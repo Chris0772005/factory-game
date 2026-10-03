@@ -15,20 +15,26 @@ static var _shader: Shader
 ## Derive it from synced piece data (e.g. `hash(design_code)` or a piece id)
 ## so every peer sees the same spots; equal seeds give identical patterns.
 static func create(alloy_id: StringName, piece_seed := 0) -> ShaderMaterial:
-	if not Alloys.has(alloy_id):
-		push_warning("Unknown alloy '%s', using %s" % [alloy_id, Alloys.DEFAULT])
-	var alloy := Alloys.get_alloy(alloy_id)
 	if _shader == null:
 		_shader = load(SHADER_PATH)
 	var mat := ShaderMaterial.new()
 	mat.shader = _shader
+	set_alloy(mat, alloy_id)
+	mat.set_shader_parameter(&"noise_seed", _seed_offset(piece_seed))
+	mat.set_shader_parameter(&"env_brightness", environment_brightness)
+	return mat
+
+
+## Switches an existing material to another alloy (colour, roughness, patina),
+## e.g. when the melt in a mold turns out to be a different mix.
+static func set_alloy(mat: ShaderMaterial, alloy_id: StringName) -> void:
+	if not Alloys.has(alloy_id):
+		push_warning("Unknown alloy '%s', using %s" % [alloy_id, Alloys.DEFAULT])
+	var alloy := Alloys.get_alloy(alloy_id)
 	mat.set_shader_parameter(&"base_color", alloy.color)
 	mat.set_shader_parameter(&"roughness", alloy.roughness)
 	mat.set_shader_parameter(&"patina_amount", alloy.get("patina", 0.0))
-	mat.set_shader_parameter(&"noise_seed", _seed_offset(piece_seed))
-	mat.set_shader_parameter(&"env_brightness", environment_brightness)
 	mat.set_meta(&"alloy", alloy_id if Alloys.has(alloy_id) else Alloys.DEFAULT)
-	return mat
 
 
 ## Noise-space offset for a seed; PCG-based, so identical on every machine.

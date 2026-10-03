@@ -317,7 +317,7 @@ func _rebuild_cavities() -> void:
 		_imprints.append(imprint)
 		var metal := MeshInstance3D.new()
 		metal.mesh = built.mesh
-		metal.material_override = MetalMaterial.create(&"alu")
+		metal.material_override = MetalMaterial.create(&"alu", hash(patterns[i]))
 		metal.position = _slot_position(i) + Vector3(0, CAST_THICKNESS * 0.5 - 0.02, 0)
 		metal.visible = false
 		add_child(metal)
@@ -333,7 +333,7 @@ func _update_visuals() -> void:
 		var metal := _metals[i]
 		metal.visible = fill > 0.001
 		var mat := metal.material_override as ShaderMaterial
-		mat.set_shader_parameter("base_color", Alloys.TABLE.get(alloy, Alloys.TABLE[&"alu"]).color)
+		MetalMaterial.set_alloy(mat, alloy)
 		MetalMaterial.set_temperature(mat, metal_temperature)
 		MetalMaterial.set_fill(mat, lerpf(-CAST_THICKNESS * 0.5, CAST_THICKNESS * 0.5, fill), fill < 0.999)
 

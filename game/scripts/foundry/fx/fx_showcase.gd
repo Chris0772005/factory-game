@@ -63,7 +63,7 @@ func _process(delta: float) -> void:
 		FoundryFX.dust(self, _spots[&"smash"] + Vector3(0.3, -0.3, 0.2))
 	if _crossed(before, now, 1.3):
 		FoundryFX.sparks(self, _spots[&"furnace"], 36)
-	var level := lerpf(-0.07, 0.05, minf(now / POUR_END, 1.0))
+	var level := lerpf(-0.085, 0.05, minf(now / POUR_END, 1.0))
 	MetalMaterial.set_fill(_mold_plate, level)
 	_stream.flow = 1.0 if now < POUR_END else 0.0
 	_stream.set_endpoints(_lip(), _spots[&"impact"] + Vector3(0, level, 0))

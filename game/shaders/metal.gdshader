@@ -26,6 +26,7 @@ uniform float patina_amount : hint_range(0.0, 1.0) = 0.0;
 uniform vec3 noise_seed = vec3(0.0);
 
 varying vec3 obj_pos;
+varying vec3 obj_normal;
 varying vec3 cam_pos;
 
 void vertex() {
@@ -35,6 +36,7 @@ void vertex() {
 		VERTEX -= NORMAL * 0.003;
 	}
 	obj_pos = VERTEX;
+	obj_normal = NORMAL;
 	cam_pos = (inverse(MODEL_MATRIX) * vec4(CAMERA_POSITION_WORLD, 1.0)).xyz;
 }
 
@@ -64,7 +66,10 @@ void fragment() {
 		if (obj_pos.y > cut) {
 			discard;
 		}
-		rim = 1.0 - smoothstep(0.0, meniscus_width, cut - obj_pos.y);
+		// Meniscus only where the melt meets a wall: a floor just below the
+		// surface (thin pours) must not glow as a whole.
+		float wall = 1.0 - smoothstep(0.5, 0.9, abs(obj_normal.y) / max(length(obj_normal), 1e-4));
+		rim = (1.0 - smoothstep(0.0, meniscus_width, cut - obj_pos.y)) * wall;
 		t = max(t, 0.72);
 		// Back faces seen through the cut stand in for the liquid surface. Their
 		// patterns are sampled where the view ray crosses the fill plane so the

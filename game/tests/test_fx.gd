@@ -112,6 +112,13 @@ func _test_materials() -> void:
 	var fallback := MetalMaterial.create(&"unobtainium")
 	_check(fallback.get_shader_parameter(&"base_color") == Alloys.get_alloy(&"alu").color, "unknown alloy falls back to aluminium")
 	_check(Alloys.get_alloy(&"verdigris").get("patina", 0.0) > 0.0, "verdigris carries a patina")
+	var switched := MetalMaterial.create(&"bronze", 5)
+	MetalMaterial.set_alloy(switched, &"verdigris")
+	var green := Alloys.get_alloy(&"verdigris")
+	_check(switched.get_shader_parameter(&"base_color") == green.color and is_equal_approx(switched.get_shader_parameter(&"roughness"), green.roughness)
+		and switched.get_shader_parameter(&"patina_amount") > 0.0 and switched.get_meta(&"alloy") == &"verdigris", "set_alloy switches colour, roughness and patina")
+	MetalMaterial.set_alloy(switched, &"gold")
+	_check(switched.get_shader_parameter(&"patina_amount") == 0.0, "set_alloy clears the patina again")
 
 
 func _test_bursts() -> void:

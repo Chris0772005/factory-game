@@ -175,7 +175,7 @@ func _pour(litres: float, rate: float, delta: float) -> void:
 	var mold := MoldBox.find_at(get_tree(), pour_target)
 	if mold:
 		mold.receive_metal(litres, temperature, share, rate, delta)
-	elif randf() < delta * 8.0:
+	elif randf() < delta * 1.5:
 		FoundryFX.sparks(get_parent(), pour_target, 6)
 	if amount <= 0.001:
 		amount = 0.0
