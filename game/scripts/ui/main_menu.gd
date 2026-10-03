@@ -43,13 +43,13 @@ func _build_ui() -> void:
 	col.add_theme_constant_override("separation", 18)
 	root.add_child(col)
 	var title := Label.new()
-	title.text = "FACTORY GAME"
+	title.text = "MOLTEN MATES"
 	title.add_theme_font_override("font", UITheme.font(700))
 	title.add_theme_font_size_override("font_size", 104)
 	title.add_theme_constant_override("outline_size", 22)
 	col.add_child(title)
 	var sub := Label.new()
-	sub.text = "Arbeitstitel – Prototyp"
+	sub.text = "Zeichne es. Gieß es. Zerschlag die Form."
 	sub.add_theme_color_override("font_color", UITheme.ACCENT)
 	col.add_child(sub)
 	col.add_child(_spacer(20))
