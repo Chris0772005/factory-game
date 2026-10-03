@@ -5,6 +5,7 @@ extends CanvasLayer
 var world: GameWorld
 var _shown := 0.0
 var _label: Label
+var _hint: Label
 var _bump := 0.0
 
 
@@ -29,6 +30,13 @@ func _ready() -> void:
 	_label.add_theme_font_size_override("font_size", 44)
 	_label.custom_minimum_size.x = 160
 	row.add_child(_label)
+	_hint = Label.new()
+	_hint.add_theme_font_size_override("font_size", 30)
+	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_hint.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_hint.position = Vector2(-600, -110)
+	_hint.size = Vector2(1200, 60)
+	root.add_child(_hint)
 	if world:
 		world.money_changed.connect(func(_m): _bump = 1.0)
 
@@ -43,6 +51,8 @@ func _process(delta: float) -> void:
 	_bump = maxf(0.0, _bump - delta * 5.0)
 	_label.scale = Vector2.ONE * (1.0 + _bump * 0.15)
 	_label.pivot_offset = _label.size * Vector2(0.0, 0.5)
+	var me := world.local_player()
+	_hint.text = me.current_hint() if me else ""
 
 
 static func _format(n: int) -> String:

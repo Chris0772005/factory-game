@@ -15,6 +15,8 @@ var money := 0
 ## Menu backgrounds reuse levels without a player or HUD.
 var attract_mode := false
 var hud: HUD
+## type -> Callable(data: Dictionary) -> Node, for level-specific networked entities.
+var entity_factories := {}
 var _next_item_id := 0
 
 
@@ -101,10 +103,27 @@ func spawn_player(id: int) -> Player:
 
 
 func spawn_item(kind: StringName, color: Color, size: Vector3, mass: float, pos: Vector3) -> Item:
-	_next_item_id += 1
-	var data := {type = "item", name = "I%d" % _next_item_id, kind = kind, color = color,
+	var data := {type = "item", name = next_name("I"), kind = kind, color = color,
 		size = size, mass = mass, pos = pos}
 	return _spawn(data)
+
+
+## Registers a networked entity type that levels can spawn with `spawn_entity`.
+func register_entity(type: String, factory: Callable) -> void:
+	entity_factories[type] = factory
+
+
+## Spawns a registered entity on every peer. `data` must contain `type`;
+## a unique `name` is added when missing. Host only.
+func spawn_entity(data: Dictionary) -> Node:
+	if not data.has("name"):
+		data.name = next_name(data.type.substr(0, 1).to_upper())
+	return _spawn(data)
+
+
+func next_name(prefix: String) -> String:
+	_next_item_id += 1
+	return "%s%d" % [prefix, _next_item_id]
 
 
 func _spawn(data: Dictionary) -> Node:
@@ -131,7 +150,34 @@ func _spawn_entity(data: Dictionary) -> Node:
 			item.position = data.pos
 			item.ready.connect(func(): physics_sync.register(item), CONNECT_ONE_SHOT)
 			return item
+	if entity_factories.has(data.type):
+		var node: Node = entity_factories[data.type].call(data)
+		node.name = data.name
+		if node is RigidBody3D:
+			node.ready.connect(func(): physics_sync.register(node), CONNECT_ONE_SHOT)
+		return node
+	push_error("Unknown entity type: %s" % data.type)
 	return null
+
+
+## Floating text for everyone (host calls this).
+func popup_all(pos: Vector3, text: String, color: Color) -> void:
+	HUD.popup(self, pos, text, color)
+	if Network.is_online() and multiplayer.is_server():
+		_popup_remote.rpc(pos, text, color)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _popup_remote(pos: Vector3, text: String, color: Color) -> void:
+	HUD.popup(self, pos, text, color)
+
+
+## Hint for whatever `player` carries, e.g. "[F] Gießen" for a crucible.
+func held_hint(player: Player) -> String:
+	var node := entities.get_node_or_null(player.held_name)
+	if node and node.has_method("held_hint"):
+		return node.held_hint(player)
+	return "[LMB] Ablegen   [RMB] Werfen"
 
 
 func local_player() -> Player:

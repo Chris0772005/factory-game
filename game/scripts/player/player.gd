@@ -14,6 +14,7 @@ const HOLD_HEIGHT := 1.05
 ## Maximum force the player's arms can exert on a held object (N).
 const STRENGTH := 160.0
 const THROW_IMPULSE := 7.0
+const INTERACT_RANGE := 2.2
 
 @export var color := Color("#3d7dd8")
 @export var peer_id := 1
@@ -22,7 +23,13 @@ const THROW_IMPULSE := 7.0
 var held: RigidBody3D = null
 ## Replicated flag so every peer can animate reaching arms.
 var holding := false
+## Replicated node name of the held object (for hints on every peer).
+var held_name := ""
 var held_local_point := Vector3.ZERO
+## Host-side: the use button is held down (pouring, pumping).
+var using := false
+## Local-only: a UI (like the draw pad) has the input.
+var ui_locked := false
 var input_dir := Vector2.ZERO
 var wants_sprint := false
 var facing := 0.0
@@ -69,10 +76,16 @@ func _physics_process(delta: float) -> void:
 		_follow_network(delta)
 	if held:
 		_hold(delta)
+		if using and Network.is_sim_authority() and held.has_method("use_tick"):
+			held.use_tick(self, delta)
 	_model.animate(delta, velocity, is_on_floor(), holding, _hand_target())
 
 
 func _read_input() -> void:
+	if ui_locked:
+		input_dir = Vector2.ZERO
+		wants_sprint = false
+		return
 	input_dir = Input.get_vector(&"move_left", &"move_right", &"move_forward", &"move_back")
 	wants_sprint = Input.is_action_pressed(&"sprint")
 	if Input.is_action_just_pressed(&"jump") and is_on_floor():
@@ -82,6 +95,10 @@ func _read_input() -> void:
 		_request(&"release" if holding else &"grab")
 	if Input.is_action_just_pressed(&"throw") and holding:
 		_request(&"throw")
+	if Input.is_action_just_pressed(&"interact"):
+		_request(&"use_start")
+	if Input.is_action_just_released(&"interact"):
+		_request(&"use_end")
 
 
 func _move(delta: float) -> void:
@@ -162,7 +179,7 @@ func grab(body: RigidBody3D) -> void:
 	var closest := _closest_point_on_body(body, _hand_target())
 	held_local_point = body.to_local(closest)
 	body.sleeping = false
-	_set_holding(true)
+	_set_holding(true, body.name)
 	if body.has_method("on_grabbed"):
 		body.on_grabbed(self)
 
@@ -171,7 +188,7 @@ func release() -> void:
 	if held and held.has_method("on_released"):
 		held.on_released(self)
 	held = null
-	_set_holding(false)
+	_set_holding(false, "")
 
 
 func throw() -> void:
@@ -228,6 +245,33 @@ func _enter_tree() -> void:
 	add_to_group(&"players")
 
 
+## Closest station in reach that accepts `interact(player)`. Works on every peer
+## so the local HUD can show a hint.
+func nearest_interactable() -> Node3D:
+	var best: Node3D = null
+	var best_d := INTERACT_RANGE
+	var probe := global_position + Vector3(0, 0.9, 0) + global_transform.basis.z * 0.6
+	for node in get_tree().get_nodes_in_group(&"interactable"):
+		var n := node as Node3D
+		var point: Vector3 = n.interact_point() if n.has_method("interact_point") else n.global_position
+		var d := probe.distance_to(point)
+		if d < best_d:
+			best_d = d
+			best = n
+	return best
+
+
+## Hint text for the local HUD, e.g. "[F] Gießen".
+func current_hint() -> String:
+	if holding:
+		var world := get_tree().get_first_node_in_group(&"world") as GameWorld
+		return world.held_hint(self) if world else ""
+	var target := nearest_interactable()
+	if target and target.has_method("hint"):
+		return target.hint(self)
+	return ""
+
+
 # --- Networking -------------------------------------------------------------
 
 ## Grab/release/throw run on the simulating peer; clients ask the host.
@@ -254,20 +298,34 @@ func _perform(action: StringName) -> void:
 			release()
 		&"throw":
 			throw()
+		&"use_start":
+			using = true
+			if held and held.has_method("use_start"):
+				held.use_start(self)
+			elif not held:
+				var target := nearest_interactable()
+				if target:
+					target.interact(self)
+		&"use_end":
+			using = false
+			if held and held.has_method("use_end"):
+				held.use_end(self)
 
 
-func _set_holding(value: bool) -> void:
+func _set_holding(value: bool, item_name: String) -> void:
 	holding = value
+	held_name = item_name
 	if Network.is_online() and multiplayer.is_server() and peer_id in multiplayer.get_peers():
-		_set_holding_remote.rpc_id(peer_id, value)
+		_set_holding_remote.rpc_id(peer_id, value, item_name)
 
 
 ## Sent by the host; the node's authority is the owning client, so allow any peer
 ## and check the sender instead.
 @rpc("any_peer", "call_remote", "reliable")
-func _set_holding_remote(value: bool) -> void:
+func _set_holding_remote(value: bool, item_name: String) -> void:
 	if multiplayer.get_remote_sender_id() == 1:
 		holding = value
+		held_name = item_name
 
 
 func _broadcast_state(delta: float) -> void:
@@ -277,16 +335,17 @@ func _broadcast_state(delta: float) -> void:
 	if _net_accum < 1.0 / NET_RATE:
 		return
 	_net_accum = 0.0
-	_state.rpc(global_position, facing, velocity, holding)
+	_state.rpc(global_position, facing, velocity, holding, held_name)
 
 
 @rpc("authority", "call_remote", "unreliable_ordered")
-func _state(pos: Vector3, yaw: float, vel: Vector3, is_holding: bool) -> void:
+func _state(pos: Vector3, yaw: float, vel: Vector3, is_holding: bool, item_name: String) -> void:
 	_net_target = pos
 	facing = yaw
 	velocity = vel
 	if multiplayer.get_unique_id() != 1:
 		holding = is_holding
+		held_name = item_name
 
 
 ## Remote workers chase their replicated position with move_and_slide so
