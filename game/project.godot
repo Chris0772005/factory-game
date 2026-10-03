@@ -17,6 +17,7 @@ config/features=PackedStringArray("4.7", "Forward Plus")
 [autoload]
 
 InputSetup="*res://scripts/core/input_setup.gd"
+Network="*res://scripts/net/network.gd"
 ShotTool="*res://tools/shot_tool.gd"
 
 [display]

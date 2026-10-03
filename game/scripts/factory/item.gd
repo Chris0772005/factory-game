@@ -6,17 +6,18 @@ extends RigidBody3D
 @export var value := 1
 
 
-static func create(kind_name: StringName, color: Color, size := 0.4) -> Item:
+static func create(kind_name: StringName, color: Color, size: Vector3 = Vector3.ONE * 0.4, item_mass := 0.5) -> Item:
 	var item := Item.new()
 	item.kind = kind_name
-	item.mass = 0.5
+	item.mass = item_mass
 	var shape := CollisionShape3D.new()
 	var box := BoxShape3D.new()
-	box.size = Vector3.ONE * size
+	box.size = size
 	shape.shape = box
 	item.add_child(shape)
 	var mi := MeshInstance3D.new()
-	mi.mesh = MeshFactory.rounded_box(Vector3.ONE * size, size * 0.18)
+	var smallest := minf(size.x, minf(size.y, size.z))
+	mi.mesh = MeshFactory.rounded_box(size, minf(smallest * 0.4, 0.09))
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = color
 	mat.roughness = 0.45
@@ -24,5 +25,4 @@ static func create(kind_name: StringName, color: Color, size := 0.4) -> Item:
 	item.add_child(mi)
 	item.physics_material_override = PhysicsMaterial.new()
 	item.physics_material_override.friction = 0.9
-	item.can_sleep = true
 	return item

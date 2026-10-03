@@ -1,17 +1,17 @@
-extends SceneTree
+extends Node
 ## Headless gameplay checks: run with
-## godot --headless --path game -s tests/test_sandbox.gd
+## godot --headless --path game res://tests/test_sandbox.tscn
 
 var _failures := 0
 
 
-func _initialize() -> void:
+func _ready() -> void:
 	_run.call_deferred()
 
 
 func _run() -> void:
 	var scene: Node3D = load("res://scenes/sandbox.tscn").instantiate()
-	root.add_child(scene)
+	add_child(scene)
 	await _frames(30)
 	var player: Player = scene.player
 	var start := player.global_position
@@ -42,10 +42,7 @@ func _run() -> void:
 
 	# Heavy crate (25 kg): one worker's arms are too weak to lift it, two together can.
 	player.release()
-	var heavy := Item.create(&"heavy", Color("#7a5c3e"), 0.6)
-	heavy.mass = 25.0
-	scene.add_child(heavy)
-	heavy.global_position = Vector3(8, 0.3, 8)
+	var heavy: Item = scene.spawn_item(&"heavy", Color("#7a5c3e"), Vector3.ONE * 0.6, 25.0, Vector3(8, 0.3, 8))
 	await _frames(30)
 	var helper := Player.new()
 	helper.name = "Helper"
@@ -68,12 +65,12 @@ func _run() -> void:
 	_check(team_height > 0.55, "two workers lift the heavy crate together")
 
 	print("TESTS %s (%d failures)" % ["PASSED" if _failures == 0 else "FAILED", _failures])
-	quit(1 if _failures else 0)
+	get_tree().quit(1 if _failures else 0)
 
 
 func _frames(n: int) -> void:
 	for i in n:
-		await physics_frame
+		await get_tree().physics_frame
 
 
 func _check(ok: bool, label: String) -> void:

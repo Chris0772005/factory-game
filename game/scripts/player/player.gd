@@ -16,19 +16,28 @@ const STRENGTH := 160.0
 const THROW_IMPULSE := 7.0
 
 @export var color := Color("#3d7dd8")
+@export var peer_id := 1
 
+## Set on the simulating peer (host) only.
 var held: RigidBody3D = null
+## Replicated flag so every peer can animate reaching arms.
+var holding := false
 var held_local_point := Vector3.ZERO
 var input_dir := Vector2.ZERO
 var wants_sprint := false
 var facing := 0.0
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
+var _net_target := Vector3.ZERO
+var _net_accum := 0.0
+const NET_RATE := 30.0
 var _model: PlayerModel
 var _camera_rig: CameraRig
 
 
 func _ready() -> void:
+	set_multiplayer_authority(peer_id)
+	_net_target = position
 	var shape := CollisionShape3D.new()
 	var capsule := CapsuleShape3D.new()
 	capsule.radius = 0.38
@@ -48,16 +57,19 @@ func _ready() -> void:
 
 
 func is_local() -> bool:
-	return not multiplayer.has_multiplayer_peer() or is_multiplayer_authority()
+	return not Network.is_online() or is_multiplayer_authority()
 
 
 func _physics_process(delta: float) -> void:
 	if is_local():
 		_read_input()
-	_move(delta)
+		_move(delta)
+		_broadcast_state(delta)
+	else:
+		_follow_network(delta)
 	if held:
 		_hold(delta)
-	_model.animate(delta, velocity, is_on_floor(), held != null, _hand_target())
+	_model.animate(delta, velocity, is_on_floor(), holding, _hand_target())
 
 
 func _read_input() -> void:
@@ -67,12 +79,9 @@ func _read_input() -> void:
 		velocity.y = JUMP_VELOCITY * _load_factor()
 		_model.squash(0.75)
 	if Input.is_action_just_pressed(&"grab"):
-		if held:
-			release()
-		else:
-			try_grab()
-	if Input.is_action_just_pressed(&"throw") and held:
-		throw()
+		_request(&"release" if holding else &"grab")
+	if Input.is_action_just_pressed(&"throw") and holding:
+		_request(&"throw")
 
 
 func _move(delta: float) -> void:
@@ -80,7 +89,7 @@ func _move(delta: float) -> void:
 		velocity.y -= _gravity * delta
 	var yaw := _camera_rig.yaw if _camera_rig else 0.0
 	var dir := Vector3(input_dir.x, 0, input_dir.y).rotated(Vector3.UP, yaw)
-	var speed := (SPRINT_SPEED if wants_sprint and not held else WALK_SPEED) * _load_factor()
+	var speed := (SPRINT_SPEED if wants_sprint and not holding else WALK_SPEED) * _load_factor()
 	var target := dir * speed
 	var accel := ACCEL if is_on_floor() else AIR_ACCEL
 	var horizontal := Vector3(velocity.x, 0, velocity.z).move_toward(target, accel * speed * delta)
@@ -99,13 +108,15 @@ func _move(delta: float) -> void:
 ## Heavier loads slow the worker down.
 func _load_factor() -> float:
 	if not held:
-		return 1.0
+		return 0.8 if holding else 1.0
 	var share := held.mass * _gravity / STRENGTH
 	return clampf(1.0 - share * 0.35, 0.45, 1.0)
 
 
 ## CharacterBody3D does not push rigid bodies on its own; nudge what we walk into.
 func _push_bodies() -> void:
+	if not Network.is_sim_authority():
+		return
 	for i in get_slide_collision_count():
 		var c := get_slide_collision(i)
 		var body := c.get_collider() as RigidBody3D
@@ -147,6 +158,7 @@ func grab(body: RigidBody3D) -> void:
 	var closest := _closest_point_on_body(body, _hand_target())
 	held_local_point = body.to_local(closest)
 	body.sleeping = false
+	_set_holding(true)
 	if body.has_method("on_grabbed"):
 		body.on_grabbed(self)
 
@@ -155,10 +167,13 @@ func release() -> void:
 	if held and held.has_method("on_released"):
 		held.on_released(self)
 	held = null
+	_set_holding(false)
 
 
 func throw() -> void:
 	var body := held
+	if body == null:
+		return
 	release()
 	var dir := global_transform.basis.z + Vector3(0, 0.45, 0)
 	body.apply_central_impulse(dir.normalized() * THROW_IMPULSE * minf(body.mass, 3.0))
@@ -207,3 +222,79 @@ func _closest_point_on_body(body: RigidBody3D, world_point: Vector3) -> Vector3:
 
 func _enter_tree() -> void:
 	add_to_group(&"players")
+
+
+# --- Networking -------------------------------------------------------------
+
+## Grab/release/throw run on the simulating peer; clients ask the host.
+func _request(action: StringName) -> void:
+	if Network.is_sim_authority():
+		_perform(action)
+	else:
+		_srv_request.rpc_id(1, action)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _srv_request(action: StringName) -> void:
+	if multiplayer.get_remote_sender_id() != peer_id:
+		return
+	_perform(action)
+
+
+func _perform(action: StringName) -> void:
+	match action:
+		&"grab":
+			if not held:
+				try_grab()
+		&"release":
+			release()
+		&"throw":
+			throw()
+
+
+func _set_holding(value: bool) -> void:
+	holding = value
+	if Network.is_online() and multiplayer.is_server() and peer_id in multiplayer.get_peers():
+		_set_holding_remote.rpc_id(peer_id, value)
+
+
+## Sent by the host; the node's authority is the owning client, so allow any peer
+## and check the sender instead.
+@rpc("any_peer", "call_remote", "reliable")
+func _set_holding_remote(value: bool) -> void:
+	if multiplayer.get_remote_sender_id() == 1:
+		holding = value
+
+
+func _broadcast_state(delta: float) -> void:
+	if not Network.is_online():
+		return
+	_net_accum += delta
+	if _net_accum < 1.0 / NET_RATE:
+		return
+	_net_accum = 0.0
+	_state.rpc(global_position, facing, velocity, holding)
+
+
+@rpc("authority", "call_remote", "unreliable_ordered")
+func _state(pos: Vector3, yaw: float, vel: Vector3, is_holding: bool) -> void:
+	_net_target = pos
+	facing = yaw
+	velocity = vel
+	if multiplayer.get_unique_id() != 1:
+		holding = is_holding
+
+
+## Remote workers chase their replicated position with move_and_slide so
+## they still collide with (and on the host, push) physics objects.
+func _follow_network(delta: float) -> void:
+	var to_target := _net_target - global_position
+	if to_target.length() > 3.0:
+		global_position = _net_target
+		return
+	var saved := velocity
+	velocity = to_target / maxf(delta, 0.001) * 0.5
+	move_and_slide()
+	_push_bodies()
+	velocity = saved
+	rotation.y = lerp_angle(rotation.y, facing, 1.0 - exp(-15.0 * delta))
