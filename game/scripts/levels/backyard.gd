@@ -2,9 +2,9 @@ extends GameWorld
 ## Level 1 – Hinterhof: a bucket furnace, a scrap heap and two sand molds
 ## in a fenced backyard at dusk.
 
-const GRASS := Color("#5d8a4e")
-const DIRT := Color("#9a7b5c")
-const FENCE := Color("#8a6243")
+const GRASS := Color("#4f7d55")
+const DIRT := Color("#8a8478")
+const FENCE := Color("#6b5547")
 
 
 func build_level() -> void:
@@ -76,9 +76,9 @@ func _build_environment() -> void:
 	var env := Environment.new()
 	var sky := Sky.new()
 	var sky_mat := ProceduralSkyMaterial.new()
-	sky_mat.sky_top_color = Color("#1b2347")
-	sky_mat.sky_horizon_color = Color("#d9805a")
-	sky_mat.ground_horizon_color = Color("#3a2f3a")
+	sky_mat.sky_top_color = Color("#141b3d")
+	sky_mat.sky_horizon_color = Color("#8a6f9e")
+	sky_mat.ground_horizon_color = Color("#2c2a3d")
 	sky_mat.ground_bottom_color = Color("#151320")
 	sky_mat.sun_angle_max = 20.0
 	sky.sky_material = sky_mat
@@ -96,7 +96,7 @@ func _build_environment() -> void:
 	env.glow_bloom = 0.08
 	env.glow_hdr_threshold = 1.1
 	env.fog_enabled = true
-	env.fog_light_color = Color("#6b5a73")
+	env.fog_light_color = Color("#4b5277")
 	env.fog_density = 0.012
 	env.adjustment_enabled = true
 	env.adjustment_saturation = 1.15
@@ -104,8 +104,8 @@ func _build_environment() -> void:
 	we.environment = env
 	add_child(we)
 	var moon := DirectionalLight3D.new()
-	moon.light_color = Color("#ffb38a")
-	moon.light_energy = 0.75
+	moon.light_color = Color("#a9b8ff")
+	moon.light_energy = 0.6
 	moon.shadow_enabled = true
 	moon.directional_shadow_max_distance = 45
 	moon.rotation_degrees = Vector3(-28, -60, 0)
@@ -123,7 +123,7 @@ func _build_fence() -> void:
 
 
 func _build_house() -> void:
-	WorldBuilder.add_box(self, Vector3(14, 5.5, 1.0), Vector3(-2, 2.75, -9.6), Color("#c9a487"), true)
+	WorldBuilder.add_box(self, Vector3(14, 5.5, 1.0), Vector3(-2, 2.75, -9.6), Color("#8f93a8"), true)
 	WorldBuilder.add_box(self, Vector3(1.4, 2.3, 0.1), Vector3(-4, 1.15, -9.05), Color("#5c3a26"))
 	for x in [-7.0, 0.5, 3.5]:
 		var win := WorldBuilder.add_box(self, Vector3(1.3, 1.1, 0.06), Vector3(x, 2.6, -9.05), Color("#ffcf7a"))
@@ -132,7 +132,7 @@ func _build_house() -> void:
 		m.emission = Color("#ffb54a")
 		m.emission_energy_multiplier = 2.5
 	# Shed on the left.
-	WorldBuilder.add_box(self, Vector3(3.2, 2.6, 3.0), Vector3(-9.5, 1.3, -5.5), Color("#7d5a3f"), true)
+	WorldBuilder.add_box(self, Vector3(3.2, 2.6, 3.0), Vector3(-9.5, 1.3, -5.5), Color("#5d6b7d"), true)
 	WorldBuilder.add_box(self, Vector3(3.6, 0.2, 3.4), Vector3(-9.5, 2.7, -5.5), Color("#4a3a35"))
 
 

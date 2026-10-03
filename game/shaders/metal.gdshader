@@ -92,8 +92,9 @@ void fragment() {
 	float patina = patina_amount * (1.0 - hot);
 	if (patina > 0.0) {
 		float pn = fx_fbm(p * 10.0 + 11.0);
-		float m = min(patina * 2.0, 1.0) * smoothstep(0.62 - 0.25 * patina, 0.7 - 0.25 * patina, pn + (grain - 0.5) * 0.2);
-		albedo = mix(albedo, patina_color.rgb * (0.8 + 0.4 * grain), m);
+		// Grain only roughens the patch edges a little: more speckle shimmers at distance.
+		float m = min(patina * 2.0, 1.0) * smoothstep(0.62 - 0.25 * patina, 0.7 - 0.25 * patina, pn + (grain - 0.5) * 0.06);
+		albedo = mix(albedo, patina_color.rgb * (0.88 + 0.24 * broad), m);
 		metal = mix(metal, 0.1, m);
 		rough = mix(rough, 0.75, m);
 	}
@@ -124,8 +125,8 @@ void fragment() {
 		float skin = smoothstep(0.55, 0.65, flow);
 		float glint = 0.0;
 		if (liquid > 0.0) {
-			glint = fx_glint_lines(p * vec3(7.0, 16.0, 7.0) + vec3(drift * 2.0, -drift, drift));
-			glint *= smoothstep(0.38, 0.62, fx_noise(p * 3.0 + drift)) * (1.0 - skin);
+			glint = fx_glint_lines(p * vec3(10.0, 22.0, 10.0) + vec3(drift * 2.0, -drift, drift));
+			glint *= smoothstep(0.3, 0.55, fx_noise(p * 5.0 + drift)) * (1.0 - skin);
 		}
 		float body = mix(0.15, 0.72, smoothstep(0.3, 0.75, t)) * (0.85 + 0.3 * broad);
 		float mask = mix(body + (1.0 - body) * cracks, 1.0 - 0.45 * skin + 0.9 * glint, liquid);
@@ -146,8 +147,8 @@ void fragment() {
 		NORMAL = normalize((VIEW_MATRIX * vec4(MODEL_MATRIX[1].xyz, 0.0)).xyz);
 		float drift = TIME * 0.12;
 		float skin = smoothstep(0.55, 0.65, fx_fbm(vec3(p.xz * 8.0 + vec2(drift, -drift * 0.6), drift)));
-		float glint = fx_glint_lines(vec3(p.x * 6.0 + drift * 3.0, p.z * 16.0, TIME * 0.3));
-		glint *= smoothstep(0.38, 0.62, fx_noise(vec3(p.xz * 3.0, drift))) * (1.0 - skin);
+		float glint = fx_glint_lines(vec3(p.x * 9.0 + drift * 3.0, p.z * 22.0, TIME * 0.4));
+		glint *= smoothstep(0.3, 0.55, fx_noise(vec3(p.xz * 5.0, drift))) * (1.0 - skin);
 		float lt = clamp(t * (0.82 - 0.3 * skin) + 0.35 * glint, 0.0, 1.0);
 		emit = fx_heat_color(lt) * fx_heat_energy(lt) * (1.0 - 0.45 * skin + 0.9 * glint);
 		rough = 0.06;

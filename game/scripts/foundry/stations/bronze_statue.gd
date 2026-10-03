@@ -7,7 +7,7 @@ const BASE_VALUE := 160
 var pose := PackedFloat32Array()
 var alloy := &"bronze"
 var suit_color := Color.WHITE
-var temperature := 0.7
+var temperature := 0.4
 var _materials: Array[ShaderMaterial] = []
 
 

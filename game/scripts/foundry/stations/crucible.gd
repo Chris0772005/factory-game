@@ -20,6 +20,7 @@ var pour_target := Vector3.ZERO
 var pour_yaw := 0.0
 
 var _pivot: Node3D
+var _shell_mat: StandardMaterial3D
 var _melt: MeshInstance3D
 var _melt_mat: ShaderMaterial
 var _stream: PourStream
@@ -56,7 +57,11 @@ func _ready() -> void:
 	mesh.bottom_radius = RADIUS * 0.82
 	mesh.height = HEIGHT
 	body.mesh = mesh
-	body.material_override = WorldBuilder.material(Color("#4a4440"), 0.9)
+	_shell_mat = WorldBuilder.material(Color("#a8968a"), 0.85)
+	_shell_mat.emission_enabled = true
+	_shell_mat.emission = Color("#ff5a1f")
+	_shell_mat.emission_energy_multiplier = 0.0
+	body.material_override = _shell_mat
 	body.position.y = HEIGHT * 0.5
 	_pivot.add_child(body)
 	var rim := MeshInstance3D.new()
@@ -72,6 +77,27 @@ func _ready() -> void:
 	spout.material_override = rim.material_override
 	spout.position = Vector3(0, HEIGHT - 0.01, RADIUS + 0.03)
 	_pivot.add_child(spout)
+	# Iron shank ring with two handles, so it reads as a foundry ladle.
+	var iron := WorldBuilder.material(Color("#3b3f46"), 0.5)
+	var ring := MeshInstance3D.new()
+	var ring_mesh := TorusMesh.new()
+	ring_mesh.inner_radius = RADIUS + 0.005
+	ring_mesh.outer_radius = RADIUS + 0.045
+	ring.mesh = ring_mesh
+	ring.material_override = iron
+	ring.position.y = HEIGHT * 0.62
+	_pivot.add_child(ring)
+	for side in [-1.0, 1.0]:
+		var bar := MeshInstance3D.new()
+		bar.mesh = MeshFactory.rounded_box(Vector3(0.34, 0.05, 0.05), 0.02)
+		bar.material_override = iron
+		bar.position = Vector3(side * (RADIUS + 0.19), HEIGHT * 0.62, 0)
+		_pivot.add_child(bar)
+		var grip := MeshInstance3D.new()
+		grip.mesh = MeshFactory.rounded_box(Vector3(0.16, 0.07, 0.07), 0.03)
+		grip.material_override = WorldBuilder.material(Color("#7a4f2e"), 0.8)
+		grip.position = Vector3(side * (RADIUS + 0.32), HEIGHT * 0.62, 0)
+		_pivot.add_child(grip)
 	_melt = MeshInstance3D.new()
 	var disc := CylinderMesh.new()
 	disc.top_radius = RADIUS - 0.035
@@ -198,6 +224,7 @@ func _update_visuals() -> void:
 	_melt.visible = amount > 0.02
 	_melt.position.y = 0.04 + (HEIGHT - 0.08) * clampf(amount / capacity(), 0.0, 1.0)
 	MetalMaterial.set_temperature(_melt_mat, clampf(temperature, 0.0, 1.0))
+	_shell_mat.emission_energy_multiplier = clampf(temperature - 0.3, 0.0, 1.0) * 0.9
 	_stream.flow = flow
 	if flow > 0.01:
 		_hiss.global_position = pour_target

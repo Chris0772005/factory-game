@@ -13,6 +13,7 @@ static var _cache := {}
 
 ## Chunky sand clods flying out with a dust cloud, e.g. when a mold is smashed.
 static func sand_burst(parent: Node, pos: Vector3, size := 1.0) -> FxBurst:
+	size = maxf(size, 0.2)
 	var fx := FxBurst.new()
 	var chunks := _emitter(fx, maxi(6, roundi(26 * size)), 1.7, _chunk_process(size), _chunk_mesh())
 	chunks.explosiveness = 0.92
