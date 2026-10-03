@@ -46,8 +46,8 @@ func _physics_process(_delta: float) -> void:
 	if world == null:
 		return
 	for node in world.entities.get_children():
-		var piece := node as CastPiece
-		if piece == null or piece.is_held() or piece.is_queued_for_deletion():
+		var piece := node as Item
+		if piece == null or not piece.has_method("value") or piece.is_held() or piece.is_queued_for_deletion():
 			continue
 		var local := to_local(piece.global_position)
 		if absf(local.x) < SIZE.x * 0.5 and absf(local.z) < SIZE.z * 0.5 and local.y < SIZE.y and local.y > -0.1:

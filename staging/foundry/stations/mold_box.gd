@@ -161,12 +161,31 @@ func receive_metal(litres: float, temperature: float, mix: Dictionary, rate: flo
 		defects["misrun"] = minf(1.0, defects.get("misrun", 0.0) + delta * 0.6)
 	for k in mix:
 		cast_mix[k] = cast_mix.get(k, 0.0) + mix[k]
+	_catch_bystanders()
 	metal_temperature = maxf(metal_temperature, temperature)
 	_distribute(litres)
 	if _total_fill() >= 0.999:
 		state = State.COOLING
 		_cool_left = COOL_TIME
 		_broadcast_state()
+
+
+## Anyone standing in the sand while metal pours in becomes a bronze statue.
+func _catch_bystanders() -> void:
+	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
+	if world == null:
+		return
+	for node in get_tree().get_nodes_in_group(&"players"):
+		var p := node as Player
+		var local := to_local(p.global_position)
+		if absf(local.x) > BED.x * 0.5 or absf(local.z) > BED.z * 0.5 or local.y < BED.y - 0.25 or local.y > BED.y + 0.8:
+			continue
+		var data := {type = "statue", pos = p.global_position, yaw = p.facing, pose = PlayerModel.panic_pose(),
+			alloy = FoundryRules.alloy_for(cast_mix)}
+		world.spawn_entity(data)
+		world.popup_all(p.global_position + Vector3(0, 2.4, 0), "BRONZEFREUND!", Color("#ffb347"))
+		_fx_all(&"sparks", p.global_position + Vector3(0, 1.0, 0))
+		p.teleport(world.respawn_point(p))
 
 
 ## Gating tree: melt flows to every cavity in proportion to what it still needs.

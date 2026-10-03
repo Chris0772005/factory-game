@@ -11,6 +11,7 @@ func build_level() -> void:
 	register_entity("crucible", Crucible.create_crucible)
 	register_entity("hammer", Hammer.create_hammer)
 	register_entity("cast", CastPiece.from_data)
+	register_entity("statue", BronzeStatue.from_data)
 	_build_environment()
 	WorldBuilder.add_box(self, Vector3(26, 0.2, 20), Vector3(0, -0.1, 0), GRASS, true)
 	WorldBuilder.add_box(self, Vector3(12, 0.02, 8.5), Vector3(0, 0.01, -0.5), DIRT)

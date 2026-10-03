@@ -261,6 +261,29 @@ func nearest_interactable() -> Node3D:
 	return best
 
 
+## Moves the worker (e.g. respawn). Movement is owned by the controlling
+## peer, so the host forwards the request there.
+func teleport(pos: Vector3) -> void:
+	release()
+	if is_local():
+		_do_teleport(pos)
+	else:
+		_teleport_remote.rpc_id(peer_id, pos)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _teleport_remote(pos: Vector3) -> void:
+	if multiplayer.get_remote_sender_id() == 1:
+		_do_teleport(pos)
+
+
+func _do_teleport(pos: Vector3) -> void:
+	global_position = pos
+	velocity = Vector3.ZERO
+	_net_target = pos
+	_model.squash(1.4)
+
+
 ## Hint text for the local HUD, e.g. "[F] Gießen".
 func current_hint() -> String:
 	if holding:

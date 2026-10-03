@@ -180,6 +180,10 @@ func held_hint(player: Player) -> String:
 	return "[LMB] Ablegen   [RMB] Werfen"
 
 
+func respawn_point(_player: Player) -> Vector3:
+	return Vector3(randf_range(-1.0, 1.0), 0.3, 5.0)
+
+
 func local_player() -> Player:
 	var id := multiplayer.get_unique_id() if Network.is_online() else 1
 	return entities.get_node_or_null(str(id))

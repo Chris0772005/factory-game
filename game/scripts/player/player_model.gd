@@ -59,6 +59,29 @@ func squash(amount: float) -> void:
 	_squash = amount
 
 
+## Snapshot of the limb angles, small enough to send over the network.
+func pose_data() -> PackedFloat32Array:
+	return PackedFloat32Array([
+		_arms[0].rotation.x, _arms[0].rotation.z, _arms[1].rotation.x, _arms[1].rotation.z,
+		_legs[0].rotation.x, _legs[1].rotation.x, _body.position.y,
+	])
+
+
+func apply_pose(pose: PackedFloat32Array) -> void:
+	if pose.size() < 7:
+		return
+	_arms[0].rotation = Vector3(pose[0], 0, pose[1])
+	_arms[1].rotation = Vector3(pose[2], 0, pose[3])
+	_legs[0].rotation.x = pose[4]
+	_legs[1].rotation.x = pose[5]
+	_body.position.y = pose[6]
+
+
+## "Oh no" pose for someone caught in a pour: arms up, one leg kicked.
+static func panic_pose() -> PackedFloat32Array:
+	return PackedFloat32Array([-2.6, 0.5, -2.4, -0.6, -0.6, 0.35, 0.04])
+
+
 func animate(delta: float, velocity: Vector3, on_floor: bool, holding: bool, hand_target: Vector3) -> void:
 	var speed := Vector2(velocity.x, velocity.z).length()
 	if on_floor:
