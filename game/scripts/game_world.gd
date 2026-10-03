@@ -5,13 +5,18 @@ extends Node3D
 
 const PLAYER_COLORS := [Color("#3d7dd8"), Color("#e2574c"), Color("#3fae6a"), Color("#c77ddb")]
 
+signal money_changed(amount: int)
+
 var spawner: MultiplayerSpawner
 var physics_sync: PhysicsSync
 var entities: Node3D
+var factory: FactoryGrid
+var money := 0
 var _next_item_id := 0
 
 
 func _ready() -> void:
+	add_to_group(&"world")
 	entities = Node3D.new()
 	entities.name = "Entities"
 	add_child(entities)
@@ -34,6 +39,30 @@ func _ready() -> void:
 ## Override in subclasses to build static geometry and initial items (host only for items).
 func build_level() -> void:
 	pass
+
+
+## Creates the conveyor/machine grid for this level.
+func create_factory() -> FactoryGrid:
+	factory = FactoryGrid.new()
+	factory.name = "Factory"
+	factory.world = self
+	add_child(factory)
+	return factory
+
+
+func add_money(amount: int) -> void:
+	if not Network.is_sim_authority():
+		return
+	money += amount
+	money_changed.emit(money)
+	if Network.is_online():
+		_sync_money.rpc(money)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _sync_money(amount: int) -> void:
+	money = amount
+	money_changed.emit(money)
 
 
 func _on_session_started() -> void:

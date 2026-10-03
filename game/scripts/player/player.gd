@@ -148,6 +148,10 @@ func try_grab() -> void:
 		if d < best_dist:
 			best_dist = d
 			best = body
+	if best == null:
+		var world := get_tree().get_first_node_in_group(&"world") as GameWorld
+		if world and world.factory:
+			best = world.factory.pick_item(_hand_target())
 	if best:
 		grab(best)
 

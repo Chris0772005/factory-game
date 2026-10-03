@@ -9,6 +9,9 @@ fail=0
 echo "== Offline gameplay =="
 timeout -s KILL 120 "$GODOT" --headless --path . res://tests/test_sandbox.tscn 2>&1 | grep -E "ok |FAIL|TESTS|SCRIPT ERROR" || fail=1
 
+echo "== Factory simulation =="
+timeout -s KILL 150 "$GODOT" --headless --path . res://tests/test_factory.tscn 2>&1 | grep -E "ok |FAIL|TESTS|stress|SCRIPT ERROR" || fail=1
+
 echo "== Network (host + client) =="
 timeout -s KILL 100 "$GODOT" --headless --path . res://tests/test_net.tscn -- --host --role=host > /tmp/fg_host.log 2>&1 &
 host_pid=$!

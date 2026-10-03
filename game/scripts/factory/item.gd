@@ -26,3 +26,18 @@ static func create(kind_name: StringName, color: Color, size: Vector3 = Vector3.
 	item.physics_material_override = PhysicsMaterial.new()
 	item.physics_material_override.friction = 0.9
 	return item
+
+
+var _holders := 0
+
+
+func on_grabbed(_by: Node) -> void:
+	_holders += 1
+
+
+func on_released(_by: Node) -> void:
+	_holders = maxi(0, _holders - 1)
+
+
+func is_held() -> bool:
+	return _holders > 0
