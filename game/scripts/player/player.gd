@@ -58,6 +58,9 @@ func _ready() -> void:
 	_model.suit_color = color
 	add_child(_model)
 	floor_snap_length = 0.3
+	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
+	if world and world.has_upgrade(&"gloves"):
+		strength = STRENGTH * 1.25
 	if is_local():
 		_camera_rig = CameraRig.new()
 		_camera_rig.target = self
