@@ -3,6 +3,7 @@ extends Node3D
 ## Heap of junk to melt. Using it hands the player a random piece of scrap.
 
 const WEIGHTS := {&"scrap_can": 70, &"scrap_key": 15, &"scrap_pipe": 13, &"scrap_ring": 2}
+const PREMIUM_WEIGHTS := {&"scrap_can": 35, &"scrap_key": 28, &"scrap_pipe": 32, &"scrap_ring": 5}
 
 
 func _ready() -> void:
@@ -41,12 +42,14 @@ func interact(player: Node) -> void:
 
 
 func _roll() -> StringName:
+	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
+	var weights := PREMIUM_WEIGHTS if world and world.has_upgrade(&"scrap_premium") else WEIGHTS
 	var total := 0
-	for k in WEIGHTS:
-		total += WEIGHTS[k]
+	for k in weights:
+		total += weights[k]
 	var r := randi() % total
-	for k in WEIGHTS:
-		r -= WEIGHTS[k]
+	for k in weights:
+		r -= weights[k]
 		if r < 0:
 			return k
 	return &"scrap_can"

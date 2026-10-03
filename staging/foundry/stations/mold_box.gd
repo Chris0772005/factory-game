@@ -91,8 +91,13 @@ func interact(_player: Node) -> void:
 			hit(false)
 
 
+func cavities() -> int:
+	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
+	return capacity + (1 if world and world.has_upgrade(&"mold_slot") else 0)
+
+
 func has_room() -> bool:
-	return state in [State.EMPTY, State.PATTERNED] and patterns.size() < capacity
+	return state in [State.EMPTY, State.PATTERNED] and patterns.size() < cavities()
 
 
 ## Adds a drawing as a new cavity. Host only.
@@ -278,7 +283,7 @@ func _break_open() -> void:
 
 func _slot_position(i: int) -> Vector3:
 	var top := BED.y
-	match capacity:
+	match cavities():
 		1:
 			return Vector3(0, top, 0)
 		2:

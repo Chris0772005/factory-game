@@ -15,6 +15,8 @@ var money := 0
 ## Menu backgrounds reuse levels without a player or HUD.
 var attract_mode := false
 var hud: HUD
+## Upgrades node of the current save (set by levels that have progression).
+var upgrades: Node = null
 ## type -> Callable(data: Dictionary) -> Node, for level-specific networked entities.
 var entity_factories := {}
 var _next_item_id := 0
@@ -178,6 +180,10 @@ func held_hint(player: Player) -> String:
 	if node and node.has_method("held_hint"):
 		return node.held_hint(player)
 	return "[LMB] Ablegen   [RMB] Werfen"
+
+
+func has_upgrade(id: StringName) -> bool:
+	return upgrades != null and upgrades.has(id)
 
 
 func respawn_point(_player: Player) -> Vector3:

@@ -161,8 +161,13 @@ func lip_position() -> Vector3:
 	return _pivot.global_transform * Vector3(0, HEIGHT, RADIUS + 0.06)
 
 
+func capacity() -> float:
+	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
+	return 5.0 if world and world.has_upgrade(&"crucible_big") else CAPACITY
+
+
 func add_melt(metal: StringName, litres: float) -> float:
-	var room := CAPACITY - amount
+	var room := capacity() - amount
 	var added := minf(room, litres)
 	if added <= 0.0:
 		return 0.0
@@ -191,7 +196,7 @@ func _update_visuals() -> void:
 		return
 	_pivot.global_basis = Basis(Vector3.UP, pour_yaw) * Basis(Vector3.RIGHT, tilt * 1.25)
 	_melt.visible = amount > 0.02
-	_melt.position.y = 0.04 + (HEIGHT - 0.08) * clampf(amount / CAPACITY, 0.0, 1.0)
+	_melt.position.y = 0.04 + (HEIGHT - 0.08) * clampf(amount / capacity(), 0.0, 1.0)
 	MetalMaterial.set_temperature(_melt_mat, clampf(temperature, 0.0, 1.0))
 	_stream.flow = flow
 	if flow > 0.01:

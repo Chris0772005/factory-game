@@ -12,6 +12,11 @@ func build_level() -> void:
 	register_entity("hammer", Hammer.create_hammer)
 	register_entity("cast", CastPiece.from_data)
 	register_entity("statue", BronzeStatue.from_data)
+	upgrades = Upgrades.new()
+	upgrades.name = "Upgrades"
+	upgrades.world = self
+	add_child(upgrades)
+	upgrades.changed.connect(_apply_upgrades)
 	_build_environment()
 	WorldBuilder.add_box(self, Vector3(26, 0.2, 20), Vector3(0, -0.1, 0), GRASS, true)
 	WorldBuilder.add_box(self, Vector3(12, 0.02, 8.5), Vector3(0, 0.01, -0.5), DIRT)
@@ -37,10 +42,34 @@ func build_level() -> void:
 	crate.rotation.y = -0.4
 	add_child(crate)
 	WorldBuilder.add_box(self, Vector3(0.7, 0.9, 0.7), Vector3(-1.2, 0.45, -4.6), Color("#5f7f95"))
+	var board := UpgradeBoard.new()
+	board.position = Vector3(5.6, 0, -5.2)
+	board.rotation.y = -0.5
+	add_child(board)
 
 	if Network.is_sim_authority():
+		SaveGame.load_into(self)
+		money_changed.connect(func(_m): _autosave())
+		upgrades.changed.connect(_autosave)
 		spawn_entity({type = "crucible", pos = furnace.global_position + Vector3(0, 0.15, 0)})
 		spawn_entity({type = "hammer", pos = Vector3(1.5, 0.1, 2.6)})
+
+
+func _apply_upgrades() -> void:
+	for p in get_tree().get_nodes_in_group(&"players"):
+		p.strength = Player.STRENGTH * (1.25 if has_upgrade(&"gloves") else 1.0)
+
+
+var _save_pending := false
+
+
+func _autosave() -> void:
+	if _save_pending:
+		return
+	_save_pending = true
+	await get_tree().create_timer(1.0).timeout
+	_save_pending = false
+	SaveGame.save(self)
 
 
 func _build_environment() -> void:

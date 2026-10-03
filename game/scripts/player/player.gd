@@ -11,7 +11,7 @@ const JUMP_VELOCITY := 5.2
 const GRAB_RANGE := 1.9
 const HOLD_DISTANCE := 1.05
 const HOLD_HEIGHT := 1.05
-## Maximum force the player's arms can exert on a held object (N).
+## Default maximum force the player's arms can exert on a held object (N).
 const STRENGTH := 160.0
 const THROW_IMPULSE := 7.0
 const INTERACT_RANGE := 2.2
@@ -25,6 +25,8 @@ var held: RigidBody3D = null
 var holding := false
 ## Replicated node name of the held object (for hints on every peer).
 var held_name := ""
+## Arm strength in newtons; upgrades raise it.
+var strength := STRENGTH
 var held_local_point := Vector3.ZERO
 ## Host-side: the use button is held down (pouring, pumping).
 var using := false
@@ -126,7 +128,7 @@ func _move(delta: float) -> void:
 func _load_factor() -> float:
 	if not held:
 		return 0.8 if holding else 1.0
-	var share := held.mass * _gravity / STRENGTH
+	var share := held.mass * _gravity / strength
 	return clampf(1.0 - share * 0.35, 0.45, 1.0)
 
 
@@ -218,8 +220,8 @@ func _hold(delta: float) -> void:
 	force += Vector3.UP * held.mass * _gravity / maxf(1.0, _holders(held))
 	# Lifting and steering draw on separate budgets so sideways tugging
 	# between two carriers does not eat the strength needed to hold the load up.
-	var lift := clampf(force.y, -STRENGTH, STRENGTH)
-	var steer := Vector3(force.x, 0, force.z).limit_length(STRENGTH * 0.7)
+	var lift := clampf(force.y, -strength, strength)
+	var steer := Vector3(force.x, 0, force.z).limit_length(strength * 0.7)
 	held.apply_force(steer + Vector3.UP * lift, offset)
 	held.angular_velocity *= 1.0 - minf(1.0, 6.0 * delta)
 

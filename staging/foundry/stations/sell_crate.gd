@@ -59,6 +59,9 @@ func _physics_process(_delta: float) -> void:
 			var v := piece.value()
 			world.add_money(v)
 			world.popup_all(piece.global_position + Vector3(0, 0.8, 0), "+%d $" % v, UITheme.ACCENT)
-			_cha_ching.rpc() if Network.is_online() else _cha_ching()
+			if Network.is_online():
+				_cha_ching.rpc()
+			else:
+				_cha_ching()
 			sold.emit(v)
 			piece.queue_free()

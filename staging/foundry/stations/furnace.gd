@@ -84,7 +84,9 @@ func hint(_player: Node) -> String:
 
 
 func interact(_player: Node) -> void:
-	heat = minf(1.0, heat + HEAT_PER_PUMP)
+	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
+	var boost := 1.5 if world and world.has_upgrade(&"bellows_foot") else 1.0
+	heat = minf(1.0, heat + HEAT_PER_PUMP * boost)
 	_bellows_squash = 1.0
 	Sfx.play(&"bellows", _bellows.global_position)
 	if Network.is_online():
