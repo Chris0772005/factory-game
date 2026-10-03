@@ -1,0 +1,58 @@
+name: Test and build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  GODOT_VERSION: 4.7.2
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-v1
+
+      - name: Install Godot and export templates
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+          cd ~/godot
+          curl -sSL -o godot.zip https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip
+          unzip -q godot.zip && mv Godot_v${GODOT_VERSION}-stable_linux.x86_64 godot && rm godot.zip
+          curl -sSL -o tpl.tpz https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz
+          unzip -q -j tpl.tpz 'templates/windows_release_x86_64*' 'templates/linux_release.x86_64' 'templates/version.txt' \
+            -d ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+          rm tpl.tpz
+
+      - name: Import project
+        run: ~/godot/godot --headless --path game --import || true
+
+      - name: Run tests
+        run: GODOT=~/godot/godot tools/run_tests.sh
+
+      - name: Export Windows and Linux
+        run: |
+          mkdir -p build/windows build/linux
+          ~/godot/godot --headless --path game --export-release "Windows Desktop" ../build/windows/FactoryGame.exe
+          ~/godot/godot --headless --path game --export-release "Linux" ../build/linux/FactoryGame.x86_64
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FactoryGame-windows
+          path: build/windows
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FactoryGame-linux
+          path: build/linux
