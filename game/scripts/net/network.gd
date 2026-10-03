@@ -2,7 +2,7 @@ extends Node
 ## Session management. Development uses ENet over IP; the Steam transport
 ## (GodotSteam lobbies) will plug into the same signals later.
 ##
-## Command line: `-- --host` or `-- --join=127.0.0.1`
+## Command line: `-- --host` or `-- --join=127.0.0.1`, optionally `--port=N`
 
 signal session_started
 signal peer_joined(id: int)
@@ -24,11 +24,15 @@ func _ready() -> void:
 	multiplayer.connected_to_server.connect(func(): session_started.emit())
 	multiplayer.server_disconnected.connect(func(): _end_session("Der Host hat das Spiel verlassen."))
 	multiplayer.connection_failed.connect(func(): _end_session("Verbindung zum Host fehlgeschlagen."))
+	var port := PORT
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--port="):
+			port = int(arg.trim_prefix("--port="))
 	for arg in OS.get_cmdline_user_args():
 		if arg == "--host":
-			host()
+			host(port)
 		elif arg.begins_with("--join="):
-			join(arg.trim_prefix("--join="))
+			join(arg.trim_prefix("--join="), port)
 
 
 func host(port := PORT) -> Error:

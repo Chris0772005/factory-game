@@ -5,6 +5,8 @@ set -u
 GODOT="${GODOT:-godot}"
 cd "$(dirname "$0")/../game"
 fail=0
+# Random port so parallel test runs on one machine don't collide.
+PORT=$((20000 + RANDOM % 20000))
 
 echo "== Offline gameplay =="
 timeout -s KILL 120 "$GODOT" --headless --path . res://tests/test_sandbox.tscn 2>&1 | grep -E "ok |FAIL|TESTS|SCRIPT ERROR" || fail=1
@@ -18,20 +20,20 @@ for t in test_drawing test_fx test_foundry; do
 done
 
 echo "== Network (host + client) =="
-timeout -s KILL 100 "$GODOT" --headless --path . res://tests/test_net.tscn -- --host --role=host > /tmp/fg_host.log 2>&1 &
+timeout -s KILL 100 "$GODOT" --headless --path . res://tests/test_net.tscn -- --host --port=$PORT --role=host > /tmp/fg_host_$PORT.log 2>&1 &
 host_pid=$!
 sleep 3
-timeout -s KILL 90 "$GODOT" --headless --path . res://tests/test_net.tscn -- --join=127.0.0.1 --role=client > /tmp/fg_client.log 2>&1
+timeout -s KILL 90 "$GODOT" --headless --path . res://tests/test_net.tscn -- --join=127.0.0.1 --port=$PORT --role=client > /tmp/fg_client_$PORT.log 2>&1
 wait $host_pid
-grep -hE "^\[|SCRIPT ERROR" /tmp/fg_host.log /tmp/fg_client.log
-grep -q "FAIL\|SCRIPT ERROR" /tmp/fg_host.log /tmp/fg_client.log && fail=1
+grep -hE "^\[|SCRIPT ERROR" /tmp/fg_host_$PORT.log /tmp/fg_client_$PORT.log
+grep -q "FAIL\|SCRIPT ERROR" /tmp/fg_host_$PORT.log /tmp/fg_client_$PORT.log && fail=1
 
 echo "== Network co-op foundry round =="
-timeout -s KILL 160 "$GODOT" --headless --path . res://tests/test_net_foundry.tscn -- --host --role=host > /tmp/fg_host2.log 2>&1 &
+timeout -s KILL 160 "$GODOT" --headless --path . res://tests/test_net_foundry.tscn -- --host --port=$PORT --role=host > /tmp/fg_host2_$PORT.log 2>&1 &
 host_pid=$!
 sleep 4
-timeout -s KILL 150 "$GODOT" --headless --path . res://tests/test_net_foundry.tscn -- --join=127.0.0.1 --role=client > /tmp/fg_client2.log 2>&1
+timeout -s KILL 150 "$GODOT" --headless --path . res://tests/test_net_foundry.tscn -- --join=127.0.0.1 --port=$PORT --role=client > /tmp/fg_client2_$PORT.log 2>&1
 wait $host_pid
-grep -hE "^\[|SCRIPT ERROR" /tmp/fg_host2.log /tmp/fg_client2.log
-grep -q "FAIL\|SCRIPT ERROR" /tmp/fg_host2.log /tmp/fg_client2.log && fail=1
+grep -hE "^\[|SCRIPT ERROR" /tmp/fg_host2_$PORT.log /tmp/fg_client2_$PORT.log
+grep -q "FAIL\|SCRIPT ERROR" /tmp/fg_host2_$PORT.log /tmp/fg_client2_$PORT.log && fail=1
 exit $fail
