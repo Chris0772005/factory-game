@@ -19,8 +19,8 @@ func _run() -> void:
 	var furnace: Furnace = _first(Furnace)
 	var crucible: Crucible = get_tree().get_first_node_in_group(&"crucibles")
 	var molds := get_tree().get_nodes_in_group(&"molds")
-	var mold: MoldBox = molds[0]
-	_check(bench != null and furnace != null and crucible != null and mold != null, "backyard has bench, furnace, crucible and molds")
+	var mold: MoldBox = null
+	_check(bench != null and furnace != null and crucible != null and molds.size() == 2, "backyard has bench, furnace, crucible and molds")
 
 	# 1. Draw: a smiley with a ring and two eyes.
 	var d := Drawing.new()
@@ -33,7 +33,10 @@ func _run() -> void:
 	d.add_stroke(PackedVector2Array([Vector2(0.62, 0.4)]))
 	d.add_stroke(PackedVector2Array([Vector2(0.32, 0.6), Vector2(0.5, 0.72), Vector2(0.68, 0.6)]))
 	_check(bench.submit(d.to_code()), "bench places the drawing into a mold")
-	_check(mold.state == MoldBox.State.PATTERNED and mold.patterns.size() == 1, "mold now has one pattern")
+	for m in molds:
+		if not m.patterns.is_empty():
+			mold = m
+	_check(mold != null and mold.state == MoldBox.State.PATTERNED and mold.patterns.size() == 1, "mold now has one pattern")
 
 	# 2. Ram with a steady rhythm.
 	for i in MoldBox.RAMS_NEEDED:
@@ -47,7 +50,7 @@ func _run() -> void:
 	for i in 8:
 		var info: Dictionary = FoundryRules.SCRAP[&"scrap_can"]
 		world.spawn_item(&"scrap_can", info.color, info.size, 0.4, furnace.global_position + Vector3(0, 1.0 + i * 0.3, 0))
-	for i in 40:
+	for i in 70:
 		furnace.interact(me)
 		await _frames(12)
 	_check(crucible.amount > 2.0, "melted cans fill the crucible (%.2f l, %.0f%% heat)" % [crucible.amount, crucible.temperature * 100])
@@ -96,7 +99,7 @@ func _run() -> void:
 		_check(world.money > before, "sell crate pays for the casting (+%d)" % (world.money - before))
 
 	# 7. Bronze buddy: someone standing in the mold while metal pours in.
-	var mold2: MoldBox = molds[1]
+	var mold2: MoldBox = molds[0] if molds[0] != mold else molds[1]
 	mold2.add_pattern(d.to_code())
 	for i in MoldBox.RAMS_NEEDED:
 		mold2.interact(me)

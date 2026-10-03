@@ -1,7 +1,7 @@
 extends Node
 ## Title screen: a live factory turns in the background; play solo, host or join.
 
-const LEVEL := "res://scenes/factory_test.tscn"
+const LEVEL := "res://scenes/backyard.tscn"
 
 var _camera: Camera3D
 var _angle := 0.0

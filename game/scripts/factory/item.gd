@@ -3,7 +3,6 @@ extends RigidBody3D
 ## A physical product that flows through the factory.
 
 @export var kind := &"crate"
-@export var value := 1
 
 
 static func create(kind_name: StringName, color: Color, size: Vector3 = Vector3.ONE * 0.4, item_mass := 0.5) -> Item:

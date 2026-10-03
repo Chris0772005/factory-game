@@ -7,7 +7,7 @@ const MOUTH_RADIUS := 0.45
 const HEIGHT := 0.75
 const HEAT_PER_PUMP := 0.11
 const HEAT_DECAY := 0.045
-const MELT_TIME := 2.2          ## seconds per scrap piece at full heat
+const MELT_TIME := 1.6          ## seconds per scrap piece at full heat
 
 var heat := 0.0
 var crucible: Crucible = null

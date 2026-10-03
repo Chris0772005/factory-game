@@ -56,7 +56,7 @@ func _physics_process(_delta: float) -> void:
 			continue
 		var local := to_local(piece.global_position)
 		if absf(local.x) < SIZE.x * 0.5 and absf(local.z) < SIZE.z * 0.5 and local.y < SIZE.y and local.y > -0.1:
-			var v := piece.value()
+			var v: int = piece.value()
 			world.add_money(v)
 			world.popup_all(piece.global_position + Vector3(0, 0.8, 0), "+%d $" % v, UITheme.ACCENT)
 			if Network.is_online():
