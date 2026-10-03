@@ -1,0 +1,190 @@
+[
+ {
+  "name": "A Game About Draining The Ocean (dt. Arbeitstitel: \"Leer den Ozean\")",
+  "scores": {
+   "noveltyScore": 3,
+   "viralScore": 4,
+   "funDepthScore": 5,
+   "feasibilityScore": 3,
+   "salesPotentialScore": 4
+  },
+  "killReasons": [
+   "WIDERLEGT: Der Pitch sagt, es gebe kein Incremental, das den Ozean leert. Auf Steam gibt es aber 'Empty the ocean with a bucket' (AppID 4366790, Seite seit Anfang 2026) und 'Empty The Lake!' (AppID 5291460, etwa September 2026). Der Ein-Satz-Hook gehört also schon anderen. Verifiziert über die Steam-App-Liste vom 2026-10-02. Inhalt und Verkaufszahlen beider Spiele: UNVERIFIED.",
+   "Allem Anschein nach hat der identische Hook 'Eimer gegen Ozean' Anfang 2026 keinen viralen Erfolg gebracht. In rund 225 Marktrecherchen dieser Sitzung zu den Hits 2026 taucht der Titel nirgends auf. Das widerspricht der Annahme, die Riesenzahl allein trage die Viralität (Schluss, UNVERIFIED).",
+   "Das Schema 'A Game About …' ist verbraucht: Seit Digging A Hole gibt es auf Steam 61 weitere Titel mit 'A Game About' im Namen, darunter 'A Game About Cleaning a River' und 'A Game About Needle In A Haystack'. Der Titel unterscheidet sich also nicht mehr, und die Steam-Suche ist überfüllt.",
+   "Die Wasser-Nische ist 2026 schon voll: Ocean Cleaner Idle, Idle Aqua Driller, Deep Sea Idle, Waterpump Simulator, Aqua Factory Simulator, Idle Tides und Drain the Galaxy. Laut PC Gamer erschienen 54 Idle-Spiele in einer Woche, viele davon fast gleich.",
+   "Klonrisiko ist belegt: Bei Needle gab es binnen 48 Stunden 14 Roblox-Kopien und über 10 Steam-Klone vor dem Release des Originals. Ein Spiel mit 5,5 Monaten Entwicklungszeit verliert dieses Rennen gegen Klone, die in 3 bis 4 Wochen entstehen. Der Vorsprung über den Globus hilft nicht, wenn der Hook vorher geklaut wird.",
+   "Der Umfang ist für 5,5 Monate ohne Grafiker unrealistisch: Wasser-Shader, ein echter Globus mit Tiefendaten, Koop mit Sprachchat nach Nähe, 150 Fische, 6 Biome, ein Kraken-Boss, Mars-Terraforming, Daily Seeds mit Bestenliste und Prestige. Die Vorbilder Digging A Hole (3 bis 4 Wochen, 1 bis 2 Stunden Spielzeit) und Black Hole (Solo-Entwickler) waren bewusst winzig. Godot 4.7: UNVERIFIED, ob die Version zum Produktionsstart stabil verfügbar ist.",
+   "Der Fortschritt ist schlecht sichtbar: Bei 1,335 × 10^21 Litern bewegt der Eimer den globalen Zähler praktisch nicht. Die spektakulären Clips (Landbrücke, Mars, Stöpsel) kommen erst nach Stunden. Im ersten Clip fehlt so das unmittelbar Befriedigende, das Needle und PowerWash haben.",
+   "Die Mitte des Spiels ist eintönig. Der Pitch nennt das selbst, und Spieler kritisieren genau das schon bei Black Hole ('wird schnell repetitiv'). Abschnitt für Abschnitt trockenlegen ist dieselbe Schleife, nur größer.",
+   "Rechtliches und Ruf: Nat Geo hat die Sendung 'Drain the Oceans', die Markenlage ist UNVERIFIED. Den Ozean zu leeren kann als umweltfeindlich gelesen werden. 'Drain the Galaxy' und 'Drainer' besetzen den Begriff 'Drain' auf Steam bereits."
+  ],
+  "similar": [
+   "Empty the ocean with a bucket",
+   "Empty The Lake!",
+   "Drain the Galaxy",
+   "A Game About Digging A Hole",
+   "A Game About Feeding A Black Hole",
+   "Needle In A Haystack Simulator (+ 10 weitere Heuhaufen/Nadel-Titel)",
+   "Wasser-Idle-Schwemme 2026: Ocean Cleaner Idle / Idle Aqua Driller / Deep Sea Idle: Infinity Abyss / Waterpump Simulator / Aqua Factory Simulator / Idle Tides / A Game About Cleaning a River"
+  ]
+ },
+ {
+  "name": "KNOCK OVER THE MOON (Arbeitstitel; deutscher Untertitel: „Der Domino-Effekt-Simulator“)",
+  "scores": {
+   "noveltyScore": 4,
+   "viralScore": 5,
+   "funDepthScore": 4,
+   "feasibilityScore": 3,
+   "salesPotentialScore": 4
+  },
+  "killReasons": [
+   "Ob das Spiel neu ist, ließ sich NICHT prüfen. Gesperrt waren Steam-Store, SteamDB, SteamSpy, Gamalytic, itch.io, YouTube, Reddit, Wikipedia, Bing und DuckDuckGo (Egress-Policy). Das WebSearch-Budget war mit 200/200 erschöpft, das YouTube-Tool hatte keine Credits. Alle Zahlen unten stammen aus Ergebnissen früherer Suchen dieser Session. Für die Behauptung, es gebe noch kein Domino-Incremental, fehlt also jeder Beleg; deshalb fällt die Neuheits-Wertung bewusst niedrig aus. Domino-Sandboxen wie Domino Craft VR gibt es; Domino-Spiele auf Roblox und Mobile sind sehr wahrscheinlich, aber UNVERIFIED.",
+   "Der Bogen von winzig bis kosmisch ist abgenutzt: Katamari, Tasty Planet, Cell to Singularity, Nodebuster („Realität zerstören“) und A Game About Feeding A Black Hole (100.000 Kopien in unter einem Monat, Dezember 2025). Neu wäre nur die Domino-Optik. Die Wahrnehmung droht „Black Hole, aber mit Dominos“ zu werden.",
+   "Der Physik-Fakt im Titel ist falsch oder zumindest mehrdeutig. Mit 5 mm × 1,5^(n−1) ist Stein #51 3.188 km hoch, das sind 92 % des Monddurchmessers (3.475 km). Mondgroß ist erst Stein #52, und die Strecke Erde–Mond (384.400 km) erreicht erst #63. Auch die Leiter stimmt nicht: #15 ist 1,46 m statt Türhöhe, #36 mit 7,3 km kleiner als der Everest, #42 mit 83 km unter der Kármán-Linie, die Erde entspricht #55 und das Universum etwa #168 statt rund 183. Ein falscher Wissenschafts-Fakt bringt Korrektur-Kommentare statt Käufe und kostet Glaubwürdigkeit. Das Whitehead-Paper (Am. J. Phys., 1983) ist in dieser Session UNVERIFIED.",
+   "Der Fakt ist kein neues Wissen zum Teilen. Die Domino-Verstärkung („der 29. Stein ist so hoch wie das Empire State Building“) ist ein altes, oft geteiltes Physik-Meme aus Demos und Wissenschaftskanälen. Die Verbreitung ist UNVERIFIED, weil die Seiten gesperrt waren.",
+   "Digitale Dominos sind Massenware. Domino-Simulationen mit Millionen Steinen aus Blender, UE5 oder Algodoo gibt es zuhauf (UNVERIFIED). Den 12-Sekunden-Zoom halten Zuschauer eher für ein Render als für ein Spiel, deshalb werden aus Views kaum Wishlists. Hevesh5-Videos leben von echtem Aufwand und echtem Risiko, und genau das nehmen Rückgängig-Funktion und Setz-Roboter weg.",
+   "Der Kern-Loop widerspricht sich selbst. Die Spannung „Bleibt der letzte Stein stehen?“ braucht Einmaligkeit und Risiko. Ein Incremental braucht ständig steigende Zahlen und Automatisierung, also Setz-Roboter und endlose Kreise. Sobald Roboter die Steine aufstellen, hat ein Fehler keine Folgen mehr; vorher ist das Setzen fummelig und das Zusehen passiv. Außerdem wiederholt die Verstärkerleiter über 50 Mal denselben Beat: Der nächste Stein ist größer.",
+   "Der Klon-Schutz ist eine Illusion. Needle In A Haystack hatte 14 Roblox-Klone in 48 Stunden und etwa 10 Lookalikes auf Steam, bevor das Original erschienen war. Die Roblox-Klone von Meccha Chameleon hatten nach 3 Wochen mehr Spieler als das Original (150.000–200.000 gegen etwa 55.000). Für das Gimmick aus dem Clip braucht kein Klon 10 Mio. Steine; „Domino to the Moon“ auf Roblox ist ein Wochenendprojekt.",
+   "Der Umfang ist für eine Person mit KI in 7 Monaten nicht zu schaffen. Geplant sind Physik für 10 Mio. Objekte, ein Fabrik-Techbaum, über 30 Sondersteine, Online-Koop mit Physik für 1–4 Spieler, ein Saboteur-Partymodus, Workshop, Bild-Import (Moderation, Urheberrecht, Gesichter), Tages-Bestenlisten mit festem Seed, Clip-Export in 9:16, über 12 Sprachen und Steam Deck Verified. Dazu kommen SDFGI, volumetrischer Nebel und SSR, was auf dem Steam Deck mit Millionen Instanzen nicht realistisch ist. Ob Godot 4.7 als stabile Basis bereitsteht, ist UNVERIFIED.",
+   "So sieht der Verkauf im Incremental-Genre 2026 aus: Die meisten belegten Neuerscheinungen kommen auf etwa 1.000–1.500 Reviews (Dwarf Eats Mountain 1.151, Rock Bottom 1.070, All Hail the Orb 1.410, Sort Them Ducks 392–630; Gamblers Table 2.612 bei einem Peak von 8.000–9.000 Spielern). Durchbrüche wie Digging A Hole mit über 1 Mio. Kopien sind Ausreißer. 2025 erreichten nur 27 Idle- und Incremental-Spiele 1.000 Reviews, bei 20.282 Steam-Releases insgesamt.",
+   "Die DACH-Nostalgie für die RTL-Domino-Day-Shows (letzte Ausgabe etwa 2009, UNVERIFIED) spricht über 30-Jährige an, nicht die Kernzielgruppe auf TikTok und bei Streamern. Außerdem ist sie markenrechtlich heikel.",
+   "7,99 € liegen über den Spontankauf-Preisen der viralen Vergleichsspiele (Nodebuster 2,99 $, Digging A Hole 4,99 €, Chained Together 4,99 $, Meccha Chameleon 5,99 $), und das bei nur 3–4 Stunden Hauptspiel."
+  ],
+  "similar": [
+   "A Game About Feeding A Black Hole",
+   "Nodebuster",
+   "A Game About Digging A Hole",
+   "Needle In A Haystack Simulator (Studio Bitdot)",
+   "Cell to Singularity",
+   "Domino Craft VR",
+   "Katamari Damacy REROLL",
+   "Tasty Planet Forever",
+   "Gamblers Table",
+   "Upload Labs",
+   "Hevesh5 (YouTube, echte Domino-Spektakel)"
+  ]
+ },
+ {
+  "name": "ONE MORE PUMP (deutscher Untertitel: „Nur noch einmal pumpen …“)",
+  "scores": {
+   "noveltyScore": 4,
+   "viralScore": 5,
+   "funDepthScore": 4,
+   "feasibilityScore": 6,
+   "salesPotentialScore": 4
+  },
+  "killReasons": [
+   "Recherche-Grenze: Steam, SteamDB, itch.io, YouTube und TikTok waren per Egress-Proxy blockiert, und das Websuch-Budget war aufgebraucht. Belegt ist nur die aktuelle Steam-App-Liste (Stand 02.10.2026, über GitHub raw). Dazu kommen Zahlen aus Such-Snippets, die frühere Agenten in diesem Workflow gesammelt haben. Was Ballon-Titel inhaltlich bieten und wie sie laufen, ist UNVERIFIED.",
+   "Das Ballon-Thema ist auf Steam nicht frei: Die App-Liste enthält etwa 40 Titel mit „Balloon“ im Namen. Darunter sind „Balloons Factory Tycoon“ (4377560, 2026), also Ballon plus Fabrik, „Don't Pop The Balloon“ (3589820), „Don't Burst My Balloon“ (3849020), „Balloon Pop 9999“ (5204630, Sep. 2026) und „BalloonsBang“ (5118350). Dazu kommen Pump-Titel wie „Pump to Escape“, „Pump Away!“, „Super Pump“ und „Pump Crew“. Das „UNGEPRÜFT“ im Pitch ist damit beantwortet: Das Thema ist besetzt.",
+   "Der Name taugt nicht als eigene Marke: 76 Steam-Titel beginnen mit „One More …“ und 5 mit „Just One More …“. Die Catchphrase lässt sich also weder besetzen noch gut suchen. „Pump“ kollidiert mit „PUMP IT UP RISE“ (2756930) und mit Fitness- und Krypto-Assoziationen.",
+   "Die Fetisch-Assoziation ist nicht hypothetisch, sondern auf Steam sichtbar: „PP Inflation“ (4733500, Sep. 2026), „Hentai Balloons“ 1 und 2 sowie „Much Bigger Than my Boyfriend“. Begriffe wie „inflate“ und „pump“ und große, glänzende Ballons landen algorithmisch in dieser Nachbarschaft. Das riskiert Shadow-Bans und Kommentarspalten, die das Spiel als Meme vorführen.",
+   "Das Klon-Risiko ist belegt: Nach dem Needle-in-a-Haystack-Hype erschienen innerhalb von etwa 4 Wochen über 10 Klone auf Steam (Dexerto, Kotaku, nichegamer). Die App-Liste zeigt 12 Needle- und Haystack-Titel aus Aug. bis Sep. 2026. Ein Ballon-Spiel aus Kugeln und Shader ist noch leichter zu kopieren. „Technisch am einfachsten“ ist hier also ein Nachteil.",
+   "Die Welle der Push-your-Luck-Inkrementalspiele ist voll: Gamblers Table (01/2026), Scritchy Scratchy (03/2026), CloverPit (2025), außerdem 2026 „Don't Push Your Luck“ (4527250), „Lucky Punk: a push your luck Deckbuilder“ und „Dice & Dare“. Laut howtomarketagame kamen in Q1 2026 nur 4 Idle-Spiele auf über 1.000 Reviews, und auf jeden Hit kommen 38 Spiele mit 0 bis 9 Reviews (Zahlen aus Snippets).",
+   "Die „offene Lücke Mikrofon“ ist falsch: Mage Arena (2025, etwa 235.000 Kopien in den ersten Tagen) und YAPYAP (Feb. 2026, 500.000 in einer Woche) nutzen das Mikrofon bereits als viralen Hook. Ins Mikro pusten kennt man von Nintendo-DS-Spielen (UNVERIFIED, Trainingswissen). Chat-Steuerung von Twitch ist Standard und kein Alleinstellungsmerkmal (UNVERIFIED).",
+   "Die kosmische Pointe ist schon gemacht: „A Game About Feeding A Black Hole“ (12/2025) wächst ebenfalls bis in kosmische Größe und verkaufte 100.000 Kopien in einem Monat. Reviews kritisieren dort ausdrücklich Wiederholung. Dazu kommen Cell to Singularity und Katamari-artige Spiele.",
+   "Das Kernverb „Taste halten“ geht auf die BART zurück, eine Laboraufgabe, die neutral und repetitiv angelegt ist. Selbst der Erfolg Gamblers Table kam nur auf etwa 72–78 % positive Reviews, unter anderem wegen Debatten zu Frust und RNG (Snippet). Nach dem ersten Knall verliert ein Clip vom Halten optisch stark an Wirkung.",
+   "Der Umfang widerspricht den 5 Monaten: Online-Koop für 1 bis 4 Spieler, Party-Modus, Twitch-Chat, Mikrofon, Fabrik mit Kettenknall-Physik, 9 Welt-Stufen mit SSR-Spiegelungen ganzer Städte, 12 Sprachen und Steam Deck Verified. Allein der Online-Koop frisst Monate, die Spiegelung gigantischer Ballons kostet viel Performance auf dem Deck."
+  ],
+  "similar": [
+   "Balloons Factory Tycoon (Steam AppID 4377560)",
+   "Don't Pop The Balloon (3589820) / Don't Burst My Balloon (3849020)",
+   "Balloon Pop 9999 (5204630), BalloonsBang (5118350), Pump to Escape (4186980), Pump Away! (4631520), Super Pump (3381970), Pump Crew (4272440)",
+   "Gamblers Table",
+   "Scritchy Scratchy",
+   "A Game About Feeding A Black Hole",
+   "Needle In A Haystack Simulator + mindestens 10 Klone",
+   "Mage Arena / YAPYAP",
+   "PUMP IT UP RISE (2756930)",
+   "Leaf Blower Revolution – Idle Game (1468260)"
+  ]
+ },
+ {
+  "name": "TOO MUCH MAGNET (dt. \"Viel zu viel Magnet\")",
+  "scores": {
+   "noveltyScore": 4,
+   "viralScore": 5,
+   "funDepthScore": 5,
+   "feasibilityScore": 3,
+   "salesPotentialScore": 4
+  },
+  "killReasons": [
+   "RECHERCHE-LIMIT: Die WebSearch-Grenze ist erreicht (200/200). Steam, SteamDB, itch.io, YouTube, TikTok und Google sperrt der Egress-Proxy, und TubeAlfred hat kein Guthaben mehr. Belegt sind deshalb nur ein zwischengespeicherter Abzug der Steam-App-Liste (rund 190.000 Spiele, Stand Ende September 2026) und Such-Logs aus früheren Schritten dieses Workflows. Alle Spielinhalte der Magnet-Titel sind UNVERIFIED.",
+   "Das Thema Magnet ist auf Steam 2026 NICHT frei. In der App-Liste stehen \"Magnet to Planet\" (4928060, Update 28.09.2026), dessen Name genau den Bogen Magnet bis Planet beschreibt, und \"Guys with Magnets\" (4594370, dem Namen nach Multiplayer) sowie \"Magnet Hunt\", \"Magnet\", \"MAGNET\", \"Magnet Agent\", \"Magnetic Catch\" und \"Invincible Magnet Warrior\", alle 2026 aktiv. Ist einer davon dasselbe Spiel, bricht die Neuheit weg. Vor jeder Zeile Code prüfen.",
+   "Die Kernformel \"winzig anfangen, am Ende den Kosmos einsaugen\" ist alt und besetzt: die Tasty-Planet-Reihe (2026 neuer Teil \"Final Bite\"), Katamari (offiziell neu: \"Once Upon A KATAMARI\") und Donut County. \"Nur Metall haftet\" ist eher ein neuer Anstrich als ein neues Spielprinzip, und Reviews werden es als Katamari-Klon einordnen.",
+   "Die Steigerung bis ins Kosmische ist 2026 übersättigt. Nach \"Feeding A Black Hole\" (100.000 Kopien in unter 1 Monat) kamen mindestens 7 Black-Hole-Incrementals allein nach Namen (How To Grow a Black Hole, Black Hole Idle, Another Black Hole Incremental, Infall, Black Hole Grow Forever, Black Hole Simulator, SMBH) und dazu \"A Game About Getting Bigger\". Beim Digging-A-Hole-Hit war es genauso: mindestens 3 Namensklone. Das Zeitfenster für diese Formel schließt sich, die Spieler sind satt.",
+   "Die Trefferquote im Genre ist brutal. 2025 erschienen 965 Idle- und Incremental-Spiele, nur 27 davon erreichten über 1.000 Reviews, also 2,8 % (Zukowski, howtomarketagame.com). Die Vorbilder (Digging A Hole über 1 Mio., Black Hole 100.000) sind Ausreißer und nicht der Normalfall.",
+   "Der Viral-Hebel passt nicht. Die Hits von 2026, auf die sich das Konzept beruft (How to Fish mit 370.901 gleichzeitigen Spielern, RV There Yet? mit 1,3 Mio., R.E.P.O. geschätzt 3 Mio.), sind Koop-Spiele für Freundesgruppen mit Sprachchat. Hier ist Koop optional und soll \"notfalls als Update\" kommen. Gestrichen würde also genau der Teil, der Clips erzeugt. Solo-Physik ohne Freunde-Geschrei erzeugt weniger Clips von Streamern.",
+   "Die Machbarkeit in 5 Monaten ist unrealistisch. Tausende Jolt-Physikkörper, ein Ferrofluid-Shader, glaubwürdige Hochhaus-Einstürze, prozedurale Städte und Schiffe und 7 Zonen mit je eigenem Asset-Set (Schreibtisch, Garage, Schrottplatz, Stadt, Hafen, Orbit, Kosmos) kommen zusammen mit Fabrik-Automatisierung und Koop-Physik-Sync. Hinzu kommen 24 Größenordnungen Maßstab (1 g bis 10^24 kg), was Probleme mit Gleitkomma-Genauigkeit, Kamera und Detailstufen bringt. Jeder einzelne Punkt ist ein Monatsprojekt.",
+   "Das Design kollidiert mit sich selbst. Förderbänder, Wirbelstrom-Sortierung und Schmelze bremsen die Machtfantasie. Katamari-Fans wollen keine Logistik, und Fabrik-Fans wollen kein Spiel mit 4 bis 6 Stunden ohne tiefe Automatisierung. Zwei Zielgruppen, von denen keine voll bedient wird.",
+   "Das Klon-Risiko ist hoch. Physik-Machtfantasien lassen sich für Roblox und Handy in Wochen kopieren. Belegt ist: Meccha Chameleon verlor 2026 Spieler an Roblox-Klone (\"Paint or Seek\" mit 150.000 bis 200.000 täglichen Spielern gegenüber rund 55.000 beim Original, howtomarketagame.com, 30.07.2026). Ein Roblox-\"Magnet Simulator\" und Handy-Magnet-Spiele existieren meiner Erinnerung nach schon: UNVERIFIED.",
+   "Titel und Auffindbarkeit sind schwach. \"TOO MUCH MAGNET\" ist holprig, und unter dem Suchbegriff \"Magnet\" stehen schon mindestens 8 andere Titel aus 2026. Auch \"Magnetar\" (668330) gibt es bereits als Steam-Titel."
+  ],
+  "similar": [
+   "Magnet to Planet",
+   "Guys with Magnets",
+   "Magnet Hunt / Magnet / MAGNET / Magnet Agent / Magnetic Catch / Invincible Magnet Warrior",
+   "Once Upon A KATAMARI",
+   "Tasty Planet: Final Bite",
+   "A Game About Feeding A Black Hole",
+   "Klonwelle Black-Hole-Incrementals 2026 (How To Grow a Black Hole, Black Hole Idle, Another Black Hole Incremental, Infall, Black Hole Grow Forever, Black Hole Simulator, SMBH)",
+   "A Game About Getting Bigger",
+   "A Game About Digging A Hole",
+   "Scrap Yard Idle / Scrap Yard Simulator / Junkyard Empire Simulator / Junkyard Simulator",
+   "How to Fish",
+   "Donut County / Katamari Damacy REROLL"
+  ]
+ },
+ {
+  "name": "SPARKLER TO SUPERNOVA (deutsch: „Von der Wunderkerze zur Supernova“)",
+  "scores": {
+   "noveltyScore": 3,
+   "viralScore": 4,
+   "funDepthScore": 5,
+   "feasibilityScore": 3,
+   "salesPotentialScore": 3
+  },
+  "killReasons": [
+   "Der Neuheits-Anspruch ist widerlegt. Die offizielle Steam-App-Liste (GitHub-Mirror jsnli/steamappidlist) enthält „Fireworks Incremental“ (AppID 3950670, aktiv bis 30.09.2026), „Firework Automata“ (3510500), „Mr Boom's Firework Factory“ (1013670) und „FireWorks Inc.“ (2813320). Inhalte und Zahlen sind UNVERIFIED, aber „das erste Feuerwerks-Fabrik-Incremental“ ist nicht haltbar.",
+   "Auch das kreative Verb ist schon besetzt: „Fireworks Designer 烟花设计师“ (4555130, 2026) und „Hanabi Craft“ (4789230, aktualisiert am 25.09.2026) zum Bombenbau, dazu „FWsim – Fireworks Display Simulator“ (1494500) und „Fireworks Show Simulator“ (4668450) für die Shows. Fabrik, Bombe und Show gibt es also einzeln bereits. Die Inhalte sind nur aus den Namen abgeleitet (UNVERIFIED).",
+   "Das Saisonfenster ist überfüllt. 8 Feuerwerks-Titel tragen AppIDs ab 4,3 Mio., die Store-Seiten stammen also etwa aus 2026, und viele wurden im September 2026 vor Silvester aktualisiert (Firework Store Simulator 20.09., BURST NOIR 04.09., Fireworks Show Simulator 30.09.). Der Dezember-Slot wird jedes Jahr voller und Streamer sind für „noch ein Feuerwerksspiel“ übersättigt.",
+   "Fireworks Mania (1079260, Update im Juli 2026) besetzt die Clip-Nische für Feuerwerk. Kurzclips mit explodierendem Feuerwerk wirken austauschbar, und die Fabrik und den Fortschritt sieht man in 5 Sekunden nicht. Die Performance-Daten von Fireworks Mania sind UNVERIFIED.",
+   "Das Timing ist tödlich. Silvester 2026/27 ist in rund 3 Monaten und damit für einen Launch unmöglich. Realistisch ist erst Dezember 2027, also über 14 Monate ohne Umsatz. Ein verpasster Termin kostet 12 Monate.",
+   "Der Scope ist unrealistisch: Shapez-artige Logistik, Pixel-Editor, Musik-Show-Editor, Balatro-Wertung, Workshop, 4er-Koop, 12+ Sprachen und Steam Deck mit Zehntausenden Partikeln, alles in 8 Monaten ohne Artist. Jedes dieser Systeme ist für sich schon ein eigenes Spiel.",
+   "Die Viralität ist überschätzt. Fabrik- und Incremental-Spiele erzeugen selten TikTok-Clips. Bloom- und Partikel-Nachtszenen werden durch die 9:16-Kompression matschig. Gesicht- und Bild-Bomben verlangen einen Bild-Upload und damit Moderation: Hakenkreuze und Obszönitäten am Himmel wären ein Store- und PR-Risiko.",
+   "Das Supernova-Finale ist kein Alleinstellungsmerkmal. „Supernova Idle“ (4177440, 2026) existiert, und der Weg vom Kleinen zum Kosmos ist eine bekannte Incremental-Formel (z. B. Universal Paperclips, Cell to Singularity).",
+   "Das Umsatzpotenzial ist gering. Die Feuerwerks-Nische auf Steam besteht laut Namensliste überwiegend aus Kleinstprojekten, belegt ist kein Hit außer vermutlich Fireworks Mania (UNVERIFIED). Ein Preis von 9,99 € und das saisonale Interesse begrenzen den Umsatz zusätzlich.",
+   "Die Prüfung ist unvollständig: Das WebSearch-Budget war aufgebraucht, und Steam, SteamDB, itch.io, YouTube, TikTok und Gamalytic sind per Egress gesperrt. Verifiziert sind nur die Einträge in der Steam-App-Liste. Weil Unsicherheit niedrig bewertet werden soll, sind die Scores bewusst konservativ."
+  ],
+  "similar": [
+   "Fireworks Incremental",
+   "烟花自动机 - Firework Automata",
+   "Mr Boom's Firework Factory",
+   "FireWorks Inc.",
+   "Fireworks Designer 烟花设计师",
+   "Hanabi Craft",
+   "Fireworks Mania - An Explosive Simulator",
+   "FWsim - Fireworks Display Simulator",
+   "Fireworks Show Simulator",
+   "Firework Store Simulator",
+   "Supernova Idle",
+   "Fireworks Simulator"
+  ]
+ },
+ {
+  "name": "TOO MUCH POPCORN (deutscher Untertitel: „Ein Spiel über viel zu viel Popcorn“)",
+  "rejectedBecause": "Das Bild „Eine Stadt ertrinkt in Popcorn“ ist stark und in einer Sekunde zu lesen, aber das ganze Spektakel hängt an der schwersten Technik aller Pitches. Körnige Physik mit Millionen Teilen braucht 8 Monate und ist ein Single Point of Failure für 1 Person plus KI: Scheitert der Prototyp, fehlt der Kern. Ein Food-Incremental wirkt schnell wie ein Idle-Spiel fürs Handy. Wer mit „Millionen Physikobjekten“ wirbt, landet in der Wahrnehmung nah an der „haystack slop“-Welle. Mechanisch überschneidet es sich mit TOO MUCH MAGNET (Massenphysik) und ONE MORE PUMP (Hitze und Push-your-Luck). Die besten Ideen (Überlauf als Risiko, der begrabene Freund im Koop, Zeitraffer-Clips, Koop-Rollen im Overcooked-Stil, das geheime „Erste Korn“) werden in die Finalisten übernommen."
+ },
+ {
+  "name": "168 DOMINOES (Arbeitstitel; deutscher Untertitel: „Ein Spiel darüber, das Universum umzuwerfen“)",
+  "rejectedBecause": "Dubletten-Domino-Konzept, aufgegangen in KNOCK OVER THE MOON. Der Titel „168“ macht neugierig, erklärt aber in 3 Sekunden weniger als „Knock Over The Moon“, wo das Ziel schon im Namen steht. 8 bis 12 Stunden für 8,99 € liegen außerhalb des bewährten Sweet Spots von 2 bis 6 Stunden für kurze Incrementals. Übernommen werden die stärksten Teile: der eigene deterministische Kippwinkel-Löser statt Rigid-Body-Physik, die mathematisch saubere Leiter bis Nr. 168 als Fakt-Karten, die TV-Rekordhallen-Stufe, der Rivale „Herr Kipp“, Rube-Goldberg-Teile und der Baum mit über 300 Knoten."
+ },
+ {
+  "name": "ONE BILLION DOMINOES (dt. \"Eine Milliarde Dominosteine\")",
+  "rejectedBecause": "Dubletten-Domino-Konzept, aufgegangen in KNOCK OVER THE MOON. Der Titel verspricht etwas, das kein Bild je zeigt: „One Billion“ ist laut Pitch nur der Lebenszeit-Zähler, nicht die Zahl der gleichzeitig sichtbaren Steine. Das riskiert „Clickbait“-Reviews. Es fehlt ein einzelner, benennbarer Höhepunkt wie der umkippende Mond. Die besten Produktionsideen werden vollständig übernommen: die Aufsteh-Welle als Rückwärts-Animation, der vorab berechnete Fall im Vertex-Shader, der günstige P2P-Netzwerkcode (nur Platzierungen und Anstöße), Glockensteine, die vom Twitch-Chat geschickte Katze, das 4er-Pack und das schlanke Scope-Ziel von 4,5 Monaten."
+ },
+ {
+  "name": "A GRAIN OF SALT (deutsch: „Ein Körnchen Salz“)",
+  "rejectedBecause": "Der Titel ist eine gängige Redewendung und damit auf Steam und Google kaum zu finden. Er bedeutet auf Englisch außerdem „mit Skepsis betrachten“, was die Marke untergräbt. Wachstum heißt Warten, das rückt das Spiel in die Nähe von Idle- und Cozy-Titeln, und genau dort ist der Markt am vollsten (54 Idle-Spiele in einer Woche). Es hat das schwächste Koop- und Streamer-Chaos aller Pitches. Prozedurale Kristall-Meshes, die in Echtzeit wachsen, inklusive LOD für Stadt und Planet, sind ein großes Technik-Risiko. Der erste Clip läuft Gefahr, wie ein weiterer Mining-Klon zu wirken. Die guten Teile werden übernommen: die Geoden-Enthüllung „1 zu 10.000“, teilbare Seed-Codes, das Sammel-Museum und die Lore über Einschlüsse."
+ }
+]

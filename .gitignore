@@ -1,0 +1,11 @@
+# Godot
+.godot/
+*.import.bak
+export/
+build/
+*.tmp
+# OS
+.DS_Store
+Thumbs.db
+# local screenshots
+/shots/
