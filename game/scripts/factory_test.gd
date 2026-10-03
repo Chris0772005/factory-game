@@ -28,7 +28,9 @@ func build_level() -> void:
 	var seller := SellerMachine.new()
 	add_child(seller)
 	seller.setup(f, Vector2i(5, 0), Vector2i(1, 1))
-	seller.sold.connect(func(_t, v): add_money(v))
+	seller.sold.connect(func(_t, v):
+		add_money(v)
+		HUD.popup(self, seller.global_position + Vector3(0, 1.8, 0), "+%d" % v))
 	# Overflow line: a second source feeding a belt that ends in the open.
 	var spiller := SourceMachine.new()
 	spiller.output_type = &"ore"

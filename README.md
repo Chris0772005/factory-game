@@ -1,6 +1,8 @@
-# factory-game (Arbeitstitel)
+# MOLTEN MATES (Arbeitstitel)
 
-Koop-Fabrik-Chaos-Spiel für Steam. Klein anfangen, Schritt für Schritt hochupgraden, mit 1–4 Freunden.
+Koop-Gieß-Partyspiel für Steam: Zeichne es. Gieß es. Zerschlag die Form. Vom Hinterhof bis zur Eisenhalle, mit 1–4 Freunden.
+
+Design: `docs/GDD.md` · Technik: `docs/TECH_SPEC.md`
 
 **Ziel:** professionelles, viral-taugliches Indie-Spiel für Steam (Preis 5–8 €), gebaut mit Godot 4.7.
 

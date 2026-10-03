@@ -12,6 +12,9 @@ var physics_sync: PhysicsSync
 var entities: Node3D
 var factory: FactoryGrid
 var money := 0
+## Menu backgrounds reuse levels without a player or HUD.
+var attract_mode := false
+var hud: HUD
 var _next_item_id := 0
 
 
@@ -32,8 +35,13 @@ func _ready() -> void:
 	Network.peer_left.connect(_on_peer_left)
 	Network.session_started.connect(_on_session_started)
 	build_level()
+	if attract_mode:
+		return
 	if Network.is_sim_authority():
 		spawn_player(1)
+	hud = HUD.new()
+	hud.world = self
+	add_child(hud)
 
 
 ## Override in subclasses to build static geometry and initial items (host only for items).
