@@ -7,15 +7,23 @@ extends Node
 signal session_started
 signal peer_joined(id: int)
 signal peer_left(id: int)
+signal session_ended(reason: String)
+
+const MENU_SCENE := "res://scenes/main_menu.tscn"
 
 const PORT := 24567
 const MAX_PLAYERS := 4
+
+## Shown by the main menu after a session ends unexpectedly.
+var last_message := ""
 
 
 func _ready() -> void:
 	multiplayer.peer_connected.connect(func(id): peer_joined.emit(id))
 	multiplayer.peer_disconnected.connect(func(id): peer_left.emit(id))
 	multiplayer.connected_to_server.connect(func(): session_started.emit())
+	multiplayer.server_disconnected.connect(func(): _end_session("Der Host hat das Spiel verlassen."))
+	multiplayer.connection_failed.connect(func(): _end_session("Verbindung zum Host fehlgeschlagen."))
 	for arg in OS.get_cmdline_user_args():
 		if arg == "--host":
 			host()
@@ -50,3 +58,18 @@ func is_online() -> bool:
 ## True when this instance simulates shared physics (host or offline).
 func is_sim_authority() -> bool:
 	return not is_online() or multiplayer.is_server()
+
+
+## Leaves the current session (host or client) and returns to the menu.
+func leave() -> void:
+	_end_session("")
+
+
+func _end_session(reason: String) -> void:
+	if multiplayer.multiplayer_peer:
+		multiplayer.multiplayer_peer.close()
+	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
+	last_message = reason
+	session_ended.emit(reason)
+	if get_tree().current_scene and get_tree().current_scene.scene_file_path != MENU_SCENE:
+		get_tree().change_scene_to_file.call_deferred(MENU_SCENE)

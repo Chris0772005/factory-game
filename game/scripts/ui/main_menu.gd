@@ -66,6 +66,8 @@ func _build_ui() -> void:
 	col.add_child(_button("Beenden", func(): get_tree().quit()))
 	_status = Label.new()
 	_status.add_theme_font_size_override("font_size", 24)
+	_status.text = Network.last_message
+	Network.last_message = ""
 	col.add_child(_status)
 
 

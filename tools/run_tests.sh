@@ -25,4 +25,13 @@ timeout -s KILL 90 "$GODOT" --headless --path . res://tests/test_net.tscn -- --j
 wait $host_pid
 grep -hE "^\[|SCRIPT ERROR" /tmp/fg_host.log /tmp/fg_client.log
 grep -q "FAIL\|SCRIPT ERROR" /tmp/fg_host.log /tmp/fg_client.log && fail=1
+
+echo "== Network co-op foundry round =="
+timeout -s KILL 160 "$GODOT" --headless --path . res://tests/test_net_foundry.tscn -- --host --role=host > /tmp/fg_host2.log 2>&1 &
+host_pid=$!
+sleep 4
+timeout -s KILL 150 "$GODOT" --headless --path . res://tests/test_net_foundry.tscn -- --join=127.0.0.1 --role=client > /tmp/fg_client2.log 2>&1
+wait $host_pid
+grep -hE "^\[|SCRIPT ERROR" /tmp/fg_host2.log /tmp/fg_client2.log
+grep -q "FAIL\|SCRIPT ERROR" /tmp/fg_host2.log /tmp/fg_client2.log && fail=1
 exit $fail
