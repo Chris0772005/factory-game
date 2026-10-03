@@ -17,6 +17,7 @@ var _fire: FurnaceFire
 var _bellows: Node3D
 var _bellows_squash := 0.0
 var _sync_accum := 0.0
+var _roar: AudioStreamPlayer3D
 
 
 func _ready() -> void:
@@ -52,6 +53,8 @@ func _ready() -> void:
 	for i in 6:
 		var a := TAU * i / 6.0
 		WorldBuilder.add_box(self, Vector3(0.16, 0.12, 0.16), Vector3(sin(a) * (MOUTH_RADIUS + 0.05), HEIGHT + 0.02, cos(a) * (MOUTH_RADIUS + 0.05)), Color("#8e6f5a"))
+	_roar = Sfx.make_loop(self, &"furnace_loop")
+	_roar.position.y = 0.5
 	_fire = FurnaceFire.new()
 	_fire.position.y = 0.15
 	add_child(_fire)
@@ -83,6 +86,7 @@ func hint(_player: Node) -> String:
 func interact(_player: Node) -> void:
 	heat = minf(1.0, heat + HEAT_PER_PUMP)
 	_bellows_squash = 1.0
+	Sfx.play(&"bellows", _bellows.global_position)
 	if Network.is_online():
 		_pump_fx.rpc()
 
@@ -90,12 +94,18 @@ func interact(_player: Node) -> void:
 @rpc("authority", "call_remote", "reliable")
 func _pump_fx() -> void:
 	_bellows_squash = 1.0
+	Sfx.play(&"bellows", _bellows.global_position)
 
 
 func _physics_process(delta: float) -> void:
 	_bellows_squash = move_toward(_bellows_squash, 0.0, delta * 4.0)
 	_bellows.scale.y = 1.0 - _bellows_squash * 0.45
 	_fire.heat = heat
+	_roar.volume_db = linear_to_db(maxf(0.001, heat)) - 4.0
+	if heat > 0.02 and not _roar.playing:
+		_roar.play()
+	elif heat <= 0.02 and _roar.playing:
+		_roar.stop()
 	if not Network.is_sim_authority():
 		return
 	heat = maxf(0.0, heat - HEAT_DECAY * delta)
@@ -143,6 +153,7 @@ func _take_scrap() -> void:
 		if Vector2(p.x, p.z).length() < MOUTH_RADIUS and p.y < HEIGHT + 0.3 and p.y > 0.0:
 			charge.append(item.kind)
 			FoundryFX.sparks(self, global_position + Vector3(0, HEIGHT, 0), 8)
+			Sfx.play(&"scrap_clatter", global_position + Vector3(0, HEIGHT, 0))
 			item.queue_free()
 
 

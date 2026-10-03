@@ -25,6 +25,7 @@ var _melt_mat: ShaderMaterial
 var _stream: PourStream
 var _pouring := false
 var _sync_accum := 0.0
+var _hiss: AudioStreamPlayer3D
 
 
 static func create_crucible(data: Dictionary) -> Crucible:
@@ -80,6 +81,7 @@ func _ready() -> void:
 	_melt_mat = MetalMaterial.create(&"alu")
 	_melt.material_override = _melt_mat
 	_pivot.add_child(_melt)
+	_hiss = Sfx.make_loop(self, &"pour_loop")
 	_stream = PourStream.new()
 	_stream.top_level = true
 	add_child(_stream)
@@ -192,5 +194,12 @@ func _update_visuals() -> void:
 	_melt.position.y = 0.04 + (HEIGHT - 0.08) * clampf(amount / CAPACITY, 0.0, 1.0)
 	MetalMaterial.set_temperature(_melt_mat, clampf(temperature, 0.0, 1.0))
 	_stream.flow = flow
+	if flow > 0.01:
+		_hiss.global_position = pour_target
+		_hiss.volume_db = linear_to_db(flow) - 2.0
+		if not _hiss.playing:
+			_hiss.play()
+	elif _hiss.playing:
+		_hiss.stop()
 	if flow > 0.0:
 		_stream.set_endpoints(lip_position(), pour_target)

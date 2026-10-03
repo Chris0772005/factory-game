@@ -35,6 +35,7 @@ func interact(player: Node) -> void:
 	var p := player as Player
 	var item := world.spawn_item(kind, info.color, info.size, 0.4, p._hand_target())
 	p.grab(item)
+	Sfx.play(&"scrap_clatter", interact_point(), -4.0)
 	if kind == &"scrap_ring":
 		world.popup_all(p._hand_target() + Vector3(0, 0.6, 0), "Omas Ring! ✨", Color("#ffcf3f"))
 

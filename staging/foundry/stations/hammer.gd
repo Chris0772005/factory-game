@@ -35,6 +35,7 @@ func held_hint(_player: Node) -> String:
 
 func use_start(player: Node) -> void:
 	_swing = 1.0
+	Sfx.play(&"pickup", global_position, -8.0)
 	var target := MoldBox.find_at(get_tree(), (player as Node3D).global_position + (player as Node3D).global_transform.basis.z * 1.0)
 	if target == null:
 		for node in get_tree().get_nodes_in_group(&"molds"):

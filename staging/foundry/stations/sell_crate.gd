@@ -39,6 +39,11 @@ func interact(_player: Node) -> void:
 	pass
 
 
+@rpc("authority", "call_local", "reliable")
+func _cha_ching() -> void:
+	Sfx.play(&"coin", interact_point(), 0.0, 0.03)
+
+
 func _physics_process(_delta: float) -> void:
 	if not Network.is_sim_authority():
 		return
@@ -54,5 +59,6 @@ func _physics_process(_delta: float) -> void:
 			var v := piece.value()
 			world.add_money(v)
 			world.popup_all(piece.global_position + Vector3(0, 0.8, 0), "+%d $" % v, UITheme.ACCENT)
+			_cha_ching.rpc() if Network.is_online() else _cha_ching()
 			sold.emit(v)
 			piece.queue_free()

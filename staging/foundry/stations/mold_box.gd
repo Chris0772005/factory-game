@@ -185,6 +185,7 @@ func _catch_bystanders() -> void:
 		world.spawn_entity(data)
 		world.popup_all(p.global_position + Vector3(0, 2.4, 0), "BRONZEFREUND!", Color("#ffb347"))
 		_fx_all(&"sparks", p.global_position + Vector3(0, 1.0, 0))
+		_fx_all(&"gong", p.global_position)
 		p.teleport(world.respawn_point(p))
 
 
@@ -239,7 +240,7 @@ func hit(with_hammer: bool) -> void:
 	if state != State.READY:
 		return
 	_hits += 1
-	_fx_all(&"dust", interact_point())
+	_fx_all(&"hit", interact_point())
 	if _hits >= (HITS_TO_BREAK if with_hammer else HITS_TO_BREAK_BARE_HANDS):
 		_break_open()
 
@@ -371,10 +372,19 @@ func _fx(kind: StringName, pos: Vector3) -> void:
 	match kind:
 		&"dust":
 			FoundryFX.dust(get_parent(), pos)
+			Sfx.play(&"ram_thud", pos)
+		&"hit":
+			FoundryFX.dust(get_parent(), pos)
+			Sfx.play(&"hammer_clank", pos)
 		&"sparks":
 			FoundryFX.sparks(get_parent(), pos, 10)
+			Sfx.play(&"sparks", pos, -6.0)
 		&"sand_burst":
 			FoundryFX.sand_burst(get_parent(), pos, BED.x)
+			Sfx.play(&"sand_burst", pos, 2.0)
+			Sfx.play(&"reveal_fanfare", pos, -2.0, 0.0)
+		&"gong":
+			Sfx.play(&"statue_gong", pos, 0.0, 0.03)
 
 
 func _popup_all(pos: Vector3, text: String, color: Color) -> void:
