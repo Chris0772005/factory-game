@@ -30,8 +30,10 @@ static func from_data(data: Dictionary) -> BronzeStatue:
 
 func _ready() -> void:
 	var model := PlayerModel.new()
-	add_child(model)
+	# Posed before it enters the tree: the rigged worker is built frozen, without
+	# animation tree or IK; its skinned meshes keep this pose for good.
 	model.apply_pose(pose)
+	add_child(model)
 	for mi in model.find_children("*", "MeshInstance3D", true, false):
 		var mat := MetalMaterial.create(alloy)
 		MetalMaterial.set_temperature(mat, temperature)

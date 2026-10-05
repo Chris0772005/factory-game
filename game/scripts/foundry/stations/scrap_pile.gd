@@ -8,15 +8,19 @@ const PREMIUM_WEIGHTS := {&"scrap_can": 35, &"scrap_key": 28, &"scrap_pipe": 32,
 
 func _ready() -> void:
 	add_to_group(&"interactable")
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 7
-	for i in 26:
-		var kind: StringName = WEIGHTS.keys()[rng.randi() % 3]
-		var info: Dictionary = FoundryRules.SCRAP[kind]
-		var a := rng.randf() * TAU
-		var r := rng.randf() * 0.7
-		var box := WorldBuilder.add_box(self, info.size, Vector3(cos(a) * r, 0.05 + rng.randf() * 0.25 * (1.0 - r), sin(a) * r), info.color)
-		box.rotation = Vector3(rng.randf(), rng.randf(), rng.randf()) * TAU
+	# Low solid core so workers stand at the heap instead of inside it.
+	var core := StaticBody3D.new()
+	core.position.y = 0.14
+	var shape := CollisionShape3D.new()
+	var cyl := CylinderShape3D.new()
+	cyl.radius = 0.55
+	cyl.height = 0.28
+	shape.shape = cyl
+	core.add_child(shape)
+	add_child(core)
+	var art := ScrapArt.new()
+	add_child(art)
+	art.build()
 
 
 func interact_point() -> Vector3:

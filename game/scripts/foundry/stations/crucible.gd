@@ -8,6 +8,8 @@ const MAX_POUR_RATE := 0.9      ## litres per second at full tilt
 const COOL_RATE := 0.035        ## temperature lost per second outside the furnace
 const RADIUS := 0.22
 const HEIGHT := 0.42
+## Melt disc radius as built; scaled to the pot's inner wall at the fill height.
+const MELT_RADIUS := 0.185
 
 var amount := 0.0
 var temperature := 0.0
@@ -20,7 +22,7 @@ var pour_target := Vector3.ZERO
 var pour_yaw := 0.0
 
 var _pivot: Node3D
-var _shell_mat: StandardMaterial3D
+var _art: CrucibleArt
 var _melt: MeshInstance3D
 var _melt_mat: ShaderMaterial
 var _stream: PourStream
@@ -51,60 +53,21 @@ func _ready() -> void:
 	add_to_group(&"crucibles")
 	_pivot = Node3D.new()
 	add_child(_pivot)
-	var body := MeshInstance3D.new()
-	var mesh := CylinderMesh.new()
-	mesh.top_radius = RADIUS
-	mesh.bottom_radius = RADIUS * 0.82
-	mesh.height = HEIGHT
-	body.mesh = mesh
-	_shell_mat = WorldBuilder.material(Color("#a8968a"), 0.85)
-	_shell_mat.emission_enabled = true
-	_shell_mat.emission = Color("#ff5a1f")
-	_shell_mat.emission_energy_multiplier = 0.0
-	body.material_override = _shell_mat
-	body.position.y = HEIGHT * 0.5
-	_pivot.add_child(body)
-	var rim := MeshInstance3D.new()
-	var torus := TorusMesh.new()
-	torus.inner_radius = RADIUS - 0.03
-	torus.outer_radius = RADIUS + 0.02
-	rim.mesh = torus
-	rim.material_override = WorldBuilder.material(Color("#2f2b29"), 0.8)
-	rim.position.y = HEIGHT
-	_pivot.add_child(rim)
-	var spout := MeshInstance3D.new()
-	spout.mesh = MeshFactory.rounded_box(Vector3(0.1, 0.05, 0.12), 0.02)
-	spout.material_override = rim.material_override
-	spout.position = Vector3(0, HEIGHT - 0.01, RADIUS + 0.03)
-	_pivot.add_child(spout)
-	# Iron shank ring with two handles, so it reads as a foundry ladle.
-	var iron := WorldBuilder.material(Color("#3b3f46"), 0.5)
-	var ring := MeshInstance3D.new()
-	var ring_mesh := TorusMesh.new()
-	ring_mesh.inner_radius = RADIUS + 0.005
-	ring_mesh.outer_radius = RADIUS + 0.045
-	ring.mesh = ring_mesh
-	ring.material_override = iron
-	ring.position.y = HEIGHT * 0.62
-	_pivot.add_child(ring)
-	for side in [-1.0, 1.0]:
-		var bar := MeshInstance3D.new()
-		bar.mesh = MeshFactory.rounded_box(Vector3(0.34, 0.05, 0.05), 0.02)
-		bar.material_override = iron
-		bar.position = Vector3(side * (RADIUS + 0.19), HEIGHT * 0.62, 0)
-		_pivot.add_child(bar)
-		var grip := MeshInstance3D.new()
-		grip.mesh = MeshFactory.rounded_box(Vector3(0.16, 0.07, 0.07), 0.03)
-		grip.material_override = WorldBuilder.material(Color("#7a4f2e"), 0.8)
-		grip.position = Vector3(side * (RADIUS + 0.32), HEIGHT * 0.62, 0)
-		_pivot.add_child(grip)
+	_art = CrucibleArt.new()
+	_pivot.add_child(_art)
+	_art.build()
 	_melt = MeshInstance3D.new()
 	var disc := CylinderMesh.new()
-	disc.top_radius = RADIUS - 0.035
-	disc.bottom_radius = RADIUS - 0.035
+	disc.top_radius = MELT_RADIUS
+	disc.bottom_radius = MELT_RADIUS
 	disc.height = 0.02
+	disc.radial_segments = 24
 	_melt.mesh = disc
 	_melt_mat = MetalMaterial.create(&"alu")
+	# Melt in the pot glows harder and mirrors less, so it reads as the hottest,
+	# brightest thing on screen (Art Bible 6.6 / rule 2).
+	_melt_mat.set_shader_parameter(&"env_brightness", 0.35)
+	_melt_mat.set_shader_parameter(&"glow_scale", 1.6)
 	_melt.material_override = _melt_mat
 	_pivot.add_child(_melt)
 	_hiss = Sfx.make_loop(self, &"pour_loop")
@@ -112,6 +75,15 @@ func _ready() -> void:
 	_stream.top_level = true
 	add_child(_stream)
 	_update_visuals()
+
+
+func _process(delta: float) -> void:
+	_art.update(delta, temperature, clampf(amount / capacity(), 0.0, 1.0), is_held())
+
+
+## Global centres of the two handle grips (e.g. for hand IK); empty headless.
+func grip_points() -> Array[Vector3]:
+	return _art.grip_points()
 
 
 func held_hint(_player: Node) -> String:
@@ -223,8 +195,13 @@ func _update_visuals() -> void:
 	_pivot.global_basis = Basis(Vector3.UP, pour_yaw) * Basis(Vector3.RIGHT, tilt * 1.25)
 	_melt.visible = amount > 0.02
 	_melt.position.y = 0.04 + (HEIGHT - 0.08) * clampf(amount / capacity(), 0.0, 1.0)
+	var r := CrucibleArt.inner_radius(_melt.position.y + 0.01) - 0.004
+	_melt.scale = Vector3(r / MELT_RADIUS, 1.0, r / MELT_RADIUS)
 	MetalMaterial.set_temperature(_melt_mat, clampf(temperature, 0.0, 1.0))
-	_shell_mat.emission_energy_multiplier = clampf(temperature - 0.3, 0.0, 1.0) * 0.9
+	if _melt.visible:
+		var al := alloy()
+		if _melt_mat.get_meta(&"alloy", &"") != al:
+			MetalMaterial.set_alloy(_melt_mat, al)
 	_stream.flow = flow
 	if flow > 0.01:
 		_hiss.global_position = pour_target

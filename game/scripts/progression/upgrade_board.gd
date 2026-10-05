@@ -3,28 +3,20 @@ extends Node3D
 ## Pinboard with the upgrade catalogue. Opens a shop overlay for the local player.
 
 var _layer: CanvasLayer
+var _art: BoardArt
 
 
 func _ready() -> void:
 	add_to_group(&"interactable")
-	var wood := Color("#7a5534")
-	WorldBuilder.add_box(self, Vector3(0.1, 1.9, 0.1), Vector3(-0.7, 0.95, 0), wood.darkened(0.2), true)
-	WorldBuilder.add_box(self, Vector3(0.1, 1.9, 0.1), Vector3(0.7, 0.95, 0), wood.darkened(0.2), true)
-	WorldBuilder.add_box(self, Vector3(1.6, 1.0, 0.08), Vector3(0, 1.45, 0), Color("#c9a77b"))
-	var colors := [Color("#fff8ec"), Color("#ffe08a"), Color("#bfe6f2"), Color("#ffc4b0")]
-	for i in 6:
-		var note := WorldBuilder.add_box(self, Vector3(0.36, 0.28, 0.02), Vector3(-0.5 + (i % 3) * 0.5, 1.68 - (i / 3) * 0.42, 0.05), colors[i % 4])
-		note.rotation.z = (i * 0.37 - 0.9) * 0.1
-	var title := Label3D.new()
-	title.text = "KATALOG"
-	title.font = UITheme.font(700)
-	title.font_size = 64
-	title.outline_size = 16
-	title.outline_modulate = UITheme.INK
-	title.modulate = UITheme.ACCENT
-	title.pixel_size = 0.004
-	title.position = Vector3(0, 2.15, 0.06)
-	add_child(title)
+	for x: float in [-0.7, 0.7]:
+		StationKit.box_collider(self, Vector3(0.1, 1.9, 0.1), Transform3D(Basis(), Vector3(x, 0.95, 0)))
+	_art = BoardArt.new()
+	add_child(_art)
+	_art.build()
+	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
+	if world and world.upgrades:
+		world.upgrades.changed.connect(func() -> void: _art.set_owned(world.upgrades.owned))
+		_art.set_owned(world.upgrades.owned)
 
 
 func interact_point() -> Vector3:

@@ -92,3 +92,30 @@ static func add_belt(parent: Node, pos: Vector3, yaw: float, speed := 1.5) -> Be
 	add_box(belt, Vector3(1.0, 0.12, 0.1), Vector3(0, 0.36, 0.48), PALETTE.belt_edge)
 	add_box(belt, Vector3(1.0, 0.12, 0.1), Vector3(0, 0.36, -0.48), PALETTE.belt_edge)
 	return belt
+
+
+## Invisible static box collider (set dressing: fences, walls, props).
+static func add_collider(parent: Node, size: Vector3, xform: Transform3D) -> StaticBody3D:
+	var body := StaticBody3D.new()
+	body.transform = xform
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = size
+	shape.shape = box
+	body.add_child(shape)
+	parent.add_child(body)
+	return body
+
+
+## Invisible static upright cylinder collider standing on `pos`.
+static func add_cylinder_collider(parent: Node, radius: float, height: float, pos: Vector3) -> StaticBody3D:
+	var body := StaticBody3D.new()
+	body.position = pos + Vector3(0, height * 0.5, 0)
+	var shape := CollisionShape3D.new()
+	var cyl := CylinderShape3D.new()
+	cyl.radius = radius
+	cyl.height = height
+	shape.shape = cyl
+	body.add_child(shape)
+	parent.add_child(body)
+	return body

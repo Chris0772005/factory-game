@@ -6,25 +6,19 @@ const SIZE := Vector3(1.2, 0.7, 0.9)
 
 signal sold(piece_value: int)
 
+var _art: CrateArt
+
 
 func _ready() -> void:
 	add_to_group(&"interactable")
-	var wood := Color("#b07a45")
+	# Four walls and a floor: thrown castings land inside and are sold.
 	for side in [-1, 1]:
-		WorldBuilder.add_box(self, Vector3(SIZE.x, SIZE.y, 0.08), Vector3(0, SIZE.y * 0.5, side * SIZE.z * 0.5), wood, true)
-		WorldBuilder.add_box(self, Vector3(0.08, SIZE.y, SIZE.z), Vector3(side * SIZE.x * 0.5, SIZE.y * 0.5, 0), wood, true)
-	WorldBuilder.add_box(self, Vector3(SIZE.x, 0.08, SIZE.z), Vector3(0, 0.04, 0), wood.darkened(0.2), true)
-	var sign := Label3D.new()
-	sign.text = "VERKAUF"
-	sign.font = UITheme.font(700)
-	sign.font_size = 72
-	sign.outline_size = 18
-	sign.outline_modulate = UITheme.INK
-	sign.modulate = UITheme.ACCENT
-	sign.pixel_size = 0.004
-	sign.position = Vector3(0, SIZE.y + 0.25, 0)
-	sign.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
-	add_child(sign)
+		StationKit.box_collider(self, Vector3(SIZE.x, SIZE.y, 0.08), Transform3D(Basis(), Vector3(0, SIZE.y * 0.5, side * SIZE.z * 0.5)))
+		StationKit.box_collider(self, Vector3(0.08, SIZE.y, SIZE.z), Transform3D(Basis(), Vector3(side * SIZE.x * 0.5, SIZE.y * 0.5, 0)))
+	StationKit.box_collider(self, Vector3(SIZE.x, 0.08, SIZE.z), Transform3D(Basis(), Vector3(0, 0.04, 0)))
+	_art = CrateArt.new()
+	add_child(_art)
+	_art.build(SIZE)
 
 
 func interact_point() -> Vector3:
@@ -42,6 +36,7 @@ func interact(_player: Node) -> void:
 @rpc("authority", "call_local", "reliable")
 func _cha_ching() -> void:
 	Sfx.play(&"coin", interact_point(), 0.0, 0.03)
+	_art.pop()
 
 
 func _physics_process(_delta: float) -> void:

@@ -14,13 +14,11 @@ var _pad_layer: CanvasLayer
 
 func _ready() -> void:
 	add_to_group(&"interactable")
-	var wood := Color("#a8774b")
-	WorldBuilder.add_box(self, Vector3(1.4, 0.08, 0.8), Vector3(0, 0.9, 0), wood, true)
-	for x in [-0.62, 0.62]:
-		for z in [-0.32, 0.32]:
-			WorldBuilder.add_box(self, Vector3(0.08, 0.9, 0.08), Vector3(x, 0.45, z), wood.darkened(0.25))
-	WorldBuilder.add_box(self, Vector3(0.7, 0.02, 0.5), Vector3(-0.1, 0.95, 0), Color("#fff8ec"))
-	WorldBuilder.add_box(self, Vector3(0.04, 0.04, 0.3), Vector3(0.45, 0.96, 0.1), Color("#1f1b2d"))
+	# The bench top is solid (things can be set on it); the rest is look.
+	StationKit.box_collider(self, Vector3(1.4, 0.08, 0.8), Transform3D(Basis(), Vector3(0, 0.9, 0)))
+	var art := BenchArt.new()
+	add_child(art)
+	art.build()
 
 
 func interact_point() -> Vector3:

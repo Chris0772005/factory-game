@@ -4,7 +4,6 @@ extends Node
 const LEVEL := "res://scenes/backyard.tscn"
 
 var _camera: Camera3D
-var _angle := 0.0
 var _ip: LineEdit
 var _status: Label
 
@@ -13,17 +12,10 @@ func _ready() -> void:
 	var bg: GameWorld = load(LEVEL).instantiate()
 	bg.attract_mode = true
 	add_child(bg)
-	_camera = Camera3D.new()
-	_camera.fov = 50
+	_camera = MenuCamera.new()
 	add_child(_camera)
 	_camera.add_child(OutlinePass.create())
 	_build_ui()
-
-
-func _process(delta: float) -> void:
-	_angle += delta * 0.08
-	var pos := Vector3(sin(_angle) * 13.0, 7.5, cos(_angle) * 13.0)
-	_camera.look_at_from_position(pos, Vector3(0, 0.5, 1.5))
 
 
 func _build_ui() -> void:

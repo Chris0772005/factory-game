@@ -36,9 +36,10 @@ var _pour_gap_flagged := false
 var _cool_left := 0.0
 var _hits := 0
 var _built := {}               ## code -> CastMeshBuilder result
-var _imprints: Array[MeshInstance3D] = []
+var _outlines := {}            ## code -> MoldArt.outlines result
 var _metals: Array[MeshInstance3D] = []
-var _sand: MeshInstance3D
+var _cavity_sig := ""
+var _art: MoldArt
 var _sync_accum := 0.0
 
 
@@ -55,11 +56,11 @@ static func find_at(tree: SceneTree, point: Vector3) -> MoldBox:
 func _ready() -> void:
 	add_to_group(&"interactable")
 	add_to_group(&"molds")
-	var wood := Color("#9b6b43")
-	_sand = WorldBuilder.add_box(self, BED, Vector3(0, BED.y * 0.5, 0), Color("#d8c194"), true).get_child(1) as MeshInstance3D
-	for side in [-1, 1]:
-		WorldBuilder.add_box(self, Vector3(BED.x + 0.12, BED.y + 0.06, 0.08), Vector3(0, (BED.y + 0.06) * 0.5, side * (BED.z * 0.5 + 0.04)), wood)
-		WorldBuilder.add_box(self, Vector3(0.08, BED.y + 0.06, BED.z), Vector3(side * (BED.x * 0.5 + 0.04), (BED.y + 0.06) * 0.5, 0), wood)
+	# The sand bed: one solid box, its top at BED.y.
+	StationKit.box_collider(self, BED, Transform3D(Basis(), Vector3(0, BED.y * 0.5, 0)))
+	_art = MoldArt.new()
+	add_child(_art)
+	_art.build(BED, get_tree().get_nodes_in_group(&"molds").size() - 1)
 
 
 func interact_point() -> Vector3:
@@ -299,33 +300,47 @@ func _build(code: String) -> Dictionary:
 	return _built[code]
 
 
+## Real recesses in the sand for every pattern, with the casting lying in
+## its recess (top flush with the sand when full), so the melt rises from
+## the imprint floor. Rebuilt when the patterns or the cavity layout change.
 func _rebuild_cavities() -> void:
-	for m in _imprints + _metals:
+	for m in _metals:
 		m.queue_free()
-	_imprints.clear()
 	_metals.clear()
+	var cavities := []
 	for i in patterns.size():
 		var built := _build(patterns[i])
 		if built.is_empty():
 			continue
-		var imprint := MeshInstance3D.new()
-		imprint.mesh = built.mesh
-		imprint.material_override = WorldBuilder.material(Color("#8c7553"), 1.0)
-		imprint.scale = Vector3(1, 0.06, 1)
-		imprint.position = _slot_position(i) + Vector3(0, 0.002, 0)
-		add_child(imprint)
-		_imprints.append(imprint)
+		if not _outlines.has(patterns[i]):
+			_outlines[patterns[i]] = MoldArt.outlines(Drawing.from_code(patterns[i]), CAST_SIZE)
+		cavities.append([_slot_position(i), _outlines[patterns[i]]])
 		var metal := MeshInstance3D.new()
 		metal.mesh = built.mesh
-		metal.material_override = MetalMaterial.create(&"alu", hash(patterns[i]))
-		metal.position = _slot_position(i) + Vector3(0, CAST_THICKNESS * 0.5 - 0.02, 0)
+		var metal_mat := MetalMaterial.create(&"alu", hash(patterns[i]))
+		metal_mat.set_shader_parameter(&"glow_scale", 1.7)
+		metal.material_override = metal_mat
+		metal.position = _slot_position(i) + Vector3(0, -CAST_THICKNESS * 0.5, 0)
 		metal.visible = false
-		add_child(metal)
+		_art.root.add_child(metal)
 		_metals.append(metal)
+	_art.set_cavities(_cavity_sig, cavities)
+
+
+func _process(delta: float) -> void:
+	# Only `fills` is replicated (`needs` is host-side), so peers use the fullest cavity.
+	var fill := 0.0
+	for f in fills:
+		fill = maxf(fill, f)
+	_art.update(delta, state, _rams, fill, metal_temperature)
 
 
 func _update_visuals() -> void:
-	if _metals.size() != patterns.size():
+	if not StationKit.visual():
+		return
+	var sig := ",".join(patterns) + "|%d" % cavities()
+	if sig != _cavity_sig:
+		_cavity_sig = sig
 		_rebuild_cavities()
 	var alloy := FoundryRules.alloy_for(cast_mix)
 	for i in _metals.size():
@@ -378,9 +393,11 @@ func _fx(kind: StringName, pos: Vector3) -> void:
 		&"dust":
 			FoundryFX.dust(get_parent(), pos)
 			Sfx.play(&"ram_thud", pos)
+			_art.bump(false)
 		&"hit":
 			FoundryFX.dust(get_parent(), pos)
 			Sfx.play(&"hammer_clank", pos)
+			_art.bump(true)
 		&"sparks":
 			FoundryFX.sparks(get_parent(), pos, 10)
 			Sfx.play(&"sparks", pos, -6.0)

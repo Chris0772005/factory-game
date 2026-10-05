@@ -18,20 +18,12 @@ var _bellows: Node3D
 var _bellows_squash := 0.0
 var _sync_accum := 0.0
 var _roar: AudioStreamPlayer3D
+var _art: FurnaceArt
 
 
 func _ready() -> void:
 	add_to_group(&"interactable")
 	add_to_group(&"furnaces")
-	var shell := MeshInstance3D.new()
-	var cyl := CylinderMesh.new()
-	cyl.top_radius = MOUTH_RADIUS
-	cyl.bottom_radius = MOUTH_RADIUS + 0.04
-	cyl.height = HEIGHT
-	shell.mesh = cyl
-	shell.material_override = WorldBuilder.material(Color("#7b8a93"), 0.5)
-	shell.position.y = HEIGHT * 0.5
-	add_child(shell)
 	var body := StaticBody3D.new()
 	add_child(body)
 	# Ring of boxes so a crucible can sit inside the open drum.
@@ -50,29 +42,21 @@ func _ready() -> void:
 	floor_cs.shape = floor_box
 	floor_cs.position.y = 0.06
 	body.add_child(floor_cs)
-	for i in 6:
-		var a := TAU * i / 6.0
-		WorldBuilder.add_box(self, Vector3(0.16, 0.12, 0.16), Vector3(sin(a) * (MOUTH_RADIUS + 0.05), HEIGHT + 0.02, cos(a) * (MOUTH_RADIUS + 0.05)), Color("#8e6f5a"))
 	_roar = Sfx.make_loop(self, &"furnace_loop")
 	_roar.position.y = 0.5
 	_fire = FurnaceFire.new()
+	_fire.radius = 0.34
+	_fire.height = 0.62
+	_fire.light_energy = 1.9
+	_fire.light_range = 4.5
 	_fire.position.y = 0.15
 	add_child(_fire)
 	_bellows = Node3D.new()
 	_bellows.position = Vector3(MOUTH_RADIUS + 0.75, 0, 0)
 	add_child(_bellows)
-	WorldBuilder.add_box(_bellows, Vector3(0.55, 0.22, 0.4), Vector3(0, 0.11, 0), Color("#8b5a3c"))
-	WorldBuilder.add_box(_bellows, Vector3(0.5, 0.05, 0.36), Vector3(0, 0.28, 0), Color("#5c3a26"))
-	var pipe := MeshInstance3D.new()
-	var pm := CylinderMesh.new()
-	pm.top_radius = 0.05
-	pm.bottom_radius = 0.05
-	pm.height = 0.6
-	pipe.mesh = pm
-	pipe.material_override = WorldBuilder.material(Color("#3a3f4b"), 0.6)
-	pipe.rotation.z = PI / 2
-	pipe.position = Vector3(MOUTH_RADIUS + 0.3, 0.12, 0)
-	add_child(pipe)
+	_art = FurnaceArt.new()
+	add_child(_art)
+	_art.build(_bellows)
 
 
 func interact_point() -> Vector3:
@@ -101,7 +85,6 @@ func _pump_fx() -> void:
 
 func _physics_process(delta: float) -> void:
 	_bellows_squash = move_toward(_bellows_squash, 0.0, delta * 4.0)
-	_bellows.scale.y = 1.0 - _bellows_squash * 0.45
 	_fire.heat = heat
 	_roar.volume_db = linear_to_db(maxf(0.001, heat)) - 4.0
 	if heat > 0.02 and not _roar.playing:
@@ -119,6 +102,10 @@ func _physics_process(delta: float) -> void:
 		if _sync_accum > 0.2:
 			_sync_accum = 0.0
 			_sync.rpc(heat)
+
+
+func _process(delta: float) -> void:
+	_art.update(delta, heat, _bellows_squash)
 
 
 @rpc("authority", "call_remote", "unreliable_ordered")

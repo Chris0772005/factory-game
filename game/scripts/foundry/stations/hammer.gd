@@ -4,7 +4,7 @@ extends Item
 
 const REACH := 2.0
 
-var _head: Node3D
+var _head: HammerArt
 var _swing := 0.0
 
 
@@ -23,10 +23,9 @@ static func create_hammer(data: Dictionary) -> Hammer:
 
 
 func _ready() -> void:
-	_head = Node3D.new()
+	_head = HammerArt.new()
 	add_child(_head)
-	WorldBuilder.add_box(_head, Vector3(0.06, 0.75, 0.06), Vector3(0, 0.37, 0), Color("#a87a4f"))
-	WorldBuilder.add_box(_head, Vector3(0.32, 0.14, 0.16), Vector3(0, 0.78, 0), Color("#4b5058"))
+	_head.build()
 
 
 func held_hint(_player: Node) -> String:
@@ -53,5 +52,6 @@ func _swing_fx() -> void:
 
 
 func _process(delta: float) -> void:
+	if _swing >= 1.0:
+		_head.swing()
 	_swing = move_toward(_swing, 0.0, delta * 3.0)
-	_head.rotation.x = sin(_swing * PI) * 1.4
