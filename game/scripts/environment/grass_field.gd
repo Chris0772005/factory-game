@@ -114,6 +114,8 @@ func _weight(p: Vector2, patch: FastNoiseLite) -> float:
 		return 0.0
 	var z := layout.zones_at(p)
 	var w := clampf(1.0 - z.r * 1.8, 0.0, 1.0) * (1.0 - z.g) * (1.0 - z.a) * (1.0 - z.b)
+	var det := layout.detail_at(p)
+	w *= (1.0 - det.r) * (1.0 - det.b)
 	if w <= 0.0:
 		return 0.0
 	w *= clampf(0.75 + patch.get_noise_2d(p.x, p.y) * 0.6, 0.25, 1.0)

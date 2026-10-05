@@ -18,7 +18,7 @@ static func tree(parent: Node3D, pos: Vector3, height: float, seed: int, solid :
 	var trunk_h := height * 0.48
 	var trunk_r := height * 0.045
 	if solid:
-		WorldBuilder.add_cylinder_collider(root, trunk_r * 1.2, trunk_h, Vector3.ZERO).add_to_group(YardSet.CAMERA_PASSTHROUGH)
+		WorldBuilder.add_cylinder_collider(root, trunk_r * 1.2, trunk_h, Vector3.ZERO)
 	if not EnvMesh.visual():
 		return root
 	var rng := RandomNumberGenerator.new()

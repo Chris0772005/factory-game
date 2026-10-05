@@ -73,6 +73,7 @@ func interact(_player: Node) -> void:
 	heat = minf(1.0, heat + HEAT_PER_PUMP * boost)
 	_bellows_squash = 1.0
 	Sfx.play(&"bellows", _bellows.global_position)
+	Juice.impact(_bellows.global_position, 0.18)
 	if Network.is_online():
 		_pump_fx.rpc()
 
@@ -81,6 +82,7 @@ func interact(_player: Node) -> void:
 func _pump_fx() -> void:
 	_bellows_squash = 1.0
 	Sfx.play(&"bellows", _bellows.global_position)
+	Juice.impact(_bellows.global_position, 0.18)
 
 
 func _physics_process(delta: float) -> void:

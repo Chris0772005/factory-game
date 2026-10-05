@@ -17,7 +17,7 @@ static func build(parent: Node3D, anchors: Dictionary, poles: Array, spans: Arra
 	parent.add_child(root)
 	for name in poles:
 		var top: Vector3 = anchors[name]
-		WorldBuilder.add_cylinder_collider(root, 0.12, top.y, Vector3(top.x, 0, top.z)).add_to_group(YardSet.CAMERA_PASSTHROUGH)
+		WorldBuilder.add_cylinder_collider(root, 0.12, top.y, Vector3(top.x, 0, top.z))
 	if not EnvMesh.visual():
 		return root
 	var rng := RandomNumberGenerator.new()

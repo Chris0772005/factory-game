@@ -164,7 +164,7 @@ static func tool(parent: Node3D, pos: Vector3, dir: Vector3, rake: bool) -> void
 ## Clothes line between two T-posts with a few pieces of laundry.
 static func clothes_line(parent: Node3D, a: Vector3, b: Vector3, seed: int) -> void:
 	for p: Vector3 in [a, b]:
-		WorldBuilder.add_cylinder_collider(parent, 0.09, 1.9, p).add_to_group(YardSet.CAMERA_PASSTHROUGH)
+		WorldBuilder.add_cylinder_collider(parent, 0.09, 1.9, p)
 	if not EnvMesh.visual():
 		return
 	var rng := RandomNumberGenerator.new()

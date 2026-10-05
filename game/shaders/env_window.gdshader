@@ -12,7 +12,8 @@ uniform vec4 room : source_color = vec4(0.55, 0.30, 0.18, 1.0);
 uniform vec4 curtain : source_color = vec4(0.72, 0.42, 0.40, 1.0);
 uniform vec4 glass_dark : source_color = vec4(0.12, 0.13, 0.20, 1.0);
 uniform vec4 glass_sky : source_color = vec4(0.45, 0.42, 0.62, 1.0);
-uniform float energy = 2.0;
+// Second tier of light (Art Bible 6.1): never brighter than the melt.
+uniform float energy = 0.9;
 instance uniform float lit = 1.0;
 instance uniform float seed = 0.0;
 

@@ -161,7 +161,7 @@ func _shed_surroundings() -> void:
 ## KayKit lantern post (arm towards local -z) with a warm unshadowed lamp.
 func _lantern_post(post: Vector3, yaw: float) -> void:
 	prop("kaykit_halloween/post_lantern.gltf", post, yaw, {solid = P.NONE, tint = Color("#b8aca0")})
-	WorldBuilder.add_cylinder_collider(root, 0.14, 2.6, post).add_to_group(YardSet.CAMERA_PASSTHROUGH)
+	WorldBuilder.add_cylinder_collider(root, 0.14, 2.6, post)
 	layout.cover(Vector2(post.x, post.z), 0.2)
 	if EnvMesh.visual() and not EnvQuality.is_low():
 		var lamp := OmniLight3D.new()
@@ -191,6 +191,11 @@ func _front_lawn() -> void:
 	prop("kaykit_hexagon/rock_single_A.gltf", Vector3(-7.6, 0, 8.1), 20.0, {scale = 0.25, solid = P.NONE})
 	prop("kaykit_hexagon/rock_single_D.gltf", Vector3(-2.8, 0, 8.3), 75.0, {scale = 0.2, solid = P.NONE})
 	prop("kaykit_hexagon/rock_single_B.gltf", Vector3(5.3, 0, 8.25), 140.0, {scale = 0.22, solid = P.NONE})
+	# A couple of late pumpkins by the lantern (muted: saturated orange means
+	# heat). The rest of the front lawn stays calm: it is the foreground of the
+	# wide shot, and anything here sits cut off at the frame's edge.
+	prop("kaykit_halloween/pumpkin_orange.gltf", Vector3(-8.15, 0, 8.25), 40.0, {solid = P.NONE, scale = 0.55, desaturate = 0.55, tint = Color("#c9b08f")})
+	prop("kaykit_halloween/pumpkin_orange_small.gltf", Vector3(-7.75, 0, 7.75), -20.0, {solid = P.NONE, scale = 0.6, desaturate = 0.55, tint = Color("#c9b08f")})
 	if EnvMesh.visual():
 		var ball := EnvMesh.surface("ball", {base_color = Color("#d9606a"), roughness_base = 0.5, contact_dark = 0.0})
 		EnvMesh.add(root, EnvMesh.sphere(0.13, 14, 8), ball, Transform3D(Basis(), Vector3(-4.6, 0.13, 7.1)))
@@ -246,7 +251,9 @@ func _background() -> void:
 	StylizedTree.hedge(root, Vector3(-12.5, 0, 11.0), Vector3(12.5, 0, 11.0), 1.3, 124)
 	StylizedTree.hedge(root, Vector3(6.2, 0, -9.8), Vector3(12.8, 0, -9.8), 1.9, 125)
 	_utility_pole()
+	_neighbour_gardens()
 	_far_ring()
+	_woodland()
 
 
 ## A loose ring of tall trees 30-40 m out, so every horizon has silhouettes.
@@ -265,6 +272,48 @@ func _far_ring() -> void:
 			StylizedTree.conifer(root, p, h, 160 + i)
 		a += rng.randf_range(0.22, 0.42)
 		i += 1
+
+
+## Shrubs in the neighbours' gardens, so the lawns between the fence and the
+## far trees are not empty fields (and the tree trunks there have a base).
+func _neighbour_gardens() -> void:
+	var spots := [
+		[Vector3(8.4, 0, -12.6), 1.1], [Vector3(10.2, 0, -14.4), 0.9], [Vector3(5.8, 0, -15.5), 1.3],
+		[Vector3(-11.8, 0, -12.0), 1.2], [Vector3(-14.6, 0, -15.6), 1.0], [Vector3(-12.6, 0, -18.5), 1.4],
+		[Vector3(18.0, 0, -12.5), 1.2], [Vector3(21.0, 0, 3.0), 1.3], [Vector3(-20.5, 0, -9.0), 1.2],
+		[Vector3(-19.5, 0, 6.5), 1.1], [Vector3(10.0, 0, 15.0), 1.3], [Vector3(-12.0, 0, 15.5), 1.2],
+	]
+	for i in spots.size():
+		StylizedTree.bush(root, spots[i][0], spots[i][1], 180 + i, false, [Color.WHITE, Color("#d8dcc4")][i % 2])
+	StylizedTree.tree(root, Vector3(-5.5, 0, -25.5), 9.5, 191, false, Color("#d0d8bc"))
+	StylizedTree.conifer(root, Vector3(22.5, 0, -16.0), 10.0, 192)
+	StylizedTree.tree(root, Vector3(-23.0, 0, -11.5), 8.5, 193, false)
+
+
+## A closed band of woodland 40 m out (one merged mesh): tall lumpy crowns
+## hide the end of the ground from every camera height used in the game and
+## menu, so the yard never ends at an edge, and the band fades into the dusk
+## haze (aerial perspective).
+func _woodland() -> void:
+	if not EnvMesh.visual():
+		return
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 151
+	var parts := []
+	var centre := Vector3(0, 0, -2.0)
+	var a := 0.0
+	while a < TAU:
+		for row in 2:
+			var r := 40.0 + row * 3.5 + rng.randf_range(-1.5, 1.5)
+			var size := rng.randf_range(3.2, 4.6) * (1.25 if row == 1 else 1.0)
+			var lift := rng.randf_range(0.6, 1.0) * size + row * 1.5
+			var p := centre + Vector3(sin(a + row * 0.035), 0, cos(a + row * 0.035)) * r
+			parts.append(EnvMesh.piece(EnvMesh.sphere(1.0, 10, 6), Transform3D(Basis().scaled(Vector3(1.0, rng.randf_range(0.9, 1.25), 1.0) * size),
+				p + Vector3(0, lift, 0)), rng.randf()))
+		a += rng.randf_range(0.06, 0.09)
+	var mat := EnvMesh.foliage("woodland", {top_color = Color("#4d6f4f"), bottom_color = Color("#1d3532"), lumps = 0.3, clump_scale = 1.1,
+		sway = 0.0, sway_base = 0.0})
+	EnvMesh.add(root, EnvMesh.merge(parts), mat, Transform3D(), false)
 
 
 ## Wooden utility pole behind the back-right corner with sagging wires.

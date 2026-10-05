@@ -144,10 +144,10 @@ func _interior() -> void:
 	var glow := MeshInstance3D.new()
 	glow.mesh = EnvMesh.sphere(0.05, 8, 4)
 	var m := StandardMaterial3D.new()
-	m.albedo_color = Color("#ffe2a8")
+	m.albedo_color = Color("#5a4a3a")
 	m.emission_enabled = true
 	m.emission = Color("#ffc27a")
-	m.emission_energy_multiplier = 3.0
+	m.emission_energy_multiplier = 1.4
 	glow.material_override = m
 	glow.position = Vector3(0.1, 2.05, 0)
 	root.add_child(glow)

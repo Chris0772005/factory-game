@@ -7,9 +7,13 @@ render_mode diffuse_burley, specular_schlick_ggx, depth_draw_always, shadows_dis
 
 #include "res://shaders/env_common.gdshaderinc"
 
-uniform vec4 glass : source_color = vec4(1.0, 0.886, 0.659, 1.0);
-uniform vec4 emission_color : source_color = vec4(1.0, 0.816, 0.541, 1.0);
-uniform float energy = 2.5;
+// Dark glass: the glow comes from EMISSION only, so the nearby string-light
+// omnis and the sun cannot light the bulbs up past the melt.
+uniform vec4 glass : source_color = vec4(0.3, 0.26, 0.2, 1.0);
+uniform vec4 emission_color : source_color = vec4(1.0, 0.78, 0.49, 1.0);
+// Below the Art Bible's 2.5: at 2.5 the bulbs measured brighter than the melt
+// in the wide shot, and the hierarchy rule (6.1) wins.
+uniform float energy = 1.1;
 uniform float amp = 0.03;
 
 void vertex() {

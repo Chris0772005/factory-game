@@ -286,6 +286,7 @@ func _do_teleport(pos: Vector3) -> void:
 	global_position = pos
 	velocity = Vector3.ZERO
 	_net_target = pos
+	reset_physics_interpolation()
 	_model.squash(1.4)
 
 
@@ -382,6 +383,7 @@ func _follow_network(delta: float) -> void:
 	var to_target := _net_target - global_position
 	if to_target.length() > 3.0:
 		global_position = _net_target
+		reset_physics_interpolation()
 		return
 	var saved := velocity
 	velocity = to_target / maxf(delta, 0.001) * 0.5

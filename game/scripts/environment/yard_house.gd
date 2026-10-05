@@ -309,10 +309,11 @@ func _door(x: float) -> void:
 	var lamp := MeshInstance3D.new()
 	lamp.mesh = EnvMesh.box(Vector3(0.15, 0.24, 0.15), 0.02, 1)
 	var lm := StandardMaterial3D.new()
-	lm.albedo_color = Color("#ffe2a8")
+	# Dark base: the glow is emission only (its own spot would light it up).
+	lm.albedo_color = Color("#5a4a3a")
 	lm.emission_enabled = true
 	lm.emission = Color("#ffc27a")
-	lm.emission_energy_multiplier = 3.0
+	lm.emission_energy_multiplier = 1.2
 	lamp.material_override = lm
 	lamp.position = Vector3(lx, ly, 0.22)
 	lamp.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF

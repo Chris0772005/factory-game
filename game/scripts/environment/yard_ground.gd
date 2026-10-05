@@ -23,6 +23,7 @@ static func build(parent: Node3D, layout: YardLayout) -> MeshInstance3D:
 		var mat := ShaderMaterial.new()
 		mat.shader = load("res://shaders/env_ground.gdshader")
 		mat.set_shader_parameter(&"zone_mask", ImageTexture.create_from_image(layout.mask))
+		mat.set_shader_parameter(&"detail_mask", ImageTexture.create_from_image(layout.detail))
 		mat.set_shader_parameter(&"mask_rect", layout.mask_rect())
 		mi.material_override = mat
 		parent.add_child(mi)

@@ -76,7 +76,7 @@ func hint(_player: Node) -> String:
 		State.RAMMED:
 			return "Bereit zum Gießen – Tiegel holen!"
 		State.FILLING:
-			return "Gießen… %d %%" % roundi(_total_fill() * 100)
+			return "Gießen… %d %%" % roundi((_total_fill() if needs.size() == fills.size() else fills.max()) * 100)
 		State.COOLING:
 			return "Kühlt ab…"
 		State.READY:
@@ -394,10 +394,12 @@ func _fx(kind: StringName, pos: Vector3) -> void:
 			FoundryFX.dust(get_parent(), pos)
 			Sfx.play(&"ram_thud", pos)
 			_art.bump(false)
+			Juice.impact(pos, 0.2)
 		&"hit":
 			FoundryFX.dust(get_parent(), pos)
 			Sfx.play(&"hammer_clank", pos)
 			_art.bump(true)
+			Juice.impact(pos, 0.35, 0.07)
 		&"sparks":
 			FoundryFX.sparks(get_parent(), pos, 10)
 			Sfx.play(&"sparks", pos, -6.0)
@@ -405,8 +407,10 @@ func _fx(kind: StringName, pos: Vector3) -> void:
 			FoundryFX.sand_burst(get_parent(), pos, BED.x)
 			Sfx.play(&"sand_burst", pos, 2.0)
 			Sfx.play(&"reveal_fanfare", pos, -2.0, 0.0)
+			Juice.reveal(pos)
 		&"gong":
 			Sfx.play(&"statue_gong", pos, 0.0, 0.03)
+			Juice.shake_at(pos, 0.4)
 
 
 func _popup_all(pos: Vector3, text: String, color: Color) -> void:

@@ -74,7 +74,7 @@ static func create_environment() -> Environment:
 	env.fog_light_energy = 1.0
 	env.fog_density = 0.007
 	env.fog_sky_affect = 0.0
-	env.fog_aerial_perspective = 0.4
+	env.fog_aerial_perspective = 0.65
 	env.volumetric_fog_enabled = high and not EnvQuality.disabled("vol")
 	env.volumetric_fog_density = 0.006
 	env.volumetric_fog_albedo = Color("#d9c2b5")
