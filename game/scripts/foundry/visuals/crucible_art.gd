@@ -2,7 +2,7 @@ class_name CrucibleArt
 extends Node3D
 ## Look of the carryable crucible: a bellied clay-graphite pot with a rolled
 ## rim and a pulled pouring spout (towards +z, matching Crucible.lip_position),
-## pale glaze drips, an iron shank band with two hinged handles that hang
+## pale glaze drips, a light steel shank band with two hinged handles that hang
 ## upright while the pot rests and swing out level as trunnions when someone
 ## carries it, a dial thermometer on the band (Art Bible 12: diegetic
 ## temperature) and a warm light over hot melt. Lives under the crucible's
@@ -40,8 +40,9 @@ func build() -> void:
 		glaze_top = 0.43, cracks = 0.3, soot = 0.5, soot_from = 0.22, soot_to = 0.0, roughness_base = 0.84,
 		glow_from = 0.0, glow_to = 0.16, glow_scale = 0.35, inner_dark = 0.65})
 	StationKit.add(self, StationKit.lathe(PackedVector2Array(PROFILE), 30, 48.0, _spout), _shell)
-	var iron := StationKit.metal("shank", {steel_color = Color("#34322f"), rust = 0.45, dents = 0.3, metallic_steel = 0.6,
-		roughness_steel = 0.5, soot = 0.4, soot_bottom = 0.0, soot_top = 0.35})
+	# Pale steel shank and handles: the frame reads apart from the dark graphite pot.
+	var iron := StationKit.metal("shank", {steel_color = Color("#8e969c"), rust = 0.2, dents = 0.3, metallic_steel = 0.6,
+		roughness_steel = 0.5, soot = 0.25, soot_bottom = 0.0, soot_top = 0.35})
 	var band := PackedVector2Array([Vector2(0.203, BAND_Y - 0.02), Vector2(0.21, BAND_Y - 0.016), Vector2(0.212, BAND_Y + 0.016),
 		Vector2(0.206, BAND_Y + 0.02)])
 	var pieces := [EnvMesh.piece(StationKit.lathe(band, 30, 60.0), Transform3D(), 0.3)]

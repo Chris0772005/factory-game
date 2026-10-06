@@ -145,6 +145,23 @@ def main():
     save("pickup", mix(thump(140, 0.15) * 0.8, crunch(0.1) * 0.2))
     save("drop_thud", mix(thump(90, 0.3), crunch(0.2) * 0.3))
     save("scrap_clatter", mix(modal(0.5, [(1900, 0.6, 0.08), (2870, 0.5, 0.06), (4100, 0.4, 0.05)]), crunch(0.3) * 0.4))
+    # Batch A (appended so the sounds above keep their random draws): footsteps on
+    # the dirt work area (duller, a soft heel thump) and a fourth grass step, and
+    # a swish for throwing.
+    save("step_grass_4", mix(crunch(0.12, 80) * 0.6, low(noise(0.12), 400) * env(0.12, 0.002, 0.03)))
+    for i in range(4):
+        grit = low(crunch(0.14, 45 + i * 8), 2600) * 0.7
+        heel = thump(95 + i * 9, 0.12) * 0.55
+        save(f"step_dirt_{i + 1}", mix(grit, heel, low(noise(0.1), 300) * env(0.1, 0.002, 0.025) * 0.6))
+    d = 0.38
+    x = t(d)
+    swell = np.sin(np.pi * np.clip(x / d, 0, 1)) ** 2
+    sweep = np.zeros(len(x))
+    n = noise(d)
+    for k, (lo, hi) in enumerate([(350, 900), (700, 1700), (1200, 2600)]):
+        part = band(n, lo, hi) * np.clip(1.0 - np.abs(x / d - (0.3 + 0.2 * k)) * 3.0, 0, 1)
+        sweep += part
+    save("throw_whoosh", sweep * swell + low(noise(d), 160) * swell * 0.3, 0.8)
 
 
 if __name__ == "__main__":

@@ -121,3 +121,9 @@ Gras nur 3 m über den Zaun hinaus (Hecken verdecken den Rest), Detailmaske nur 
   inzwischen auch von `foundry/visuals/*` benutzt – Signaturen bitte stabil halten.
 - Stationspositionen dürfen sich ändern: Sperrzonen, Abnutzung, Laufwege, Ruß, Formsand und Arbeitsspuren folgen den
   echten Knoten.
+- **Figuren (Batch A, 06.10.):** Schrittgeräusche lesen den Boden über `YardSet.layout.zones_at()` (R Erde / A Formsand
+  → `step_dirt_*`, sonst `step_grass_*`) – Kanal-Belegung der Zonenmaske bitte stabil halten. Die Ziel-Kontur
+  (`scripts/player/target_highlight.gd`) setzt `material_overlay` auf die Meshes des anvisierten Objekts (Stencil-Maske +
+  gewachsene Hülle, transparenter Pass, Priorität 7/8); Stationen und Props sollten `material_overlay` nicht selbst
+  belegen, und Effekt-Meshes (Flammen, Rauch, Glühkarten) bleiben außen vor, solange ihr Shader `unshaded`/`blend_*`
+  bzw. `depth_draw_never` nutzt.

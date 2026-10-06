@@ -11,10 +11,13 @@ const HEIGHT := 0.42
 ## Melt disc radius as built; scaled to the pot's inner wall at the fill height.
 const MELT_RADIUS := 0.185
 ## Carry pose (see `carry_offset`): the pot's base sits this far in front of the
-## carrier, at hip height while walking and lifted to chest height for the pour.
+## carrier, at hip height while walking. For the pour it is pushed out to arm's
+## length and only lifted to the belt, so the tipped pot stays below the chin
+## (the face shows) while the lip still clears a mold's sand by ~15 cm.
 const CARRY_DISTANCE := 0.64
+const POUR_DISTANCE := 0.78
 const CARRY_HEIGHT := 0.55
-const POUR_HEIGHT := 0.86
+const POUR_HEIGHT := 0.74
 ## Base height while near a furnace, so the pot clears the drum wall on the way
 ## out and back in; blends to the carry height over this ring (m from the centre).
 const FURNACE_LIFT_HEIGHT := 1.0
@@ -100,16 +103,17 @@ func grip_points() -> Array[Vector3]:
 
 
 ## Where a carrier's hands hold the pot, as (distance in front, height of the
-## pot's base): low in front of the hips while walking, heaved up to the chest
-## as it tips for a pour (the lip then sits ~25 cm above a mold's sand), and
-## lifted over the drum wall near a furnace.
+## pot's base): low in front of the hips while walking, pushed out and heaved
+## to the belt as it tips for a pour (the lip then sits ~15 cm above a mold's
+## sand), and lifted over the drum wall near a furnace.
 func carry_offset(_player: Node) -> Vector2:
 	var height := lerpf(CARRY_HEIGHT, POUR_HEIGHT, tilt)
+	var distance := lerpf(CARRY_DISTANCE, POUR_DISTANCE, tilt)
 	for node in get_tree().get_nodes_in_group(&"furnaces"):
 		var f := node as Node3D
 		var d := Vector2(global_position.x - f.global_position.x, global_position.z - f.global_position.z).length()
 		height = maxf(height, lerpf(FURNACE_LIFT_HEIGHT, height, smoothstep(FURNACE_LIFT_NEAR, FURNACE_LIFT_FAR, d)))
-	return Vector2(CARRY_DISTANCE, height)
+	return Vector2(distance, height)
 
 
 func held_hint(_player: Node) -> String:

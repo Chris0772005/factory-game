@@ -1,8 +1,9 @@
 class_name PlayerModel
 extends Node3D
 ## Rigged foundry worker: the KayKit Adventurers "Barbarian" body (shared 41-bone
-## rig, 76 clips) with props and fur hat removed, a player-coloured shirt and a
-## procedural hard hat on the head bone. Faces +Z; Player rotates this node.
+## rig, 76 clips) with props and fur hat removed, a player-coloured shirt, leather
+## gloves, boots and apron, and a procedural hard hat tipped back on the head
+## bone so the face shows. Faces +Z; Player rotates this node.
 ##
 ## `animate()` (called at physics rate) drives an AnimationTree:
 ##   locomotion blend space idle → walk → jog → run, cycle-synced so the feet stay in
@@ -18,8 +19,11 @@ signal footstep(foot: int)
 ## Global positions of the two handles of the carried object (e.g. the crucible's
 ## grips), set by Player at physics rate; empty = hold the load's centre.
 var grips: Array[Vector3] = []
+## True when `grips` are two hand positions along one handle, [left, right]
+## (the sledgehammer) rather than two handles either side of a load.
+var grips_on_handle := false
 
-@export var suit_color := Color("#3d7dd8"):
+@export var suit_color := Color("#3e7bd6"):
 	set(value):
 		suit_color = value
 		if is_node_ready():
@@ -28,6 +32,7 @@ var grips: Array[Vector3] = []
 const BODY_SCENE := preload("res://assets/models/kaykit_adventurers/Barbarian.glb")
 const OUTFIT_SHADER := preload("res://assets/models/characters/worker_outfit.gdshader")
 const HAIR_SHADER := preload("res://assets/models/characters/worker_hair.gdshader")
+const APRON_SHADER := preload("res://assets/models/characters/worker_apron.gdshader")
 ## Base hair colour (the atlas' beard cell); per-player LOOKS tints multiply it.
 const HAIR_BASE := Color(0.5, 0.36, 0.26)
 ## KayKit units → metres: the worker stands ~1.75 m (2.0 m with the hat).
@@ -46,10 +51,22 @@ const ACTIONS := {
 	&"interact": &"Interact",
 	&"use": &"Use_Item",
 	&"throw": &"Throw",
-	&"hammer": &"1H_Melee_Attack_Chop",
+	&"hammer": &"2H_Melee_Attack_Chop",
+	&"ram": &"2H_Melee_Attack_Stab",
 	&"kick": &"Unarmed_Melee_Attack_Kick",
 	&"cheer": &"Cheer",
 	&"hit": &"Hit_A",
+}
+## Per action: Vector2(start offset in the clip (s), playback speed). Gameplay
+## happens on the button press, so the clips skip their slow wind-ups and play
+## faster to land their key frame within ~0.1–0.2 s: the sledge chop strikes
+## with HammerArt's blow (0.21 s), the pickup bottoms out at 0.19 s, the throw
+## lets go at 0.13 s, the rammer stab hits the sand at 0.16 s.
+const ACTION_TIMING := {
+	&"hammer": Vector2(0.6, 1.45),
+	&"ram": Vector2(0.25, 1.6),
+	&"pickup": Vector2(0.15, 1.8),
+	&"throw": Vector2(0.55, 1.6),
 }
 ## Upper-body bones used by the carry layer and moving one-shots.
 const UPPER_BONES: Array[String] = ["spine", "chest", "head", "upperarm.l", "lowerarm.l", "wrist.l", "hand.l", "handslot.l",
@@ -59,9 +76,11 @@ const ARM_BONES: Array[String] = ["upperarm.l", "lowerarm.l", "wrist.l", "hand.l
 ## Distance of each hand from the carry point, sideways (m).
 const HAND_SPREAD := 0.21
 ## Carrying: the body steps this far towards the load (m) and bends over it (rad),
-## so the short chibi arms meet things held at Player.HOLD_DISTANCE.
+## so the short chibi arms meet things held at Player.HOLD_DISTANCE. The head
+## takes back HEAD_LEVELING of the bend, so the face looks ahead, not at the feet.
 const CARRY_STEP := 0.24
-const CARRY_BEND := 0.2
+const CARRY_BEND := 0.28
+const HEAD_LEVELING := 0.6
 ## Loads held by their handles (`grips`): the body steps in so the shoulders end
 ## up about this far behind the handles (m), up to CARRY_STEP_MAX.
 const GRIP_REACH := 0.45
@@ -72,36 +91,45 @@ const POSE_BONES: Array[StringName] = [&"hips", &"spine", &"chest", &"head", &"u
 	&"upperarm.r", &"lowerarm.r", &"hand.r", &"upperleg.l", &"lowerleg.l", &"foot.l", &"upperleg.r", &"lowerleg.r", &"foot.r"]
 const POSE_FORMAT := 2.0
 const POSE_SIZE := 4 + 16 * 3
-## Arms thrown up, knee kicked, head back: what a worker looks like when the metal arrives.
+## Arms flung up and out in a Y beside the head (the face stays free), right
+## knee kicked up, body leaning back: what a worker looks like when the metal
+## arrives. Reads as a clear silhouette on the statue's plinth.
 const PANIC_POSE: Array[float] = [
-	2.0000, 0.0, 0.4057, -0.0200,
+	2.0, 0.0, 0.39, -0.03,
 	0.0, 0.0, 0.0,
-	-0.0142, 0.0403, 0.0206,
-	-0.0240, 0.0406, 0.0260,
-	-0.0853, -0.0946, 0.0515,
-	-0.2006, -0.7020, -0.3229,
-	0.2680, -0.0148, -0.0724,
-	0.0, 0.0, 0.0,
-	-0.3605, 0.6119, 0.4156,
-	0.3144, 0.0174, 0.1164,
-	0.0, 0.0, 0.0,
-	0.7685, 0.2445, -0.0042,
-	0.6604, -0.0125, 0.1171,
-	-0.6296, 0.0355, 0.0693,
-	-0.9975, 0.0497, -0.0009,
-	-0.0744, 0.0037, -0.0349,
+	-0.06, 0.0, 0.0,
+	-0.0499, 0.0599, 0.003,
+	-0.0417, -0.0587, 0.0275,
+	-0.3547, -0.6229, -0.531,
+	0.3577, -0.0198, -0.1187,
+	0.0823, 0.0, -0.0189,
+	-0.4142, 0.5757, 0.4742,
+	0.3544, 0.0196, 0.128,
+	0.0825, 0.0, 0.021,
+	-0.9985, -0.0503, 0.0009,
+	-0.0602, -0.0032, 0.0303,
 	-0.4552, 0.0, 0.0,
+	0.7902, -0.0497, 0.0009,
+	0.7061, 0.0027, -0.0253,
+	-0.4674, -0.0115, -0.0225,
 ]
 
-## Skin and beard tints (multipliers on the atlas) per default player colour, so the
-## four workers also differ by face, not only by shirt.
-## Multiplier that turns the white fur trim into worn canvas workwear.
-const TRIM_TINT := Color(0.78, 0.68, 0.54)
+## Multiplier that turns the barbarian's white fur trim (skirt hem, cuffs, boot
+## tops) into dark leather, and the glove, boot and apron leathers (Art Bible 4.2).
+const TRIM_TINT := Color("#5a4636")
+const GLOVE_COLOR := Color("#5a4636")
+const BOOT_COLOR := Color("#3a2f2b")
+const APRON_COLOR := Color("#5a4636")
+## Hard hat tipped back (rad, about its own centre) so the brim clears the brow.
+const HAT_TILT := -0.22
+## Skin and beard tints (multipliers on the atlas) per default player colour
+## (keys are GameWorld.PLAYER_COLORS in hex), so the four workers also differ by
+## face, not only by shirt.
 const LOOKS := {
-	"3d7dd8": [Color(1.0, 1.0, 1.0), Color(0.62, 0.42, 0.3)],
-	"e2574c": [Color(0.9, 0.78, 0.7), Color(1.3, 0.62, 0.32)],
-	"3fae6a": [Color(0.6, 0.47, 0.4), Color(0.32, 0.29, 0.29)],
-	"c77ddb": [Color(0.82, 0.68, 0.58), Color(1.4, 1.38, 1.36)],
+	"3e7bd6": [Color(1.0, 1.0, 1.0), Color(0.62, 0.42, 0.3)],
+	"26b5c4": [Color(0.9, 0.78, 0.7), Color(1.3, 0.62, 0.32)],
+	"9b5bd0": [Color(0.6, 0.47, 0.4), Color(0.32, 0.29, 0.29)],
+	"e26aa0": [Color(0.82, 0.68, 0.58), Color(1.4, 1.38, 1.36)],
 }
 
 const P_LOCO := &"parameters/loco/blend_position"
@@ -111,6 +139,8 @@ const P_LAND := &"parameters/land/blend_amount"
 const P_LAND_SEEK := &"parameters/land_seek/seek_request"
 const P_CARRY := &"parameters/carry/blend_amount"
 const P_ACTION_CLIP := &"parameters/action_clip/transition_request"
+const P_ACTION_SEEK := &"parameters/action_seek/seek_request"
+const P_ACTION_SPEED := &"parameters/action_speed/scale"
 const P_ACTION := &"parameters/action/request"
 
 ## Squash spring: 4 Hz, damping ratio 0.45 (overshoots once, then settles).
@@ -125,6 +155,7 @@ var _tree: AnimationTree
 var _rig: WorkerRig
 var _dust: WorkerDust
 var _outfit: ShaderMaterial
+var _apron_mat: ShaderMaterial
 var _hat_mat: StandardMaterial3D
 var _hair_mat: ShaderMaterial
 var _action_node: AnimationNodeOneShot
@@ -195,7 +226,10 @@ func play_action(action: StringName) -> void:
 	if _frozen or _tree == null or not ACTIONS.has(action):
 		return
 	_action_node.filter_enabled = _speed > 0.5 or _air_w > 0.5
+	var timing: Vector2 = ACTION_TIMING.get(action, Vector2(0.0, 1.0))
 	_tree.set(P_ACTION_CLIP, String(action))
+	_tree.set(P_ACTION_SEEK, timing.x)
+	_tree.set(P_ACTION_SPEED, timing.y)
 	_tree.set(P_ACTION, AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 
 
@@ -355,6 +389,10 @@ func _grip_targets(to_skel: Transform3D) -> Array[Vector3]:
 	var b := to_skel * grips[1]
 	var side := (to_skel.basis * global_transform.basis.x).normalized()
 	var ahead := (to_skel.basis * global_transform.basis.z).normalized()
+	if grips_on_handle:
+		# Fists stacked along one handle (sledgehammer), each nudged to its own
+		# side so they do not merge, wrists just behind the shaft.
+		return [a - ahead * 0.06 + side * 0.05, b - ahead * 0.06 - side * 0.05]
 	var lateral := (a - b).dot(side)
 	if absf(lateral) < absf((a - b).dot(ahead)):
 		return []
@@ -394,9 +432,10 @@ func _update_squash(delta: float) -> void:
 func _update_look(delta: float, holding: bool, hand_target: Vector3) -> void:
 	var goal := Vector2.ZERO
 	if holding:
-		# Eyes on the load.
+		# A glance down at the load, but the face stays up for the camera: the
+		# back does the bending (CARRY_BEND) and the head levels most of it out.
 		var local := global_transform.affine_inverse() * hand_target
-		goal = Vector2(clampf(atan2(1.45 - local.y, maxf(local.z, 0.3)) * 0.7, -0.2, 0.5), 0.0)
+		goal = Vector2(clampf(atan2(1.45 - local.y, maxf(local.z, 0.3)) * 0.35, -0.2, 0.15), 0.0)
 	elif _idle_time > 1.5:
 		# Standing around: glance about every few seconds.
 		_glance_timer -= delta
@@ -405,7 +444,7 @@ func _update_look(delta: float, holding: bool, hand_target: Vector3) -> void:
 			_glance = Vector2(_rng.randf_range(-0.12, 0.15), _rng.randf_range(-0.5, 0.5)) if _rng.randf() < 0.7 else Vector2.ZERO
 		goal = _glance
 	_look = _look.lerp(goal, 1.0 - exp(-5.0 * delta))
-	_rig.look = _look
+	_rig.look = _look - Vector2(HEAD_LEVELING * _rig.bend.x, 0.0)
 
 
 ## Emits `footstep` when a foot plants, from the locomotion cycle's playback position.
@@ -438,7 +477,7 @@ static func _approach(from: float, to: float, rate: float, delta: float) -> floa
 
 # --- Construction ---------------------------------------------------------------
 
-## Removes the adventurer props and adds the hard hat.
+## Removes the adventurer props and adds the hard hat and the leather apron.
 func _dress() -> void:
 	for node in _body.find_children("*", "MeshInstance3D", true, false):
 		for part in HIDDEN_PARTS:
@@ -471,26 +510,38 @@ func _dress() -> void:
 		_hair_mat.shader = HAIR_SHADER
 		hair.material_override = _hair_mat
 		head.add_child(hair)
+	var body_mesh := _body.find_child("Barbarian_Body", true, false) as MeshInstance3D
+	if body_mesh:
+		var apron := MeshInstance3D.new()
+		apron.name = &"Apron"
+		apron.mesh = WorkerGear.apron_mesh(body_mesh.mesh)
+		apron.skin = body_mesh.skin
+		apron.transform = body_mesh.transform
+		_apron_mat = ShaderMaterial.new()
+		_apron_mat.shader = APRON_SHADER
+		apron.material_override = _apron_mat
+		body_mesh.get_parent().add_child(apron)
+		apron.skeleton = apron.get_path_to(_skeleton)
 	var hat := Node3D.new()
 	hat.name = &"HardHat"
-	# Pushed back a touch so the face shows from the high game camera.
+	# Tipped back into the neck so the face shows from the high game camera.
 	var pivot := WorkerGear.SHELL_CENTER - Vector3(0, WorkerGear.HEAD_BONE_Y, 0)
-	hat.transform = Transform3D(Basis(Vector3.RIGHT, -0.1), pivot) * Transform3D(Basis(), -pivot)
+	hat.transform = Transform3D(Basis(Vector3.RIGHT, HAT_TILT), pivot) * Transform3D(Basis(), -pivot)
 	head.add_child(hat)
-	# Satin plastic: a soft sheen that reads as a helmet, but never a hot pin-point
-	# highlight brighter than the molten metal (Art Bible 4.2 / rule 2).
+	# Matte plastic: a broad soft sheen that reads as a helmet, but never a
+	# highlight that competes with the molten metal (Art Bible 4.2 / rule 2).
 	_hat_mat = StandardMaterial3D.new()
 	_hat_mat.vertex_color_use_as_albedo = true
-	_hat_mat.roughness = 0.45
+	_hat_mat.roughness = 0.6
 	_hat_mat.clearcoat_enabled = true
-	_hat_mat.clearcoat = 0.3
-	_hat_mat.clearcoat_roughness = 0.45
+	_hat_mat.clearcoat = 0.1
+	_hat_mat.clearcoat_roughness = 0.5
 	_hat_mat.rim_enabled = true
-	_hat_mat.rim = 0.15
+	_hat_mat.rim = 0.05
 	var stripe := StandardMaterial3D.new()
-	stripe.albedo_color = Color("#e6e0d2")
-	stripe.roughness = 0.4
-	stripe.metallic_specular = 0.4
+	stripe.albedo_color = Color("#cdbf9f")
+	stripe.roughness = 0.55
+	stripe.metallic_specular = 0.2
 	var clip := StandardMaterial3D.new()
 	clip.albedo_color = Color("#2d2c33")
 	clip.roughness = 0.5
@@ -514,8 +565,12 @@ func _apply_colors() -> void:
 	if _hair_mat:
 		var tint: Color = look[1]
 		_hair_mat.set_shader_parameter(&"hair_color", Color(HAIR_BASE.r * tint.r, HAIR_BASE.g * tint.g, HAIR_BASE.b * tint.b).clamp())
-	# The adventurer's white fur trim becomes worn canvas.
+	# The adventurer's white fur trim becomes leather, the bare fists gloves.
 	_outfit.set_shader_parameter(&"trim_tint", TRIM_TINT)
+	_outfit.set_shader_parameter(&"glove_color", GLOVE_COLOR)
+	_outfit.set_shader_parameter(&"boot_color", BOOT_COLOR)
+	if _apron_mat:
+		_apron_mat.set_shader_parameter(&"leather_color", APRON_COLOR)
 	_hat_mat.albedo_color = suit_color.lightened(0.06)
 
 
@@ -564,6 +619,11 @@ func _build_animation() -> void:
 	bt.add_node(&"action_clip", actions)
 	for i in names.size():
 		bt.connect_node(&"action_clip", i, StringName("act_%s" % names[i]))
+	# Start offset and speed per action (ACTION_TIMING), set on every fire.
+	bt.add_node(&"action_seek", AnimationNodeTimeSeek.new())
+	bt.connect_node(&"action_seek", 0, &"action_clip")
+	bt.add_node(&"action_speed", AnimationNodeTimeScale.new())
+	bt.connect_node(&"action_speed", 0, &"action_seek")
 	_action_node = AnimationNodeOneShot.new()
 	_action_node.fadein_time = 0.08
 	_action_node.fadeout_time = 0.2
@@ -571,7 +631,7 @@ func _build_animation() -> void:
 	_action_node.filter_enabled = false
 	bt.add_node(&"action", _action_node)
 	bt.connect_node(&"action", 0, &"carry")
-	bt.connect_node(&"action", 1, &"action_clip")
+	bt.connect_node(&"action", 1, &"action_speed")
 	bt.connect_node(&"output", 0, &"action")
 	_tree = AnimationTree.new()
 	_tree.name = &"AnimationTree"

@@ -43,6 +43,11 @@ func hold_point() -> Vector3:
 	return GRIP
 
 
+## Global hand positions on the handle, following the swing (for hand IK).
+func grip_points() -> Array[Vector3]:
+	return _head.grip_points() if _head else []
+
+
 ## Picked up: stands upright in the hands (head up, facing the carrier) and
 ## stays upright while carried. Runs where physics is simulated (host).
 func on_grabbed(by: Node) -> void:

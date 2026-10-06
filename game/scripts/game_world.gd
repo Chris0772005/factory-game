@@ -3,7 +3,9 @@ extends Node3D
 ## Networked world root: spawns workers and items on every peer via a
 ## MultiplayerSpawner and hosts the physics replication.
 
-const PLAYER_COLORS := [Color("#3d7dd8"), Color("#e2574c"), Color("#3fae6a"), Color("#c77ddb")]
+## Blue, teal, violet, pink (Art Bible 4.2): never orange, yellow or green,
+## which compete with the heat, the "bad" red and the lawn.
+const PLAYER_COLORS := [Color("#3e7bd6"), Color("#26b5c4"), Color("#9b5bd0"), Color("#e26aa0")]
 
 signal money_changed(amount: int)
 

@@ -66,6 +66,7 @@ Münzflug ins HUD. Diese Systeme nicht umbauen, nur füttern.
 Aufwand: S ≤ ½ Tag · M ≈ 1 Tag · L ≈ 2 Tage. In eckigen Klammern die Batch (Abschnitt 3).
 
 ### 1. Der Held hat kein Gesicht und trägt noch Barbaren-Kostüm [A] · L
+> **✅ done (Batch A)** – Helm eng angepasst und 0,22 rad in den Nacken gekippt (Schale (0,48 | 0,37 | 0,49) bei y 1,88 – die vorgeschlagenen Radien (0,44 | 0,42 | 0,47) hätten den kantigen Chibi-Schädel durchstoßen, Fit gegen das Kopf-Mesh), Krempe vorn 0,11, matter Lack + Streifen `#CDBF9F` (Helm-p95 im pour-Shot 0,83 → **0,45**, Strahl bleibt 0,95), Kopf gleicht 60 % der Rumpfbeuge aus, Fell → Leder (Saum `#5A4636`, Handschuhe `#5A4636`, Stiefel `#3A2F2B` per Atlas-Zellen), neue an den Körper gehäutete Lederschürze mit Saumnaht, Tasche, Nieten, Nacken- und Hüftbändern (`WorkerGear.apron_mesh`, `worker_apron.gdshader`).
 *Sichtbar:* pour (Figur 3/10), side, reveal, wide. Helm ≈ 0,8 m breit, Kopf beim Tragen ~24° gesenkt + 0,2 rad Rumpfbeuge
 → Krempe verdeckt Augen aus jeder Kamera über Kopfhöhe. Fellrock mit Zickzack-Saum, Fellstiefel, nackte Hautfarbe-Fäuste.
 Helm-Glanzstreifen (`#e6e0d2`, `metallic_specular` 0.4, Clearcoat 0.3, Rim 0.15) ist mit p95 0,90 fast so hell wie die
@@ -117,6 +118,7 @@ aufgerufen; `grade_good.wav`/`grade_bad.wav` sind ungenutzt. Das Sandbett bleibt
 *Abnahme:* reveal-Shot: Gussteil ist der Blickfang, keine Schrift > 8 % Bildhöhe, nichts angeschnitten, Sandbett sichtbar zerbrochen.
 
 ### 4. Ein Koop-Partyspiel – aber auf jedem Bild nur ein Arbeiter; Spielerfarben brechen die Palette [B + A] · M
+> **✅ done (Teil A)** – `PLAYER_COLORS` = `#3E7BD6` / `#26B5C4` / `#9B5BD0` / `#E26AA0`, `LOOKS`-Schlüssel und Standardfarben (`Player.color`, `PlayerModel.suit_color`) nachgezogen. Showcase-Mitspieler (Teil B) offen.
 *Sichtbar:* wide, pour, side, reveal zeigen genau eine Figur. Das Kernversprechen „Koop-Ritual mit Geschrei“ (GDD §1)
 kommt in keinem Bild vor. `GameWorld.PLAYER_COLORS` = Blau, **Rot `#e2574c`**, **Grün `#3fae6a`**, Violett – Bibel §4.2
 verbietet Orange/Gelb/Grün (Rot konkurriert mit Hitze und „schlecht“, Grün verschwindet im Rasen).
@@ -128,6 +130,7 @@ verbietet Orange/Gelb/Grün (Rot konkurriert mit Hitze und „schlecht“, Grün
   Schrott. Alle drei Gesichter zur Kamera ¾.
 
 ### 5. Tiegel-Haltung verdeckt das Gesicht, der Tiegel ist unlesbar [A] · M
+> **✅ done (Batch A)** – Gießhaltung `lerpf(0.64, 0.78, tilt)` und `POUR_HEIGHT` 0,74 (Lippe 15 cm über dem Sand), `CARRY_BEND` 0,28 mit Kopfausgleich, Schaftband/Bügel `#8E969C`; Topf steht im pour-/side-Shot unter dem Kinn, Augen frei. Hinweis: der hintere Topfrand liegt bei voller Neigung auf ≈ 1,10 m – ≤ 1,05 m geht mit dieser Topfgeometrie nur, wenn die Lippe unter 15 cm über den Sand sinkt; Gießtests treffen weiter.
 *Sichtbar:* pour, side. `Crucible.POUR_HEIGHT` 0.86 + Topfhöhe 0.43 → Topfrand auf ≈ 1,3 m, direkt vor dem Mund; im side-Shot
 sieht man vom Tiegel nur den Ausguss, im pour-Shot liest er sich als Maulkorb unter der Krempe.
 *Fix* (`scripts/foundry/stations/crucible.gd`, `player_model.gd`):
@@ -197,6 +200,7 @@ beige Scheibe auf Navy ohne Glühen, 120-px-Loch zwischen Vorschau und Knöpfen,
 - Hinweiszeile mit `KeyPrompt`-Glyphen; `_hint_label` mit `HINT_FULL` bleibt (Test `test_drawing`).
 
 ### 11. Steife bzw. fehlende Aktions-Animationen und -Sounds [A] · M
+> **✅ done (Batch A)** – Hammer `2H_Melee_Attack_Chop` + zweihändiger Überkopf-Schwung der `HammerArt` im Rahmen des Trägers (beide Fäuste per IK am Stiel, Kopf dreht in Schlagrichtung und trifft die Form), Kopf r 0,062 / 0,26 m, Stiel +25 %; Greifen `PickUp`, Stampfen `2H_Melee_Attack_Stab`; Clips per Startversatz/Tempo (`ACTION_TIMING`) so verschoben, dass Tiefpunkt/Treffer 0,13–0,21 s nach dem Tastendruck liegen; Sounds auf allen Peers: Greifen `pickup` −8 dB, Ablegen `drop_thud` −14 dB, Werfen neues `throw_whoosh`, Schritte neue `step_dirt_1..4` / `step_grass_4` nach Bodenmaske (Erde/Sand vs. Rasen).
 *Abgeleitet aus Code + reveal:* Hammer nutzt `1H_Melee_Attack_Chop` (Einhand-Hieb mit einem Vorschlaghammer), der Hammer liest
 sich als dünner Stock (`HammerArt.HEAD_R` 0.046). Greifen hat keine Animation (`_action_anim` liefert für `grab` nichts,
 obwohl `PickUp` im Rig liegt); Stampfen nutzt das generische `Interact`. Aufheben/Ablegen/Werfen sind stumm (nur der Hammer
@@ -209,6 +213,7 @@ spielt `pickup.wav`); `PlayerModel.footstep` wird gesendet, aber nur Staub häng
 - `scripts/foundry/visuals/hammer_art.gd`: `HEAD_R` 0.046 → 0.062, `HEAD_LEN` 0.2 → 0.26, Stielradien +25 %.
 
 ### 12. Man sieht nicht, was man gleich greift oder benutzt [A] · M
+> **✅ done (Batch A)** – `Player.grab_candidate()` herausgelöst (ohne Seiteneffekte; der Förderband-Fallback `pick_item` bleibt in `try_grab`), neues `TargetHighlight`: Stencil-Maske als `material_overlay` + gewachsene Hülle im `next_pass` (wirkt auch auf geteilte ShaderMaterials, ohne sie anzufassen), `#FFF3D6`, 2 cm, 0,2-s-Puls, Flammen/Rauch/Strahl ausgenommen; nur lokaler Spieler, nicht headless.
 *Abgeleitet:* `try_grab()` nimmt den nächsten Körper in einer Kugel; es gibt keine Hervorhebung (Bibel §5.4 Stencil-Kontur
 fehlt im ganzen Projekt). Im Gedränge zu viert greift man das Falsche.
 *Fix:* `player.gd`: Auswahl aus `try_grab()` in `grab_candidate() -> RigidBody3D` herauslösen (Verhalten gleich). Neues
@@ -225,6 +230,7 @@ Erd-Makro-FBM 1,5 m ±10 % Wert. `yard_dressing.gd`: eine Palette/Laufbohlen zwi
 Werkbank. `grass_field.gd`: Büschelhöhe variieren (0,6–1,3×) und dunklere Wurzelfarbe im kameranahen Rasen.
 
 ### 14. Bronzefreund liest sich nicht als Statue [A] · S–M
+> **✅ done (Batch A)** – erstarrte Pfütze als Sockel (r 0,45 m, 6 cm, gelappter Rand, 7 Spritzer, eigener Zylinder-Collider), Statuen-Rauheit +0,15, neue `PANIC_POSE` (per Bone-Aiming erzeugt: Arme als Y neben dem Kopf, Gesicht frei, rechtes Knie hoch, Rücklage); die Schürze deckt den Rock auch in Bronze.
 *Sichtbar:* pour (riesig, angeschnitten), wide (verschmilzt mit dem Schrotthaufen). Kein Sockel, Hände vor dem Gesicht,
 Fellrock in Bronze, Glanzlichter an Beinen p99 0,63 konkurrieren im pour-Shot.
 *Fix:* `scripts/foundry/stations/bronze_statue.gd`: erstarrte Metall-Pfütze als Sockel (Scheibe r 0,45 m, 6 cm, Spritzer-
@@ -259,6 +265,7 @@ Quellen ausschließlich CC0 (z. B. OpenGameArt mit CC0-Filter, HoliznaCC0) mit L
   Kabel höher (Durchhang 0,4 m statt Diagonale durchs Bild).
 
 ### 18. Netz-Glätte der Mitspieler [A] · M
+> **✅ done (Batch A)** – Snapshot-Puffer (16 Pakete) mit jitter-gefilterten lokalen Zeitstempeln, Darstellung 100 ms in der Vergangenheit (Host 50 ms, weil er das Getragene simuliert), Extrapolation ≤ 150 ms, Sprünge > 3 m (Teleport) springen sofort; Gieren interpoliert, RPC `_state` unverändert.
 *Abgeleitet (nicht im Standbild sichtbar):* `player.gd` `_follow_network()` jagt dem letzten 30-Hz-Paket mit halber
 Geschwindigkeit hinterher, kein Snapshot-Puffer (Bibel §9.1.3) – bei Paket-Jitter ruckeln Mitspieler.
 *Fix:* Ringpuffer der `_state`-Pakete mit Zeitstempel, Darstellung 100 ms in der Vergangenheit interpoliert (Position,

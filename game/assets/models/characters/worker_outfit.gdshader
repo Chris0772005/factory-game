@@ -1,7 +1,9 @@
 // Worker outfit: the KayKit character atlas with the shirt cells recoloured to the
-// player colour and per-player skin/beard tints. Keeps the atlas' painted top-to-bottom
-// gradients (the new colour follows the original luminance) and adds soft wrap lighting
-// and a gentle rim so the chunky shapes read against the dusk yard.
+// player colour, the barbarian's fur trim turned into dark leather, the hands into
+// leather gloves and the fur boots into work boots (Art Bible 4.2), plus per-player
+// skin/beard tints. Keeps the atlas' painted top-to-bottom gradients (new colours
+// follow the original luminance) and adds soft wrap lighting and a gentle rim so
+// the chunky shapes read against the dusk yard.
 shader_type spatial;
 render_mode diffuse_lambert_wrap, specular_schlick_ggx;
 
@@ -19,6 +21,15 @@ uniform vec4 suit_rect_b = vec4(0.125, 0.25, 0.25, 0.5);
 uniform vec4 skin_rect = vec4(0.0, 0.0, 0.125, 0.25);
 uniform vec4 hair_rect = vec4(0.125, 0.0, 0.25, 0.25);
 uniform vec4 trim_rect = vec4(0.25, 0.25, 0.375, 0.5);
+// Hands (cell 7/2) and boots (cell 3/2) of the Barbarian atlas, recoloured to
+// glove and boot leather.
+uniform vec4 glove_rect = vec4(0.875, 0.5, 1.0, 0.75);
+uniform vec4 boot_rect = vec4(0.375, 0.5, 0.5, 0.75);
+uniform vec3 glove_color : source_color = vec3(0.353, 0.275, 0.212);
+uniform vec3 boot_color : source_color = vec3(0.227, 0.184, 0.169);
+// Linear luminance of the original hand and boot cells at mid height.
+uniform float glove_ref_luma = 0.24;
+uniform float boot_ref_luma = 0.11;
 // Linear luminance of the original shirt at mid height; maps onto suit_color.
 uniform float suit_ref_luma = 0.14;
 uniform float roughness_value : hint_range(0.0, 1.0) = 0.78;
@@ -40,6 +51,8 @@ void fragment() {
 	base *= mix(vec3(1.0), skin_tint, in_rect(UV, skin_rect));
 	base *= mix(vec3(1.0), hair_tint, in_rect(UV, hair_rect));
 	base *= mix(vec3(1.0), trim_tint, in_rect(UV, trim_rect));
+	base = mix(base, glove_color * clamp(luma / glove_ref_luma, 0.6, 1.4), in_rect(UV, glove_rect));
+	base = mix(base, boot_color * clamp(luma / boot_ref_luma, 0.6, 1.5), in_rect(UV, boot_rect));
 	ALBEDO = base;
 	ROUGHNESS = roughness_value;
 	SPECULAR = 0.35;
