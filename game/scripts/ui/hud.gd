@@ -300,7 +300,7 @@ static func popup(parent: Node3D, pos: Vector3, text: String, color := UITheme.A
 	parent.add_child(l)
 	l.global_position = pos
 	l.scale = Vector3.ONE * 0.35
-	var drift := Vector3(randf_range(-0.15, 0.15), 1.25, 0.0)
+	var drift := Vector3(randf_range(-0.15, 0.15), 0.8, 0.0)
 	var tw := l.create_tween().set_parallel()
 	tw.tween_property(l, "scale", Vector3.ONE, 0.32).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tw.tween_property(l, "global_position", pos + drift, 1.2).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)

@@ -268,7 +268,7 @@ func _break_open() -> void:
 		var slot := to_global(_slot_position(i) + Vector3(0, 0.25, 0))
 		if fill < 0.3:
 			any_fail = true
-			stamps.append([slot + Vector3(0, 0.6, 0), "Fehlguss!", Color("#ff6b5a")])
+			stamps.append([slot + Vector3(0, 0.5, 0), "Fehlguss!", Color("#ff6b5a")])
 			continue
 		var q := FoundryRules.score(ram_quality, fill, defects)
 		var data := {type = "cast", code = patterns[i], alloy = alloy, quality = q, defects = defects.duplicate(),
@@ -278,7 +278,7 @@ func _break_open() -> void:
 			piece.apply_central_impulse(Vector3(randf_range(-0.6, 0.6), 4.2, randf_range(-0.6, 0.6)) * piece.mass)
 			piece.apply_torque_impulse(Vector3(randf(), randf(), randf()) * 0.4 * piece.mass)
 			var g := FoundryRules.grade(q)
-			stamps.append([slot + Vector3(0, 0.7, 0), "%d $" % piece.value(), g.color])
+			stamps.append([slot + Vector3(0, 0.5, 0), "%d $" % piece.value(), g.color])
 			if q > best:
 				best = q
 				best_line = "%s · %d $" % [Alloys.display_name(alloy), piece.value()]

@@ -528,14 +528,15 @@ func _dress() -> void:
 	var pivot := WorkerGear.SHELL_CENTER - Vector3(0, WorkerGear.HEAD_BONE_Y, 0)
 	hat.transform = Transform3D(Basis(Vector3.RIGHT, HAT_TILT), pivot) * Transform3D(Basis(), -pivot)
 	head.add_child(hat)
-	# Matte plastic: a broad soft sheen that reads as a helmet, but never a
-	# highlight that competes with the molten metal (Art Bible 4.2 / rule 2).
+	# Glossy moulded plastic: a small, tight clear-coat highlight sells "hard
+	# hat" (a matte shell reads as felt), while the base stays rough enough that
+	# the shell never outshines the molten metal (Art Bible 4.2 / rule 2).
 	_hat_mat = StandardMaterial3D.new()
 	_hat_mat.vertex_color_use_as_albedo = true
-	_hat_mat.roughness = 0.6
+	_hat_mat.roughness = 0.5
 	_hat_mat.clearcoat_enabled = true
-	_hat_mat.clearcoat = 0.1
-	_hat_mat.clearcoat_roughness = 0.5
+	_hat_mat.clearcoat = 0.55
+	_hat_mat.clearcoat_roughness = 0.18
 	_hat_mat.rim_enabled = true
 	_hat_mat.rim = 0.05
 	var stripe := StandardMaterial3D.new()

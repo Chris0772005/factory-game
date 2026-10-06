@@ -140,8 +140,8 @@ func _add_crew(furnace: Furnace, mold2: MoldBox, reveal: bool) -> void:
 	var fan := PlayerModel.new()
 	fan.suit_color = GameWorld.PLAYER_COLORS[2]
 	world.add_child(fan)
-	fan.global_position = mold2.global_position + (Vector3(0.9, 0.0, 1.6) if reveal else Vector3(0.7, 0.0, -1.3))
-	fan.rotation.y = PI * 0.85 if reveal else 0.3
+	fan.global_position = mold2.global_position + (Vector3(0.55, 0.0, -1.35) if reveal else Vector3(0.7, 0.0, -1.3))
+	fan.rotation.y = 0.15 if reveal else 0.3
 	_crew.append(fan)
 
 

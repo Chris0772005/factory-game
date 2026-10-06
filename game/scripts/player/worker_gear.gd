@@ -14,11 +14,11 @@ const HEAD_BONE_Y := 1.241
 const SHELL_CENTER := Vector3(0.0, 1.88, -0.04)
 const SHELL_RADII := Vector3(0.48, 0.37, 0.49)
 ## Brim widths: sides, front peak, back.
-const BRIM_SIDE := 0.028
-const BRIM_FRONT := 0.11
-const BRIM_BACK := 0.06
+const BRIM_SIDE := 0.034
+const BRIM_FRONT := 0.15
+const BRIM_BACK := 0.07
 const BRIM_THICKNESS := 0.03
-## Height band (polar angle from the top, radians) of the reflective stripe.
+## Height band (polar angle from the top, radians) of the reflective stickers.
 const STRIPE_FROM := 1.18
 const STRIPE_TO := 1.33
 
@@ -66,7 +66,10 @@ static func hard_hat_parts() -> Array[ArrayMesh]:
 	_add_brim(shell)
 	var stripe := SurfaceTool.new()
 	stripe.begin(Mesh.PRIMITIVE_TRIANGLES)
-	_add_band(stripe, STRIPE_FROM, STRIPE_TO, 0.012)
+	# Reflective stickers on both sides and the back – a full ring band would
+	# read as a bowler hat.
+	for span in [Vector2(0.95, 1.95), Vector2(-1.95, -0.95), Vector2(PI - 0.5, PI + 0.5)]:
+		_add_band(stripe, STRIPE_FROM, STRIPE_TO, 0.012, span.x, span.y)
 	var clips := SurfaceTool.new()
 	clips.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for side in [-1.0, 1.0]:
@@ -100,37 +103,44 @@ static func _add_shell(st: SurfaceTool) -> void:
 			_quad_on_shell(st, t0, t1, p0, p1, 0.0)
 
 
-## A raised ridge over the crown from the front to the back, typical of a hard hat.
+## Raised ribs over the crown from the front to the back – the signature of a
+## hard hat: a tall centre ridge flanked by two lower, shorter ribs.
 static func _add_crest(st: SurfaceTool) -> void:
-	var steps := 28
-	var half_width := 0.075
-	var height := 0.035
-	# Profile across the ridge: (side offset, lift) from left foot to right foot.
-	var profile := [Vector2(-1.0, -0.4), Vector2(-0.75, 0.55), Vector2(-0.35, 0.95), Vector2(0.0, 1.0),
-		Vector2(0.35, 0.95), Vector2(0.75, 0.55), Vector2(1.0, -0.4)]
+	_add_rib(st, 0.0, 1.3, 0.1, 0.06)
+	for side in [-1.0, 1.0]:
+		_add_rib(st, side * 0.17, 1.12, 0.055, 0.032)
+
+
+## One rib running front to back in the plane x = `offset` (shell space), over
+## the arc |a| <= `reach` (a = polar angle in that plane; 0 = top), tapering
+## into the shell at both ends.
+static func _add_rib(st: SurfaceTool, offset: float, reach: float, half_width: float, height: float) -> void:
+	var steps := 30
+	# Rounded profile across the rib: (side offset, lift) from left foot to right foot.
+	var profile := [Vector2(-1.0, -0.3), Vector2(-0.8, 0.5), Vector2(-0.45, 0.92), Vector2(0.0, 1.0),
+		Vector2(0.45, 0.92), Vector2(0.8, 0.5), Vector2(1.0, -0.3)]
+	var r := SHELL_RADII
+	var squeeze := sqrt(maxf(0.0, 1.0 - pow(offset / r.x, 2.0)))
 	var rows: Array[PackedVector3Array] = []
 	var normals: Array[PackedVector3Array] = []
 	for s in steps + 1:
-		# Arc in the YZ plane from the front edge (theta 1.25) over the crown to the back edge.
-		var a := lerpf(-1.25, 1.25, float(s) / steps)
-		var theta := absf(a)
-		var phi := 0.0 if a < 0.0 else PI
-		var center := shell_point(theta, phi)
-		var n := shell_normal(theta, phi)
-		var side := Vector3.RIGHT
+		var a := lerpf(-reach, reach, float(s) / steps)
+		var local := Vector3(offset, r.y * squeeze * cos(a), -r.z * squeeze * sin(a))
+		var center := SHELL_CENTER + local - Vector3(0, HEAD_BONE_Y, 0)
+		var n := Vector3(local.x / (r.x * r.x), local.y / (r.y * r.y), local.z / (r.z * r.z)).normalized()
+		var side := (Vector3.RIGHT - n * n.dot(Vector3.RIGHT)).normalized()
+		var taper := smoothstep(0.0, 0.3, reach - absf(a))
 		var row := PackedVector3Array()
 		var nrow := PackedVector3Array()
-		# Taper the ridge into the brim at both ends.
-		var taper := clampf((1.25 - theta) / 0.35, 0.0, 1.0)
 		for k in profile.size():
 			var pr: Vector2 = profile[k]
 			row.append(center + side * pr.x * half_width + n * pr.y * height * taper)
-			var slope := -pr.x * 1.2 if absf(pr.x) > 0.2 else 0.0
-			nrow.append((n + side * slope).normalized())
+			var slope := -pr.x * 1.4 if absf(pr.x) > 0.2 else 0.0
+			nrow.append((n + side * slope * taper).normalized())
 		rows.append(row)
 		normals.append(nrow)
 	for s in steps:
-		var shade := 1.0 - absf(lerpf(-1.25, 1.25, (s + 0.5) / steps)) * 0.08
+		var shade := 1.0 - absf(lerpf(-1.0, 1.0, (s + 0.5) / steps)) * 0.12
 		for k in profile.size() - 1:
 			_tri_strip(st, rows[s][k], rows[s][k + 1], rows[s + 1][k + 1], rows[s + 1][k],
 				normals[s][k], normals[s][k + 1], normals[s + 1][k + 1], normals[s + 1][k], Color(shade, shade, shade))
@@ -165,17 +175,18 @@ static func _brim_outer(phi: float) -> Vector3:
 	var dir := Vector3(sin(phi), 0, cos(phi))
 	# The peak tips down to shade the brow; the sides curl up like a rain gutter.
 	var side := absf(sin(phi))
-	return p + dir * width + Vector3(0, -0.04 * pow(front, 2.0) + 0.018 * side - 0.006, 0)
+	return p + dir * width + Vector3(0, -0.05 * pow(front, 2.0) + 0.022 * side - 0.006, 0)
 
 
-## Band hugging the shell between two polar angles (used for the reflective stripe).
-static func _add_band(st: SurfaceTool, from: float, to: float, grow: float) -> void:
+## Band hugging the shell between two polar angles and two azimuths (a sticker).
+static func _add_band(st: SurfaceTool, from: float, to: float, grow: float, phi_from: float, phi_to: float) -> void:
 	var steps := 3
+	var segs := maxi(2, ceili((phi_to - phi_from) / TAU * SEG))
 	for i in steps:
 		var t0 := lerpf(from, to, float(i) / steps)
 		var t1 := lerpf(from, to, float(i + 1) / steps)
-		for j in SEG:
-			_quad_on_shell(st, t0, t1, TAU * j / SEG, TAU * (j + 1) / SEG, grow)
+		for j in segs:
+			_quad_on_shell(st, t0, t1, lerpf(phi_from, phi_to, float(j) / segs), lerpf(phi_from, phi_to, float(j + 1) / segs), grow)
 
 
 ## Small dark harness clip on each side of the shell.
