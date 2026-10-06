@@ -44,7 +44,7 @@ static func create_grade_lut() -> Texture3D:
 				c = c.lerp(c * 0.6 + shadow_tint * 0.4, 0.15 * (1.0 - smoothstep(0.0, 0.5, luma)))
 				c = c.lerp(c * 0.7 + light_tint * 0.3, 0.10 * smoothstep(0.5, 1.0, luma))
 				for i in 3:
-					var v := c[i]
+					var v: float = c[i]
 					c[i] = clampf(v + (v - 0.5) * 0.12 * (1.0 - absf(v - 0.5) * 2.0), 0.0, 1.0)
 				img.set_pixel(r, g, c)
 		images.append(img)
