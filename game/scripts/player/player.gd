@@ -83,7 +83,17 @@ func _physics_process(delta: float) -> void:
 		_hold(delta)
 		if using and Network.is_sim_authority() and held.has_method("use_tick"):
 			held.use_tick(self, delta)
+	_update_grips()
 	_model.animate(delta, velocity, is_on_floor(), holding, _hand_target())
+
+
+## Hands go onto the handles of things that have them (crucible), on every peer.
+func _update_grips() -> void:
+	var grips: Array[Vector3] = []
+	var item := held_item() if holding else null
+	if item and item.has_method("grip_points"):
+		grips = item.grip_points()
+	_model.grips = grips
 
 
 func _read_input() -> void:
@@ -148,8 +158,28 @@ func _push_bodies() -> void:
 			body.apply_impulse(push * 0.6 * minf(velocity.length(), 4.0) * 0.1, c.get_position() - body.global_position)
 
 
+## Where the held object's grab point is pulled to. Items may set their own carry
+## pose with `carry_offset(player) -> Vector2(distance, height)` (the crucible is
+## held low at the hips); everything else floats at HOLD_DISTANCE / HOLD_HEIGHT.
 func _hand_target() -> Vector3:
-	return global_position + Vector3(0, HOLD_HEIGHT, 0) + global_transform.basis.z * HOLD_DISTANCE
+	var carry := Vector2(HOLD_DISTANCE, HOLD_HEIGHT)
+	var item := held_item()
+	if item and item.has_method("carry_offset"):
+		carry = item.carry_offset(self)
+	return global_position + Vector3(0, carry.y, 0) + global_transform.basis.z * carry.x
+
+
+## The object this worker carries, on every peer: the host knows `held`, other
+## peers look it up by its replicated name.
+func held_item() -> Node3D:
+	if held:
+		return held
+	if not holding or held_name.is_empty():
+		return null
+	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
+	if world == null or world.entities == null:
+		return null
+	return world.entities.get_node_or_null(held_name) as Node3D
 
 
 func try_grab() -> void:
@@ -180,9 +210,13 @@ func try_grab() -> void:
 
 func grab(body: RigidBody3D) -> void:
 	held = body
-	# Grab at the point on the body closest to our hand so big objects can be held by an edge.
-	var closest := _closest_point_on_body(body, _hand_target())
-	held_local_point = body.to_local(closest)
+	if body.has_method("hold_point"):
+		# Tools are held by their grip.
+		held_local_point = body.hold_point()
+	else:
+		# Grab at the point on the body closest to our hand so big objects can be held by an edge.
+		var closest := _closest_point_on_body(body, _hand_target())
+		held_local_point = body.to_local(closest)
 	body.sleeping = false
 	_set_holding(true, body.name)
 	if body.has_method("on_grabbed"):
@@ -304,11 +338,44 @@ func current_hint() -> String:
 # --- Networking -------------------------------------------------------------
 
 ## Grab/release/throw run on the simulating peer; clients ask the host.
+## The body animation starts right away on the acting peer and is mirrored to the others.
 func _request(action: StringName) -> void:
+	_show_action(_action_anim(action))
 	if Network.is_sim_authority():
 		_perform(action)
 	else:
 		_srv_request.rpc_id(1, action)
+
+
+## One-shot body animation for a request (PlayerModel.ACTIONS), or "" for none.
+## Evaluated before the request runs, while `holding` still says what is in hand.
+func _action_anim(action: StringName) -> StringName:
+	match action:
+		&"throw":
+			return &"throw" if holding else &""
+		&"use_start":
+			var item := held_item() if holding else null
+			if item:
+				return &"hammer" if item is Hammer else &""
+			var target := nearest_interactable()
+			if target is Furnace:
+				return &"kick"
+			if target:
+				return &"interact"
+	return &""
+
+
+func _show_action(anim: StringName) -> void:
+	if anim.is_empty():
+		return
+	_model.play_action(anim)
+	if Network.is_online():
+		_action_remote.rpc(anim)
+
+
+@rpc("authority", "call_remote", "unreliable")
+func _action_remote(anim: StringName) -> void:
+	_model.play_action(anim)
 
 
 @rpc("any_peer", "call_remote", "reliable")

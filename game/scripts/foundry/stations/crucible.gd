@@ -10,6 +10,16 @@ const RADIUS := 0.22
 const HEIGHT := 0.42
 ## Melt disc radius as built; scaled to the pot's inner wall at the fill height.
 const MELT_RADIUS := 0.185
+## Carry pose (see `carry_offset`): the pot's base sits this far in front of the
+## carrier, at hip height while walking and lifted to chest height for the pour.
+const CARRY_DISTANCE := 0.64
+const CARRY_HEIGHT := 0.55
+const POUR_HEIGHT := 0.86
+## Base height while near a furnace, so the pot clears the drum wall on the way
+## out and back in; blends to the carry height over this ring (m from the centre).
+const FURNACE_LIFT_HEIGHT := 1.0
+const FURNACE_LIFT_NEAR := 0.75
+const FURNACE_LIFT_FAR := 1.1
 
 var amount := 0.0
 var temperature := 0.0
@@ -77,13 +87,29 @@ func _ready() -> void:
 	_update_visuals()
 
 
-func _process(delta: float) -> void:
-	_art.update(delta, temperature, clampf(amount / capacity(), 0.0, 1.0), is_held())
+func _process(_delta: float) -> void:
+	# Physics interpolation draws the pot between ticks; glue the stream's top to
+	# the lip as drawn so it never detaches on high-refresh screens.
+	if _stream.is_pouring():
+		_stream.set_endpoints(_pivot.get_global_transform_interpolated() * _lip_local(), pour_target)
 
 
 ## Global centres of the two handle grips (e.g. for hand IK); empty headless.
 func grip_points() -> Array[Vector3]:
 	return _art.grip_points()
+
+
+## Where a carrier's hands hold the pot, as (distance in front, height of the
+## pot's base): low in front of the hips while walking, heaved up to the chest
+## as it tips for a pour (the lip then sits ~25 cm above a mold's sand), and
+## lifted over the drum wall near a furnace.
+func carry_offset(_player: Node) -> Vector2:
+	var height := lerpf(CARRY_HEIGHT, POUR_HEIGHT, tilt)
+	for node in get_tree().get_nodes_in_group(&"furnaces"):
+		var f := node as Node3D
+		var d := Vector2(global_position.x - f.global_position.x, global_position.z - f.global_position.z).length()
+		height = maxf(height, lerpf(FURNACE_LIFT_HEIGHT, height, smoothstep(FURNACE_LIFT_NEAR, FURNACE_LIFT_FAR, d)))
+	return Vector2(CARRY_DISTANCE, height)
 
 
 func held_hint(_player: Node) -> String:
@@ -108,6 +134,9 @@ func _physics_process(delta: float) -> void:
 	if Network.is_sim_authority():
 		_simulate(delta)
 	_update_visuals()
+	# Handle swing and thermometer run on the physics step: the pot is a physics
+	# body, so its children are interpolated between ticks (no stutter > 60 Hz).
+	_art.update(delta, temperature, clampf(amount / capacity(), 0.0, 1.0), is_held())
 
 
 func _simulate(delta: float) -> void:
@@ -156,7 +185,11 @@ func _pour(litres: float, rate: float, delta: float) -> void:
 
 ## World position of the pouring spout, following the visual tilt.
 func lip_position() -> Vector3:
-	return _pivot.global_transform * Vector3(0, HEIGHT, RADIUS + 0.06)
+	return _pivot.global_transform * _lip_local()
+
+
+func _lip_local() -> Vector3:
+	return Vector3(0, HEIGHT, RADIUS + 0.06)
 
 
 func capacity() -> float:

@@ -19,6 +19,7 @@ signal cancelled
 		if _preview_mesh:
 			_preview_mesh.material_override = value if value else _default_metal()
 
+const BACKDROP_SHADER := preload("res://assets/ui/shaders/backdrop_blur.gdshader")
 const CURSOR_SPEED := 0.75
 const SIDE_WIDTH := 420.0
 const WARN_TIME := 5.0
@@ -300,9 +301,16 @@ func _layout() -> void:
 
 
 func _build_ui() -> void:
+	# Frosted glass over the live yard (Art Bible 12: the bench stays visible,
+	# softly out of focus) instead of a flat dark sheet.
 	var shade := ColorRect.new()
 	shade.color = Color(0.08, 0.06, 0.12, 0.78)
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var frost := ShaderMaterial.new()
+	frost.shader = BACKDROP_SHADER
+	frost.set_shader_parameter(&"blur_lod", 2.6)
+	frost.set_shader_parameter(&"darken", 0.42)
+	shade.material = frost
 	add_child(shade)
 	var col := VBoxContainer.new()
 	col.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -446,7 +454,8 @@ func _build_preview() -> SubViewport:
 	cyl.bottom_radius = 0.46
 	cyl.height = 0.06
 	plinth.mesh = cyl
-	plinth.material_override = WorldBuilder.material(Color("#3b3247"), 0.9)
+	# Rammed foundry sand, like the mold bed the pattern goes into.
+	plinth.material_override = WorldBuilder.material(Color("#b8955f"), 0.95)
 	plinth.position.y = -0.07
 	vp.add_child(plinth)
 	_preview_pivot = Node3D.new()
@@ -461,11 +470,10 @@ func _build_preview() -> SubViewport:
 	return vp
 
 
-func _default_metal() -> StandardMaterial3D:
-	var metal := StandardMaterial3D.new()
-	metal.albedo_color = PREVIEW_COLOR
-	metal.metallic = 0.9
-	metal.roughness = 0.38
+## Polished bronze from the real cast-metal shader (studio reflections, no crust).
+func _default_metal() -> Material:
+	var metal := MetalMaterial.create(&"bronze")
+	metal.set_shader_parameter(&"crust", 0.0)
 	return metal
 
 

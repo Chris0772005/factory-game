@@ -54,6 +54,9 @@ static func find_at(tree: SceneTree, point: Vector3) -> MoldBox:
 
 
 func _ready() -> void:
+	# The station never moves but its art is animated per frame (Art Bible 9.1):
+	# without interpolation it shows each frame's pose instead of lagging a tick.
+	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	add_to_group(&"interactable")
 	add_to_group(&"molds")
 	# The sand bed: one solid box, its top at BED.y.
@@ -269,7 +272,8 @@ func _break_open() -> void:
 			piece.apply_central_impulse(Vector3(randf_range(-0.6, 0.6), 3.2, randf_range(-0.6, 0.6)) * piece.mass)
 			piece.apply_torque_impulse(Vector3(randf(), randf(), randf()) * 0.4 * piece.mass)
 			var g := FoundryRules.grade(q)
-			_popup_all(slot + Vector3(0, 0.8 + i * 0.25, 0), "%s!  %d $" % [g.name.to_upper(), piece.value()], g.color)
+			# Staggered so two grades never print over each other.
+			_popup_all(slot + Vector3(0, 0.8 + i * 0.4, 0), "%s!  %d $" % [g.name.to_upper(), piece.value()], g.color)
 	patterns.clear()
 	fills.clear()
 	needs.clear()

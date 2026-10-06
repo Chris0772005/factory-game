@@ -54,7 +54,9 @@ func swing() -> void:
 	_t = 0.0
 
 
-func _process(delta: float) -> void:
+## Physics step, not frame: the hammer is a carried physics body, so its art is
+## interpolated between ticks; posing it per frame would stutter above 60 Hz.
+func _physics_process(delta: float) -> void:
 	if _t > 1.0:
 		return
 	_t += delta

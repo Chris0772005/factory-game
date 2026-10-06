@@ -21,7 +21,11 @@ const STRIPE_TO := 1.33
 const SEG := 40
 const RINGS := 14
 
+## Short hair: how far the copied back-of-head surface sits off the skin (rig units).
+const HAIR_LIFT := 0.014
+
 static var _hat_parts: Array[ArrayMesh] = []
+static var _hair: ArrayMesh
 
 
 ## Hard hat as three single-surface meshes: [shell with crest and brim, reflective
@@ -217,3 +221,28 @@ static func _vert(st: SurfaceTool, p: Vector3, n: Vector3, color: Color) -> void
 	st.set_color(color)
 	st.set_normal(n)
 	st.add_vertex(p)
+
+
+## Short hair under the hat (rest space, like the head mesh it is built from):
+## the back half of the KayKit `head` mesh lifted HAIR_LIFT along its normals so
+## it hugs the skull exactly. worker_hair.gdshader cuts the smooth hairline.
+static func hair_mesh(head: Mesh) -> ArrayMesh:
+	if _hair:
+		return _hair
+	var arrays := head.surface_get_arrays(0)
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+	var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for t in range(0, indices.size(), 3):
+		var centre := (verts[indices[t]] + verts[indices[t + 1]] + verts[indices[t + 2]]) / 3.0
+		if centre.z > 0.1 or centre.y < 1.3 or centre.y > 2.0:
+			continue
+		for k in 3:
+			var i := indices[t + k]
+			st.set_normal(normals[i])
+			st.add_vertex(verts[i] + normals[i] * HAIR_LIFT)
+	_hair = st.commit()
+	return _hair
+

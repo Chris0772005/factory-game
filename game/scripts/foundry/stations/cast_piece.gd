@@ -41,6 +41,8 @@ static func from_data(data: Dictionary) -> CastPiece:
 	var mi := MeshInstance3D.new()
 	mi.mesh = built.get("mesh", MeshFactory.rounded_box(Vector3(0.3, 0.07, 0.3), 0.02))
 	piece._material = MetalMaterial.create(piece.alloy, hash(piece.drawing_code))
+	# A thin oxide skin with glowing seams while it cools: hot metal, not lava rock.
+	piece._material.set_shader_parameter(&"crust", 0.45)
 	MetalMaterial.set_temperature(piece._material, piece.temperature)
 	piece._material.set_shader_parameter("defect_amount", FoundryRules.defect_amount(piece.defects))
 	mi.material_override = piece._material

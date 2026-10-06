@@ -3,11 +3,15 @@ extends Item
 ## A worker who got caught in a pour, frozen in metal mid-panic. Sellable.
 
 const BASE_VALUE := 160
+## The metal sets almost at once: a short, even glow that fades to polished
+## bronze within COOL_TIME seconds (no dark crust – it must read as bronze, not lava).
+const START_TEMPERATURE := 0.42
+const COOL_TIME := 2.4
 
 var pose := PackedFloat32Array()
 var alloy := &"bronze"
 var suit_color := Color.WHITE
-var temperature := 0.4
+var temperature := START_TEMPERATURE
 var _materials: Array[ShaderMaterial] = []
 
 
@@ -36,6 +40,7 @@ func _ready() -> void:
 	add_child(model)
 	for mi in model.find_children("*", "MeshInstance3D", true, false):
 		var mat := MetalMaterial.create(alloy)
+		mat.set_shader_parameter(&"crust", 0.0)
 		MetalMaterial.set_temperature(mat, temperature)
 		(mi as MeshInstance3D).material_override = mat
 		_materials.append(mat)
@@ -46,7 +51,7 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	if temperature > 0.0:
-		temperature = maxf(0.0, temperature - delta / 10.0)
+		temperature = maxf(0.0, temperature - delta * START_TEMPERATURE / COOL_TIME)
 		for m in _materials:
 			MetalMaterial.set_temperature(m, temperature)
 

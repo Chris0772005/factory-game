@@ -20,14 +20,15 @@ uniform float scene_darken : hint_range(0.0, 1.0) = 0.35;
 uniform float opacity : hint_range(0.0, 1.0) = 0.85;
 /// Sample offset in pixels at 1080p.
 uniform float thickness = 1.0;
-uniform float depth_threshold = 0.06;
+uniform float depth_threshold = 0.04;
 uniform float normal_threshold = 0.6;
 /// Silhouette lines fade out over this distance range (metres).
 uniform float fade_start = 18.0;
 uniform float fade_end = 35.0;
-/// Crease (normal) lines fade out over this nearer range.
-uniform float crease_fade_start = 11.0;
-uniform float crease_fade_end = 22.0;
+/// Crease (normal) lines fade out over this nearer range: beyond the play
+/// area small creases (nail heads, tiles, quoins) only add dotted noise.
+uniform float crease_fade_start = 7.0;
+uniform float crease_fade_end = 15.0;
 
 void vertex() {
 	POSITION = vec4(VERTEX.xy, 1.0, 1.0);
@@ -60,7 +61,7 @@ void fragment() {
 			}
 			vec3 n = nr.xyz * 2.0 - 1.0;
 			if (1.0 - dot(n, n0) > normal_threshold) {
-				crease = 0.85;
+				crease = 0.75;
 			}
 		}
 	}

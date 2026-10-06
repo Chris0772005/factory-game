@@ -34,8 +34,10 @@ void fragment() {
 	SPECULAR = 0.3;
 	if (heat > 0.0) {
 		float flick = 0.7 + 0.3 * sin(TIME * (2.0 + v_seed * 3.0) + v_seed * 40.0) * env_noise(vec2(TIME * 0.8, v_seed * 9.0));
-		float body = smoothstep(0.45, 0.8, n) * 0.45;
-		float t = clamp(heat * (crack * 0.95 + body) * flick * (1.0 - ash * 0.7), 0.0, 1.0);
+		// A blown bed glows through, not only along the cracks: the furnace mouth
+		// reads as a hot orange bowl from the high game camera.
+		float body = (0.12 + smoothstep(0.45, 0.8, n) * 0.5) * smoothstep(0.4, 0.9, heat);
+		float t = clamp(heat * (crack * 0.95 + body) * flick * (1.0 - ash * 0.55), 0.0, 1.0);
 		EMISSION = fx_heat_color(t * 0.92) * fx_heat_energy(t * 0.92) * glow_scale;
 	}
 	NORMAL = env_bump(VERTEX, NORMAL, (n - crack * 0.6) * 0.002, 1.0);

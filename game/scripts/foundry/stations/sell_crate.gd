@@ -10,6 +10,9 @@ var _art: CrateArt
 
 
 func _ready() -> void:
+	# The station never moves but its art is animated per frame (Art Bible 9.1):
+	# without interpolation it shows each frame's pose instead of lagging a tick.
+	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	add_to_group(&"interactable")
 	# Four walls and a floor: thrown castings land inside and are sold.
 	for side in [-1, 1]:

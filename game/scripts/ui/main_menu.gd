@@ -19,12 +19,22 @@ var _buttons: Array[Button] = []
 var _settings_layer: Control
 var _settings: SettingsPanel
 var _busy := false
+var _furnace: Furnace
+var _time := 0.0
+## Background workers (models only): one works the bellows, one draws at the bench.
+var _stoker: PlayerModel
+var _drafter: PlayerModel
+var _next_pump := 1.2
+var _next_sketch := 2.5
+var _pump_at := -1.0
 
 
 func _ready() -> void:
 	var bg: GameWorld = load(LEVEL).instantiate()
 	bg.attract_mode = true
 	add_child(bg)
+	_light_the_furnace(bg)
+	_add_workers(bg)
 	_camera = MenuCamera.new()
 	add_child(_camera)
 	_camera.add_child(OutlinePass.create())
@@ -34,6 +44,71 @@ func _ready() -> void:
 	if DisplayServer.get_name() != "headless":
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	Juice.device_changed.connect(_on_device_changed)
+
+
+## The yard behind the menu is mid-session: the furnace roars and the crucible in it
+## holds a full, glowing melt, so the hottest thing on screen anchors the picture.
+func _light_the_furnace(bg: GameWorld) -> void:
+	var furnaces := bg.find_children("*", "Furnace", true, false)
+	if furnaces.is_empty():
+		return
+	_furnace = furnaces[0]
+	_furnace.heat = 0.92
+	var crucible := get_tree().get_first_node_in_group(&"crucibles") as Crucible
+	if crucible:
+		crucible.add_melt(&"copper", 2.3)
+		crucible.add_melt(&"zinc_brass", 0.4)
+		crucible.temperature = 0.92
+
+
+## Two workers mid-shift so the yard behind the menu is alive (no players, no
+## physics: rigged models with their idle, glances and one-shot actions).
+func _add_workers(bg: GameWorld) -> void:
+	if _furnace == null:
+		return
+	_stoker = PlayerModel.new()
+	_stoker.suit_color = GameWorld.PLAYER_COLORS[0]
+	bg.add_child(_stoker)
+	# Right of the bellows, facing the furnace, one boot on the pedal.
+	_stoker.global_position = _furnace.global_position + Vector3(1.78, 0.0, 0.08)
+	_stoker.rotation.y = -PI * 0.5
+	# The hammer leans by the far mold instead of standing in the foreground.
+	var molds := get_tree().get_nodes_in_group(&"molds")
+	for node in bg.entities.get_children():
+		if node is Hammer and molds.size() > 1:
+			(node as Node3D).global_position = (molds[1] as Node3D).global_position + Vector3(0.98, 0.05, -0.25)
+	var benches := bg.find_children("*", "ModelBench", true, false)
+	if benches.is_empty():
+		return
+	var bench := benches[0] as Node3D
+	_drafter = PlayerModel.new()
+	_drafter.suit_color = GameWorld.PLAYER_COLORS[3]
+	bg.add_child(_drafter)
+	_drafter.global_position = bench.global_position + Vector3(-0.15, 0.0, 0.72)
+	_drafter.rotation.y = PI + 0.15
+
+
+func _process(delta: float) -> void:
+	# Nobody plays here: the stoker's pumps and a slow breath hold the heat.
+	if _furnace:
+		_time += delta
+		_furnace.heat = 0.88 + 0.06 * sin(_time * 0.7)
+	if _stoker and _time >= _next_pump:
+		_next_pump = _time + randf_range(2.2, 3.2)
+		_stoker.play_action(&"kick")
+		_pump_at = _time + 0.32
+	if _pump_at > 0.0 and _time >= _pump_at:
+		_pump_at = -1.0
+		_furnace.pump_fx()
+	if _drafter and _time >= _next_sketch:
+		_next_sketch = _time + randf_range(3.5, 6.0)
+		_drafter.play_action(&"interact")
+
+
+func _physics_process(delta: float) -> void:
+	for worker in [_stoker, _drafter]:
+		if worker:
+			(worker as PlayerModel).animate(delta, Vector3.ZERO, true, false, Vector3.ZERO)
 
 
 func _build_ui() -> void:

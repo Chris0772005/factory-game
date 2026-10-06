@@ -12,6 +12,12 @@ uniform float metallic : hint_range(0.0, 1.0) = 1.0;
 /// 0 cold, 0.3 dark red, 0.6 orange, 1 white-hot liquid.
 uniform float temperature : hint_range(0.0, 1.0) = 0.0;
 uniform float glow_scale = 1.0;
+/// Extra emission for liquid metal (melt, stream-fed cavities): x (1 + boost).
+/// Keeps molten metal the brightest thing on screen (Art Bible rule 2, 6.6).
+uniform float liquid_boost = 1.0;
+/// 1 = cooling metal grows dark oxide plates with glowing cracks; 0 = it keeps
+/// its polished skin and glows evenly (bronze statues: shiny bronze at once).
+uniform float crust : hint_range(0.0, 1.0) = 1.0;
 /// Brightness of the stylised studio reflection that replaces the sky reflection,
 /// so alloys keep their hue under a blue sky and still shine in dark rooms.
 uniform float env_brightness = 1.0;
@@ -134,12 +140,14 @@ void fragment() {
 			glint *= smoothstep(0.3, 0.55, fx_noise(p * 5.0 + drift)) * (1.0 - skin);
 		}
 		float body = mix(0.15, 0.72, smoothstep(0.3, 0.75, t)) * (0.85 + 0.3 * broad);
-		float mask = mix(body + (1.0 - body) * cracks, 1.0 - 0.45 * skin + 0.9 * glint, liquid);
+		float even = mix(0.35, 0.9, smoothstep(0.1, 0.5, t)) * (0.85 + 0.3 * broad);
+		float solid = mix(even, body + (1.0 - body) * cracks, crust);
+		float mask = mix(solid, 1.0 - 0.45 * skin + 0.9 * glint, liquid);
 		float heat = mix(0.85 + 0.25 * cracks, 0.82 - 0.3 * skin, liquid);
 		float lt = clamp(t * heat + 0.35 * glint * liquid, 0.0, 1.0);
 		emit = fx_heat_color(lt) * fx_heat_energy(lt) * mask;
 		// Dark oxide scale while glowing; it burns off again once liquid.
-		float scale = hot * (1.0 - liquid);
+		float scale = hot * (1.0 - liquid) * crust;
 		albedo = mix(albedo, vec3(0.07, 0.055, 0.05), 0.8 * scale);
 		metal = mix(metal, 0.3, scale);
 		rough = mix(rough, 0.7, scale);
@@ -178,5 +186,5 @@ void fragment() {
 	ALBEDO = albedo;
 	METALLIC = metal;
 	ROUGHNESS = rough;
-	EMISSION = emit * glow_scale;
+	EMISSION = emit * glow_scale * (1.0 + liquid_boost * liquid);
 }

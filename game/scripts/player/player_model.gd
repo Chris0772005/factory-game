@@ -15,6 +15,10 @@ extends Node3D
 
 signal footstep(foot: int)
 
+## Global positions of the two handles of the carried object (e.g. the crucible's
+## grips), set by Player at physics rate; empty = hold the load's centre.
+var grips: Array[Vector3] = []
+
 @export var suit_color := Color("#3d7dd8"):
 	set(value):
 		suit_color = value
@@ -23,6 +27,9 @@ signal footstep(foot: int)
 
 const BODY_SCENE := preload("res://assets/models/kaykit_adventurers/Barbarian.glb")
 const OUTFIT_SHADER := preload("res://assets/models/characters/worker_outfit.gdshader")
+const HAIR_SHADER := preload("res://assets/models/characters/worker_hair.gdshader")
+## Base hair colour (the atlas' beard cell); per-player LOOKS tints multiply it.
+const HAIR_BASE := Color(0.5, 0.36, 0.26)
 ## KayKit units → metres: the worker stands ~1.75 m (2.0 m with the hat).
 const MODEL_SCALE := 0.8
 ## Meshes baked into the KayKit file that do not belong on a foundry worker.
@@ -55,6 +62,10 @@ const HAND_SPREAD := 0.21
 ## so the short chibi arms meet things held at Player.HOLD_DISTANCE.
 const CARRY_STEP := 0.24
 const CARRY_BEND := 0.2
+## Loads held by their handles (`grips`): the body steps in so the shoulders end
+## up about this far behind the handles (m), up to CARRY_STEP_MAX.
+const GRIP_REACH := 0.45
+const CARRY_STEP_MAX := 0.3
 
 ## Bones captured by `pose_data()`: hips position + 16 rotations (52 floats).
 const POSE_BONES: Array[StringName] = [&"hips", &"spine", &"chest", &"head", &"upperarm.l", &"lowerarm.l", &"hand.l",
@@ -115,6 +126,7 @@ var _rig: WorkerRig
 var _dust: WorkerDust
 var _outfit: ShaderMaterial
 var _hat_mat: StandardMaterial3D
+var _hair_mat: ShaderMaterial
 var _action_node: AnimationNodeOneShot
 var _frozen := false
 var _pending_pose := PackedFloat32Array()
@@ -133,6 +145,7 @@ var _carry_w := 0.0
 var _reach_w := 0.0
 var _reach_vel := 0.0
 var _was_holding := false
+var _carry_step := CARRY_STEP
 var _squash := 1.0
 var _squash_vel := 0.0
 var _look := Vector2.ZERO
@@ -312,14 +325,42 @@ func _update_carry(delta: float, holding: bool, hand_target: Vector3) -> void:
 	_reach_vel += ((goal - _reach_w) * 260.0 - _reach_vel * 22.0) * delta
 	_reach_w = clampf(_reach_w + _reach_vel * delta, 0.0, 1.15)
 	_rig.reach = minf(_reach_w, 1.0)
+	var step := CARRY_STEP
 	if _reach_w > 0.001:
 		var to_skel := _skeleton.global_transform.affine_inverse()
-		var center := to_skel * hand_target
-		var side := (to_skel.basis * global_transform.basis.x).normalized() * HAND_SPREAD / MODEL_SCALE
-		# Wrists sit a hand's width below and behind the grip point.
-		var drop := Vector3(0, -0.1, -0.08)
-		_rig.left_target = center + side + drop
-		_rig.right_target = center - side + drop
+		var handles := _grip_targets(to_skel)
+		if handles.is_empty():
+			var center := to_skel * hand_target
+			var side := (to_skel.basis * global_transform.basis.x).normalized() * HAND_SPREAD / MODEL_SCALE
+			# Wrists sit a hand's width below and behind the grip point.
+			var drop := Vector3(0, -0.1, -0.08)
+			_rig.left_target = center + side + drop
+			_rig.right_target = center - side + drop
+		else:
+			_rig.left_target = handles[0]
+			_rig.right_target = handles[1]
+			# Close loads (the crucible at the hips) need less of a step than far ones.
+			var ahead := (global_transform.affine_inverse() * ((grips[0] + grips[1]) * 0.5)).z
+			step = clampf(ahead - GRIP_REACH, 0.0, CARRY_STEP_MAX)
+	_carry_step = lerpf(_carry_step, step, 1.0 - exp(-10.0 * delta))
+
+
+## Wrist targets in skeleton space (left, right) for a load carried by two
+## handles, or empty when there are none or they are not either side of the
+## worker (e.g. a second carrier standing at the pot's side).
+func _grip_targets(to_skel: Transform3D) -> Array[Vector3]:
+	if grips.size() != 2:
+		return []
+	var a := to_skel * grips[0]
+	var b := to_skel * grips[1]
+	var side := (to_skel.basis * global_transform.basis.x).normalized()
+	var ahead := (to_skel.basis * global_transform.basis.z).normalized()
+	var lateral := (a - b).dot(side)
+	if absf(lateral) < absf((a - b).dot(ahead)):
+		return []
+	# The wrist sits just behind and below the grip, where the fist closes round it.
+	var back := -ahead * 0.1 + (to_skel.basis * global_transform.basis.y).normalized() * -0.03
+	return [(a if lateral > 0.0 else b) + back, (b if lateral > 0.0 else a) + back]
 
 
 func _update_lean(delta: float, planar: float) -> void:
@@ -335,7 +376,7 @@ func _update_lean(delta: float, planar: float) -> void:
 	_lean = _lean.lerp(Vector2(pitch, roll), 1.0 - exp(-10.0 * delta))
 	_tilt.rotation = Vector3(_lean.x, 0.0, _lean.y)
 	# Carrying: step into the load and bend the back over it.
-	_tilt.position = Vector3(0.0, 0.0, CARRY_STEP * _carry_w)
+	_tilt.position = Vector3(0.0, 0.0, _carry_step * _carry_w)
 	# The run clips already lean forward, so bend less the faster the worker goes.
 	var run := clampf((_speed - JOG_SPEED) / (RUN_SPEED - JOG_SPEED), 0.0, 1.0)
 	_rig.bend = Vector3(CARRY_BEND * _carry_w * (1.0 - 0.7 * run) + _lean.x * 0.5, 0.0, 0.0)
@@ -419,24 +460,37 @@ func _dress() -> void:
 		head = BoneAttachment3D.new()
 		head.bone_name = "head"
 		_skeleton.add_child(head)
+	# Short hair at the back of the head, so the high camera never sees a bald dome.
+	var head_mesh := _body.find_child("Barbarian_Head", true, false) as MeshInstance3D
+	if head_mesh:
+		var hair := MeshInstance3D.new()
+		hair.name = &"Hair"
+		hair.mesh = WorkerGear.hair_mesh(head_mesh.mesh)
+		hair.position.y = -WorkerGear.HEAD_BONE_Y
+		_hair_mat = ShaderMaterial.new()
+		_hair_mat.shader = HAIR_SHADER
+		hair.material_override = _hair_mat
+		head.add_child(hair)
 	var hat := Node3D.new()
 	hat.name = &"HardHat"
 	# Pushed back a touch so the face shows from the high game camera.
 	var pivot := WorkerGear.SHELL_CENTER - Vector3(0, WorkerGear.HEAD_BONE_Y, 0)
 	hat.transform = Transform3D(Basis(Vector3.RIGHT, -0.1), pivot) * Transform3D(Basis(), -pivot)
 	head.add_child(hat)
+	# Satin plastic: a soft sheen that reads as a helmet, but never a hot pin-point
+	# highlight brighter than the molten metal (Art Bible 4.2 / rule 2).
 	_hat_mat = StandardMaterial3D.new()
 	_hat_mat.vertex_color_use_as_albedo = true
-	_hat_mat.roughness = 0.32
+	_hat_mat.roughness = 0.45
 	_hat_mat.clearcoat_enabled = true
-	_hat_mat.clearcoat = 0.6
-	_hat_mat.clearcoat_roughness = 0.25
+	_hat_mat.clearcoat = 0.3
+	_hat_mat.clearcoat_roughness = 0.45
 	_hat_mat.rim_enabled = true
-	_hat_mat.rim = 0.2
+	_hat_mat.rim = 0.15
 	var stripe := StandardMaterial3D.new()
-	stripe.albedo_color = Color("#f1ece0")
-	stripe.roughness = 0.25
-	stripe.metallic_specular = 0.7
+	stripe.albedo_color = Color("#e6e0d2")
+	stripe.roughness = 0.4
+	stripe.metallic_specular = 0.4
 	var clip := StandardMaterial3D.new()
 	clip.albedo_color = Color("#2d2c33")
 	clip.roughness = 0.5
@@ -457,6 +511,9 @@ func _apply_colors() -> void:
 	var look: Array = LOOKS.get(suit_color.to_html(false), [Color.WHITE, Color(0.62, 0.42, 0.3)])
 	_outfit.set_shader_parameter(&"skin_tint", look[0])
 	_outfit.set_shader_parameter(&"hair_tint", look[1])
+	if _hair_mat:
+		var tint: Color = look[1]
+		_hair_mat.set_shader_parameter(&"hair_color", Color(HAIR_BASE.r * tint.r, HAIR_BASE.g * tint.g, HAIR_BASE.b * tint.b).clamp())
 	# The adventurer's white fur trim becomes worn canvas.
 	_outfit.set_shader_parameter(&"trim_tint", TRIM_TINT)
 	_hat_mat.albedo_color = suit_color.lightened(0.06)

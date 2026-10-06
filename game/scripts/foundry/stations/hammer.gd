@@ -3,6 +3,11 @@ extends Item
 ## Sledgehammer for breaking molds open. Swing with the use button.
 
 const REACH := 2.0
+## Carried upright by the handle at the hips, head up, just in front of the
+## worker (instead of floating at head height); swings forward from there.
+const CARRY_OFFSET := Vector2(0.6, 0.48)
+## Where hands hold it: on the leather grip near the handle end (local).
+const GRIP := Vector3(0.0, 0.15, 0.0)
 
 var _head: HammerArt
 var _swing := 0.0
@@ -28,6 +33,34 @@ func _ready() -> void:
 	_head.build()
 
 
+## Carry pose for Player._hand_target: (distance in front, height of the grip).
+func carry_offset(_player: Node) -> Vector2:
+	return CARRY_OFFSET
+
+
+## Local point Player holds (instead of the point nearest its hands).
+func hold_point() -> Vector3:
+	return GRIP
+
+
+## Picked up: stands upright in the hands (head up, facing the carrier) and
+## stays upright while carried. Runs where physics is simulated (host).
+func on_grabbed(by: Node) -> void:
+	super(by)
+	var yaw := (by as Node3D).global_rotation.y if by is Node3D else global_rotation.y
+	global_basis = Basis(Vector3.UP, yaw)
+	angular_velocity = Vector3.ZERO
+	axis_lock_angular_x = true
+	axis_lock_angular_z = true
+
+
+func on_released(by: Node) -> void:
+	super(by)
+	if not is_held():
+		axis_lock_angular_x = false
+		axis_lock_angular_z = false
+
+
 func held_hint(_player: Node) -> String:
 	return "[F] Zuschlagen"
 
@@ -51,7 +84,7 @@ func _swing_fx() -> void:
 	_swing = 1.0
 
 
-func _process(delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	if _swing >= 1.0:
 		_head.swing()
 	_swing = move_toward(_swing, 0.0, delta * 3.0)

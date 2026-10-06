@@ -95,7 +95,7 @@ kommt aus Gras (3 045 statt 7 920 Büschel), Bildschirmeffekten und Lichtern.
 | Hintergrund neu | Waldband 1 Mesh (≈ 170 Kugeln, ≈ 20 k Dreiecke, ohne Schatten), 12 Sträucher + 3 Bäume in den Nachbargärten (≈ 18 Draws) |
 | Lichter | Umgebung: Sonne (Schatten) + Fill, 5 Lichterketten-Omnis, 2 Fenster-Omnis, Tür-Spot + Glimmlicht, Schuppenbirne, Tischlaterne, 2 Laternenpfosten – alle ohne Schatten; dazu Ofen, Schmelze, Werkbanklampe (Stationen). Mehr als das Art-Bible-Budget (≤ 8 sichtbare Omni/Spot), mit Forward+-Clustering aber unkritisch; sichtbar sind je Ansicht weniger. Kandidaten zum Kürzen: 2 der 5 Lichterketten-Omnis, Tischlaterne. |
 | Reflection Probe | 1 Box, `UPDATE_ONCE` (6 Seiten einmal beim Start) |
-| Lichthierarchie (Wide-Shot, Bildhelligkeit p99 nach AgX) | Schmelze/Ofenmund 0,61 · Lichterketten-Birnen 0,90 → 0,73 · Fenster 0,83 → 0,68 · Türlampe 0,94 → 0,76 (vorher → jetzt). Die Umgebung ist jetzt fast auf Schmelzen-Niveau; damit das Metall klar das Hellste ist (Regel 2), muss die Schmelze selbst heller werden (Art Bible 6.6: Emission × 1,5–2 beim Gießen, `metal.gdshader`/Ofen-Glut – Stationen/FX). |
+| Lichthierarchie (Wide-Shot, Bildhelligkeit p99 nach AgX) | Lichterketten-Birnen 0,90 → 0,73 · Fenster 0,83 → 0,66 · Türlampe 0,94 → 0,70 (Umgebungs-Pass). Schmelze/Guss 0,70 → **0,92** nach dem Art-Director-Pass: flüssiges Metall leuchtet × (1 + `liquid_boost`) = × 2 (`metal.gdshader`), Gießstrahl Energie 2,2 und dicker, Ofen-Glut/Auskleidung heller, Helm matter. Damit ist die Schmelze klar das Hellste im Bild (Regel 2). |
 | Showcase-Render 150 Frames | ≈ 8 min allein, 15–20 min wenn 4–6 Renders parallel laufen (Timeout entsprechend setzen). Jeder lavapipe-Render belegt ≈ 4 GB RAM: in der 16-GB-Sandbox höchstens 3 gleichzeitig, sonst greift der OOM-Killer. |
 
 Optimierungen, die schon drin sind: Gras-Rasenfarbe pro Vertex statt pro Pixel, Voronoi im Boden-Shader nur auf
@@ -107,15 +107,16 @@ Gras nur 3 m über den Zaun hinaus (Hecken verdecken den Rest), Detailmaske nur 
 - **Kontur-Pass (`outline_post.gdshader`, WP 3):** Gras, Lichterketten-Kabel und Birnen laufen im transparenten Pass
   (`ALPHA = 1`), damit sie keine Tinten-Kontur bekommen; sie schreiben zusätzlich `ROUGHNESS = 0.99` als Marker
   (Art Bible 5.4). Sobald der Kontur-Shader Rauheit > 0,98 ignoriert, kann Gras zurück in den opaken Pass.
-  Der aktuelle Kontur-Shader (1,4 px, Normal-Schwelle 0,45, Fade 48 → 80 m) zeichnet in 15–25 m Entfernung
-  gepunktete Linien an Fasen, Brettfugen, Dachziegeln, Nägeln und Eckquadern (Haus, Schuppen). Mit den
-  Art-Bible-Werten (Normal-Schwelle 0,6, 1 px Dicke, Distanz-Fade 18 → 35 m) verschwinden sie weitgehend.
-  Der Boden-Shader hat deshalb bewusst keine gebumpten Risse (die Kontur hätte jede Zelle nachgezeichnet).
+  Stand 05.10. (Art-Director-Pass): 1 px, Normal-Schwelle 0,6, Silhouetten-Fade 18 → 35 m, Tiefen-Schwelle 0,04
+  (durchgehende Silhouetten statt gestrichelter Kanten), Falten-/Normalkanten schon ab 7 → 15 m ausgeblendet –
+  so zeichnen Nägel, Ziegelreihen und Eckquader an Haus und Schuppen keine gepunkteten Linien mehr.
+  Der Boden-Shader hat bewusst keine gebumpten Risse (die Kontur hätte jede Zelle nachgezeichnet).
 - **Kamera (`camera_rig.gd`, WP 7):** siehe Abschnitt 2. Offen: Verdeckungs-Dither (Art Bible 8.2) für Zaun/Baum/Schuppen
   zwischen Kamera und Figur – bei flacher Neigung (−12°) verdeckt der 1,55-m-Zaun sonst die Beine der Figur.
-- **Hauptmenü (`main_menu.gd`, UI-Paket):** Im Attract-Modus ist der Ofen kalt und der Hof leer – das Menü hat dadurch
-  kein glühendes Zentrum. Empfehlung: Ofen auf Hitze 0,9 vorheizen und den Tiegel mit Schmelze füllen (wie im
-  Showcase), dann ist der Ofen der hellste Punkt im Menübild.
+- **Hauptmenü (`main_menu.gd`):** Im Attract-Modus hält das Menü den Ofen auf Hitze ≈ 0,9 (langsames Atmen), der Tiegel
+  im Ofen ist mit glühender Schmelze gefüllt, zwei Arbeiter (nur Modelle) treten den Blasebalg bzw. zeichnen an der
+  Werkbank. Der Hammer lehnt am zweiten Formkasten statt im Vordergrund zu stehen. Menü und Showcases laden/schreiben
+  nie den Spielstand (`SaveGame.is_active()`).
 - **Stationen:** `EnvMesh` (`piece`, `merge`, `box`, `cylinder`, `sphere`, `material`, `wood`, `surface`, `foliage`) wird
   inzwischen auch von `foundry/visuals/*` benutzt – Signaturen bitte stabil halten.
 - Stationspositionen dürfen sich ändern: Sperrzonen, Abnutzung, Laufwege, Ruß, Formsand und Arbeitsspuren folgen den

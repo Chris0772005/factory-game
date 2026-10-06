@@ -8,13 +8,16 @@ extends Node3D
 const SIDES := 10
 const RINGS := 22
 const SHADER_PATH := "res://shaders/fx_stream.gdshader"
+## Emission multiplier: the stream is the hottest, brightest thing in the yard
+## (Art Bible rule 2): a near-white core with a saturated orange rim under AgX.
+const ENERGY := 2.2
 
 ## 0 = off (hidden), 1 = full pour: thickness, sparks and light scale with it.
 var flow := 0.0:
 	set(value):
 		flow = clampf(value, 0.0, 1.0)
 ## Tube radius at the lip for flow = 1.
-var max_radius := 0.045
+var max_radius := 0.056
 ## Heat of the metal (0..1, same scale as MetalMaterial): colour of the stream.
 var temperature := 0.88:
 	set(value):
@@ -44,6 +47,7 @@ func _ready() -> void:
 	_mat.shader = load(SHADER_PATH)
 	_mat.render_priority = 1
 	_mat.set_shader_parameter(&"temperature", temperature)
+	_mat.set_shader_parameter(&"energy", ENERGY)
 	_tube = MeshInstance3D.new()
 	_tube.mesh = _mesh
 	_tube.material_override = _mat
@@ -127,7 +131,7 @@ func _update_impact(active: bool, radius: float) -> void:
 	_splash.global_transform = Transform3D(Basis.from_scale(Vector3(1.9, 0.75 + wobble, 1.9) * radius), _to)
 	_light.global_position = _to + Vector3(0, 0.3, 0)
 	var flicker := 0.85 + 0.1 * sin(_time * 17.0) + 0.05 * sin(_time * 41.0)
-	_light.light_energy = 0.9 * sqrt(_shown_flow) * flicker
+	_light.light_energy = 1.5 * sqrt(_shown_flow) * flicker
 
 
 ## Point on the arc for s in [0, 1]: horizontal travel is linear, the drop

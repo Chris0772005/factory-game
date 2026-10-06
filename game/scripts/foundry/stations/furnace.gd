@@ -22,6 +22,9 @@ var _art: FurnaceArt
 
 
 func _ready() -> void:
+	# The station never moves but its art is animated per frame (Art Bible 9.1):
+	# without interpolation it shows each frame's pose instead of lagging a tick.
+	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	add_to_group(&"interactable")
 	add_to_group(&"furnaces")
 	var body := StaticBody3D.new()
@@ -76,6 +79,12 @@ func interact(_player: Node) -> void:
 	Juice.impact(_bellows.global_position, 0.18)
 	if Network.is_online():
 		_pump_fx.rpc()
+
+
+## Bellows press and puff only – no heat, no camera shake (menu background workers).
+func pump_fx() -> void:
+	_bellows_squash = 1.0
+	Sfx.play(&"bellows", _bellows.global_position, -6.0)
 
 
 @rpc("authority", "call_remote", "reliable")

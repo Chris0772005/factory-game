@@ -118,13 +118,14 @@ func _iron() -> ShaderMaterial:
 func _lining_and_coals(rng: RandomNumberGenerator) -> void:
 	_lining = StationKit.unique("station_clay", {body_color = Color("#b3a089"), glaze = 0.0, cracks = 0.9, soot = 1.0,
 		soot_from = 0.775, soot_to = 0.7, roughness_base = 0.92, glow_from = HEARTH, glow_to = 0.66, glow_radius = 0.43,
-		glow_scale = 0.7})
+		glow_scale = 1.0})
 	var prof := PackedVector2Array([
 		Vector2(0.488, TOP - 0.004), Vector2(0.472, 0.776), Vector2(0.44, 0.781), Vector2(0.415, 0.775),
 		Vector2(LINING_IN, 0.758), Vector2(LINING_IN, 0.6), Vector2(LINING_IN + 0.004, 0.3),
 		Vector2(LINING_IN + 0.006, HEARTH + 0.03), Vector2(0.38, HEARTH + 0.004), Vector2(0.0, HEARTH)])
 	StationKit.add(self, StationKit.lathe(prof, 36, 50.0), _lining)
-	_coals = StationKit.unique("station_ember")
+	# The furnace mouth is the yard's second-hottest spot after the melt itself.
+	_coals = StationKit.unique("station_ember", {glow_scale = 1.6})
 	var pieces := []
 	for i in 46:
 		var r := sqrt(rng.randf()) * 0.37

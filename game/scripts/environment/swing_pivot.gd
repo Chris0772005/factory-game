@@ -8,6 +8,11 @@ extends Node3D
 var _t := 0.0
 
 
+func _ready() -> void:
+	# Animated per frame: skip physics interpolation (it would lag and stutter).
+	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+
+
 func _process(delta: float) -> void:
 	_t += delta
 	var w := TAU / period

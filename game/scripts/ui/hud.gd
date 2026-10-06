@@ -288,7 +288,7 @@ static func popup(parent: Node3D, pos: Vector3, text: String, color := UITheme.A
 	l.outline_modulate = UITheme.INK
 	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	l.no_depth_test = true
-	l.pixel_size = 0.004
+	l.pixel_size = 0.0032
 	l.render_priority = 10
 	l.outline_render_priority = 9
 	# Animated in _process by the tween: render where we put it.

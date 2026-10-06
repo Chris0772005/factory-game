@@ -43,9 +43,11 @@ func build_level() -> void:
 	YardSet.build(self, stations)
 
 	if Network.is_sim_authority():
-		SaveGame.load_into(self)
-		money_changed.connect(func(_m): _autosave())
-		upgrades.changed.connect(_autosave)
+		# Menu backgrounds show the yard as on a fresh install and never save.
+		if not attract_mode:
+			SaveGame.load_into(self)
+			money_changed.connect(func(_m): _autosave())
+			upgrades.changed.connect(_autosave)
 		spawn_entity({type = "crucible", pos = furnace.global_position + Vector3(0, 0.15, 0)})
 		spawn_entity({type = "hammer", pos = Vector3(1.5, 0.1, 2.6)})
 

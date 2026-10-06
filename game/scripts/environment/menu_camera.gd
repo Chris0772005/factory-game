@@ -24,6 +24,8 @@ var _t := 0.0
 
 
 func _ready() -> void:
+	# Moved per frame in _process: no physics interpolation (smooth at any refresh rate).
+	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	fov = 46.0
 	# Pushes the yard to the right so the menu column has calm ground behind it.
 	h_offset = -1.6
