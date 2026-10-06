@@ -106,8 +106,23 @@ def bell(f, dur=1.2, bright=1.0):
     return modal(dur, [(f, 1.0, 0.6), (f * 2.0, 0.5 * bright, 0.35), (f * 3.01, 0.25 * bright, 0.2), (f * 4.2, 0.15 * bright, 0.12)])
 
 
+def crickets(dur=8.0):
+    """Evening ambience: a few chirping crickets over a soft distant hum."""
+    x = t(dur)
+    out = low(noise(dur), 300) * 0.04
+    for k in range(5):
+        f = rng.uniform(4200, 5200)
+        rate = rng.uniform(2.2, 3.4)
+        phase = rng.uniform(0, 1)
+        gate = ((x * rate + phase) % 1.0) < 0.35
+        trill = (np.sin(2 * np.pi * 28 * x) > 0).astype(float)
+        out += np.sin(2 * np.pi * f * x) * gate * trill * rng.uniform(0.04, 0.09)
+    return out
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
+    save("evening_crickets", loopable(crickets(), 0.5), 0.35)
     for i in range(3):
         save(f"hammer_clank_{i + 1}", clank(i))
         save(f"ram_thud_{i + 1}", mix(thump(60 + i * 12) * 1.6, crunch(0.4) * 0.5))

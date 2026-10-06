@@ -5,7 +5,10 @@ class_name YardAmbience
 
 
 static func build(parent: Node3D, chimney_top: Vector3) -> void:
-	if not EnvMesh.visual() or EnvQuality.is_low():
+	if not EnvMesh.visual():
+		return
+	parent.add_child(_evening_sounds())
+	if EnvQuality.is_low():
 		return
 	parent.add_child(_smoke(chimney_top))
 	parent.add_child(_fireflies(Vector3(-6.0, 0.7, 7.2), Vector3(4.5, 0.45, 1.4), 18, 5))
@@ -122,3 +125,16 @@ static func _glow_material() -> StandardMaterial3D:
 	mat.albedo_color = Color(0.85, 1.0, 0.55) * 2.2
 	mat.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
 	return mat
+
+
+## Quiet looping crickets under everything (synthesized, see tools/sfx_gen.py).
+static func _evening_sounds() -> AudioStreamPlayer:
+	var player := AudioStreamPlayer.new()
+	player.name = "EveningAmbience"
+	var stream: AudioStreamWAV = load("res://assets/sfx/evening_crickets.wav").duplicate()
+	stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	stream.loop_end = int(stream.get_length() * stream.mix_rate)
+	player.stream = stream
+	player.volume_db = -20.0
+	player.autoplay = true
+	return player

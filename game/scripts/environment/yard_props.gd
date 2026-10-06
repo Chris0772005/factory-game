@@ -65,8 +65,8 @@ static func scrap_lean(parent: Node3D, pos: Vector3, normal: Vector3, seed: int)
 		var c := pos + along * (i * 0.45 - 0.45) + normal * (0.18 + i * 0.05)
 		var b := Basis(along, -0.22 - i * 0.04) * Basis.looking_at(-normal, Vector3.UP)
 		parts.append(EnvMesh.piece(EnvMesh.box(Vector3(w, h, 0.02), 0.008, 1), Transform3D(b, c + Vector3(0, h * 0.48, 0)), rng.randf()))
-	var tin := EnvMesh.surface("rust_sheet", {base_color = Color("#7f8488"), metallic_base = 0.5, roughness_base = 0.55,
-		stains = 0.85, stain_color = Color("#7a4a32"), noise_scale = 1.8})
+	var tin := EnvMesh.surface("rust_sheet", {base_color = Color("#8e969c"), metallic_base = 0.25, roughness_base = 0.65,
+		stains = 0.85, stain_color = Color("#8a4b2e"), noise_scale = 1.8})
 	EnvMesh.add(parent, EnvMesh.merge(parts), tin)
 	var pipes := []
 	for i in 4:

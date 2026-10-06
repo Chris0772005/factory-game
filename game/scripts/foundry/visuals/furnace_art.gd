@@ -218,7 +218,7 @@ func _make_smoke() -> GPUParticles3D:
 	m.angular_velocity_min = -25.0
 	m.angular_velocity_max = 25.0
 	m.scale_min = 0.7
-	m.scale_max = 1.0
+	m.scale_max = 1.6
 	var sc := Curve.new()
 	sc.add_point(Vector2(0.0, 0.25))
 	sc.add_point(Vector2(0.4, 0.8))
@@ -227,16 +227,17 @@ func _make_smoke() -> GPUParticles3D:
 	sct.curve = sc
 	m.scale_curve = sct
 	var ramp := Gradient.new()
-	ramp.set_color(0, Color(0.5, 0.46, 0.48, 0.0))
-	ramp.set_color(1, Color(0.82, 0.78, 0.76, 0.0))
-	ramp.add_point(0.12, Color(0.42, 0.38, 0.4, 0.55))
-	ramp.add_point(0.55, Color(0.68, 0.64, 0.64, 0.3))
+	# Two-tone puffs (light core, violet-grey tail) so smoke reads against the house wall.
+	ramp.set_color(0, Color("#e9e1d6", 0.0))
+	ramp.set_color(1, Color("#9c8f9a", 0.0))
+	ramp.add_point(0.12, Color("#e9e1d6", 0.8))
+	ramp.add_point(0.55, Color("#9c8f9a", 0.45))
 	var rt := GradientTexture1D.new()
 	rt.gradient = ramp
 	m.color_ramp = rt
 	m.lifetime_randomness = 0.3
 	var p := GPUParticles3D.new()
-	p.amount = 14
+	p.amount = 21
 	p.lifetime = 4.0
 	p.preprocess = 4.0
 	p.process_material = m

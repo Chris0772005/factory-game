@@ -49,7 +49,8 @@ func _ready() -> void:
 	_roar.position.y = 0.5
 	_fire = FurnaceFire.new()
 	_fire.radius = 0.34
-	_fire.height = 0.62
+	# Tongues rise ~0.3 m above the drum rim so the furnace reads as the hero object.
+	_fire.height = 0.95
 	_fire.light_energy = 1.9
 	_fire.light_range = 4.5
 	_fire.position.y = 0.15
@@ -67,7 +68,12 @@ func interact_point() -> Vector3:
 
 
 func hint(_player: Node) -> String:
-	return "[F] Blasebalg treten  · Hitze %d %%" % roundi(heat * 100)
+	if crucible == null:
+		return "Kein Tiegel im Ofen!"
+	var melted := "%.1f l Schmelze" % crucible.amount
+	if not charge.is_empty():
+		melted += " · %d Teile im Ofen" % charge.size()
+	return "[F] Blasebalg treten · Hitze %d %% · %s" % [roundi(heat * 100), melted]
 
 
 func interact(_player: Node) -> void:
@@ -77,6 +83,7 @@ func interact(_player: Node) -> void:
 	_bellows_squash = 1.0
 	Sfx.play(&"bellows", _bellows.global_position)
 	Juice.impact(_bellows.global_position, 0.18)
+	_mouth_sparks()
 	if Network.is_online():
 		_pump_fx.rpc()
 
@@ -92,6 +99,13 @@ func _pump_fx() -> void:
 	_bellows_squash = 1.0
 	Sfx.play(&"bellows", _bellows.global_position)
 	Juice.impact(_bellows.global_position, 0.18)
+	_mouth_sparks()
+
+
+## A burst of sparks out of the furnace mouth on every pump.
+func _mouth_sparks() -> void:
+	if heat > 0.15:
+		FoundryFX.sparks(get_parent(), global_position + Vector3(0, HEIGHT + 0.1, 0), 20)
 
 
 func _physics_process(delta: float) -> void:

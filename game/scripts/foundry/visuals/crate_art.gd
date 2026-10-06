@@ -89,7 +89,7 @@ func _chalkboard(size: Vector3) -> void:
 	var lift := Vector3(0, 0, 0.004)
 	var hand := StationKit.hand_font()
 	var gold := Color(0.96, 0.85, 0.55, 0.92)
-	StationKit.label(_root, "ANKAUF", face * Transform3D(Basis(), Vector3(-0.07, 0.13, 0) + lift), 110, chalk, 700, 0.0011, StationKit.chalk_font())
+	StationKit.label(_root, "VERKAUF", face * Transform3D(Basis(), Vector3(-0.07, 0.13, 0) + lift), 110, chalk, 700, 0.0011, StationKit.chalk_font())
 	StationKit.label(_root, "Gussteile aller Art", face * Transform3D(Basis(), Vector3(-0.07, 0.03, 0) + lift), 64, chalk, 500, 0.0011, hand)
 	StationKit.label(_root, "Bar auf die Hand!", face * Transform3D(Basis(Vector3.BACK, 0.05), Vector3(-0.08, -0.06, 0) + lift), 64, gold, 600, 0.0011, hand)
 	StationKit.label(_root, "$", face * Transform3D(Basis(), Vector3(0.27, 0.07, 0) + lift), 120, gold, 700, 0.0011, StationKit.chalk_font())
