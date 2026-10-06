@@ -75,7 +75,7 @@ func _stage() -> void:
 				pos = mold2.global_position + Vector3(-0.4 + i * 0.9, 0.6, 1.3), size = 0.5, thickness = 0.07})
 	_add_crew(furnace, mold2, reveal)
 	# Fully in frame next to the furnace (never cut by the left edge of the pour/side shots).
-	var statue_pos := mold2.global_position + Vector3(-1.75, 0.05, -1.0) if reveal else mold2.global_position + Vector3(-2.6, 0.05, -1.4)
+	var statue_pos := mold2.global_position + Vector3(-1.75, 0.05, -1.0) if reveal else mold2.global_position + Vector3(-1.2, 0.05, -2.2)
 	world.spawn_entity({type = "statue", pos = statue_pos, yaw = 0.6, pose = PlayerModel.panic_pose(), alloy = &"bronze"})
 	var cam := Camera3D.new()
 	cam.fov = 50
@@ -140,8 +140,8 @@ func _add_crew(furnace: Furnace, mold2: MoldBox, reveal: bool) -> void:
 	var fan := PlayerModel.new()
 	fan.suit_color = GameWorld.PLAYER_COLORS[2]
 	world.add_child(fan)
-	fan.global_position = mold2.global_position + (Vector3(0.9, 0.0, 1.6) if reveal else Vector3(1.1, 0.0, 1.9))
-	fan.rotation.y = PI * 0.85
+	fan.global_position = mold2.global_position + (Vector3(0.9, 0.0, 1.6) if reveal else Vector3(0.7, 0.0, -1.3))
+	fan.rotation.y = PI * 0.85 if reveal else 0.3
 	_crew.append(fan)
 
 
