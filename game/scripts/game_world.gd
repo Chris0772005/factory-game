@@ -176,6 +176,26 @@ func _popup_remote(pos: Vector3, text: String, color: Color) -> void:
 	HUD.popup(self, pos, text, color)
 
 
+## Big reveal banner (and grade sting) for every player near `pos`. Host calls this.
+func banner_near(pos: Vector3, text: String, color: Color, subtitle: String, good: bool) -> void:
+	_banner_local(pos, text, color, subtitle, good)
+	if Network.is_online() and multiplayer.is_server():
+		_banner_remote.rpc(pos, text, color, subtitle, good)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _banner_remote(pos: Vector3, text: String, color: Color, subtitle: String, good: bool) -> void:
+	_banner_local(pos, text, color, subtitle, good)
+
+
+func _banner_local(pos: Vector3, text: String, color: Color, subtitle: String, good: bool) -> void:
+	var me := local_player()
+	if me == null or me.global_position.distance_to(pos) > 6.0:
+		return
+	HUD.banner(text, color, subtitle)
+	Sfx.play_ui(&"grade_good" if good else &"grade_bad", -2.0)
+
+
 ## Hint for whatever `player` carries, e.g. "[F] Gießen" for a crucible.
 func held_hint(player: Player) -> String:
 	var node := entities.get_node_or_null(player.held_name)

@@ -9,6 +9,7 @@ const COLUMN_X := 112.0
 
 var _camera: Camera3D
 var _ip: LineEdit
+var _coop_card: VBoxContainer
 var _status: Label
 var _status_pill: PanelContainer
 var _root: Control
@@ -59,6 +60,25 @@ func _light_the_furnace(bg: GameWorld) -> void:
 		crucible.add_melt(&"copper", 2.3)
 		crucible.add_melt(&"zinc_brass", 0.4)
 		crucible.temperature = 0.92
+	# Fresh glowing castings in the first mold, a rammed pattern waiting in the second.
+	var molds := get_tree().get_nodes_in_group(&"molds")
+	if molds.size() >= 2:
+		var hot: MoldBox = molds[0]
+		for d: Drawing in [DrawingSamples.star(), DrawingSamples.cat()]:
+			hot.add_pattern(d.to_code())
+		for i in MoldBox.RAMS_NEEDED:
+			hot._rams = i
+			hot._ram()
+		var litres := 0.0
+		for need in hot.needs:
+			litres += need
+		hot.receive_metal(litres + 0.01, 0.9, {&"copper": litres * 0.85, &"zinc_brass": litres * 0.15}, 0.5, 1.0 / 60.0)
+		hot._cool_left = 1.0e9
+		var waiting: MoldBox = molds[1]
+		waiting.add_pattern(DrawingSamples.smiley().to_code())
+		for i in MoldBox.RAMS_NEEDED:
+			waiting._rams = i
+			waiting._ram()
 
 
 ## Two workers mid-shift so the yard behind the menu is alive (no players, no
@@ -139,19 +159,25 @@ func _build_ui() -> void:
 	_column.add_child(tag)
 	_column.add_child(_spacer(18))
 	_first = _button("Solo spielen", &"BigButton", _on_solo)
-	_button("Spiel hosten", &"SecondaryButton", _on_host)
+	_button("Koop spielen", &"SecondaryButton", _toggle_coop)
+	# Host / join only appear after "Koop spielen" (no raw address field on the title screen).
+	_coop_card = VBoxContainer.new()
+	_coop_card.add_theme_constant_override("separation", 10)
+	_coop_card.visible = false
+	_button("Spiel hosten", &"SecondaryButton", _on_host, _coop_card)
 	var join_row := HBoxContainer.new()
 	join_row.add_theme_constant_override("separation", 12)
 	var join := _button("Beitreten", &"SecondaryButton", _on_join, join_row)
-	join.custom_minimum_size.x = 250
+	join.custom_minimum_size.x = 200
 	_ip = LineEdit.new()
 	_ip.text = "127.0.0.1"
-	_ip.placeholder_text = "IP-Adresse"
+	_ip.placeholder_text = "Adresse des Hosts"
 	_ip.custom_minimum_size = Vector2(240, 0)
 	_ip.add_theme_font_size_override("font_size", 28)
 	_ip.text_submitted.connect(func(_t: String) -> void: _on_join())
 	join_row.add_child(_ip)
-	_column.add_child(join_row)
+	_coop_card.add_child(join_row)
+	_column.add_child(_coop_card)
 	_button("Einstellungen", &"SecondaryButton", _open_settings)
 	_button("Beenden", &"SecondaryButton", func() -> void: get_tree().quit())
 
@@ -172,7 +198,9 @@ func _build_ui() -> void:
 	footer.name = "Footer"
 	footer.text = "Koop-Gießerei für 1–4 Spieler  ·  v0.1"
 	footer.theme_type_variation = &"Small"
-	footer.position = Vector2(COLUMN_X, 1080 - 54 - 30)
+	footer.position = Vector2(1920 - 520, 1080 - 54 - 30)
+	footer.size = Vector2(480, 40)
+	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_root.add_child(footer)
 
 
@@ -193,11 +221,9 @@ func _intro() -> void:
 		var bt := b.create_tween().set_parallel()
 		bt.tween_property(b, "position", target, 0.38).set_delay(0.62 + i * 0.06).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		bt.tween_property(b, "modulate:a", 1.0, 0.2).set_delay(0.62 + i * 0.06)
-	_ip.modulate.a = 0.0
-	_ip.create_tween().tween_property(_ip, "modulate:a", 1.0, 0.3).set_delay(0.9)
 	var footer := _root.get_node(^"Footer") as Label
 	footer.modulate.a = 0.0
-	footer.create_tween().tween_property(footer, "modulate:a", 1.0, 0.5).set_delay(1.1)
+	footer.create_tween().tween_property(footer, "modulate:a", 0.6, 0.5).set_delay(1.1)
 	if Juice.using_gamepad:
 		_first.grab_focus()
 
@@ -299,6 +325,13 @@ func _close_settings() -> void:
 func _start(path: String) -> void:
 	_busy = true
 	Transition.change_scene(path)
+
+
+func _toggle_coop() -> void:
+	_coop_card.visible = not _coop_card.visible
+	if _coop_card.visible:
+		UITheme.pop_in(_coop_card, 0.0, Vector2(-20, 0))
+	Sfx.play_ui(&"pop")
 
 
 func _on_solo() -> void:

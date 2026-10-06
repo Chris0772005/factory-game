@@ -119,7 +119,25 @@ func carry_offset(_player: Node) -> Vector2:
 func held_hint(_player: Node) -> String:
 	if amount < 0.05:
 		return "Leer – in den Ofen stellen"
-	return "[F halten] Gießen  · %.1f l · %d °C" % [amount, roundi(200 + temperature * 1100)]
+	var mold := _mold_under_spout()
+	if mold and mold.state in [MoldBox.State.RAMMED, MoldBox.State.FILLING, MoldBox.State.COOLING]:
+		var fill := mold._total_fill()
+		if fill >= 0.98:
+			return "STOPP!  Form voll – nicht weitergießen (Grat!)"
+		var line := "[F halten] Gießen · Form %d %%" % roundi(fill * 100)
+		if flow * MAX_POUR_RATE > MoldBox.SAFE_POUR_RATE:
+			line += " · zu schnell!"
+		return line
+	return "[F halten] Gießen · %.1f l · %d °C" % [amount, roundi(200 + temperature * 1100)]
+
+
+## The mold below the spout (where the stream would land), if any.
+func _mold_under_spout() -> MoldBox:
+	if _pivot == null:
+		return null
+	var probe := lip_position()
+	probe.y = 0.6
+	return MoldBox.find_at(get_tree(), probe)
 
 
 func use_start(_player: Node) -> void:

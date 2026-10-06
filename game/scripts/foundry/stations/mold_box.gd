@@ -81,7 +81,7 @@ func hint(_player: Node) -> String:
 		State.FILLING:
 			return "Gießen… %d %%" % roundi((_total_fill() if needs.size() == fills.size() else fills.max()) * 100)
 		State.COOLING:
-			return "Kühlt ab…"
+			return "Kühlt ab · %d s" % ceili(maxf(_cool_left, 0.0))
 		State.READY:
 			return "[F] Form zerschlagen (mit Hammer schneller)"
 	return ""
@@ -237,11 +237,12 @@ func _simulate(delta: float) -> void:
 			state = State.READY
 			_hits = 0
 			_broadcast_state()
+			_fx_all(&"ready", interact_point())
 	if Network.is_online() and (state == State.FILLING or state == State.COOLING):
 		_sync_accum += delta
 		if _sync_accum > 1.0 / 15.0:
 			_sync_accum = 0.0
-			_sync_fill.rpc(PackedFloat32Array(fills), metal_temperature, FoundryRules.alloy_for(cast_mix))
+			_sync_fill.rpc(PackedFloat32Array(fills), metal_temperature, FoundryRules.alloy_for(cast_mix), _cool_left)
 
 
 ## Hammer (or bare hands) hit on a ready mold. Host only.
@@ -258,22 +259,30 @@ func _break_open() -> void:
 	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
 	var alloy := FoundryRules.alloy_for(cast_mix)
 	_fx_all(&"sand_burst", interact_point())
+	var best := -1.0
+	var best_line := ""
+	var any_fail := false
+	var stamps := []
 	for i in patterns.size():
 		var fill := fills[i] if i < fills.size() else 0.0
 		var slot := to_global(_slot_position(i) + Vector3(0, 0.25, 0))
 		if fill < 0.3:
-			_popup_all(slot + Vector3(0, 0.6, 0), "Fehlguss!", Color("#ff6b5a"))
+			any_fail = true
+			stamps.append([slot + Vector3(0, 0.6, 0), "Fehlguss!", Color("#ff6b5a")])
 			continue
 		var q := FoundryRules.score(ram_quality, fill, defects)
 		var data := {type = "cast", code = patterns[i], alloy = alloy, quality = q, defects = defects.duplicate(),
 			temperature = 0.45, pos = slot, size = CAST_SIZE, thickness = CAST_THICKNESS}
 		var piece: CastPiece = world.spawn_entity(data) if world else null
 		if piece:
-			piece.apply_central_impulse(Vector3(randf_range(-0.6, 0.6), 3.2, randf_range(-0.6, 0.6)) * piece.mass)
+			piece.apply_central_impulse(Vector3(randf_range(-0.6, 0.6), 4.2, randf_range(-0.6, 0.6)) * piece.mass)
 			piece.apply_torque_impulse(Vector3(randf(), randf(), randf()) * 0.4 * piece.mass)
 			var g := FoundryRules.grade(q)
-			# Staggered so two grades never print over each other.
-			_popup_all(slot + Vector3(0, 0.8 + i * 0.4, 0), "%s!  %d $" % [g.name.to_upper(), piece.value()], g.color)
+			stamps.append([slot + Vector3(0, 0.7, 0), "%d $" % piece.value(), g.color])
+			if q > best:
+				best = q
+				best_line = "%s · %d $" % [Alloys.display_name(alloy), piece.value()]
+	_present_reveal(stamps, best, best_line, any_fail)
 	patterns.clear()
 	fills.clear()
 	needs.clear()
@@ -282,6 +291,21 @@ func _break_open() -> void:
 	metal_temperature = 0.0
 	state = State.EMPTY
 	_broadcast_state()
+
+
+## Value stamps one after another at each casting, then one banner for the best piece.
+func _present_reveal(stamps: Array, best: float, best_line: String, any_fail: bool) -> void:
+	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
+	if world == null:
+		return
+	for s in stamps:
+		world.popup_all(s[0], s[1], s[2])
+		await get_tree().create_timer(0.35).timeout
+	if best >= 0.0:
+		var g := FoundryRules.grade(best)
+		world.banner_near(interact_point(), "%s!" % g.name.to_upper(), g.color, best_line, best >= 0.35)
+	elif any_fail:
+		world.banner_near(interact_point(), "FEHLGUSS!", Color("#ff6b5a"), "Zu wenig Metall in der Form", false)
 
 
 # --- Visuals ------------------------------------------------------------------
@@ -375,7 +399,8 @@ func _sync_state(s: int, p: PackedStringArray, f: PackedFloat32Array, rams: int,
 
 
 @rpc("authority", "call_remote", "unreliable_ordered")
-func _sync_fill(f: PackedFloat32Array, temp: float, alloy: StringName) -> void:
+func _sync_fill(f: PackedFloat32Array, temp: float, alloy: StringName, cool_left: float) -> void:
+	_cool_left = cool_left
 	fills.assign(Array(f))
 	metal_temperature = temp
 	cast_mix = {alloy: 1.0}
@@ -409,9 +434,16 @@ func _fx(kind: StringName, pos: Vector3) -> void:
 			Sfx.play(&"sparks", pos, -6.0)
 		&"sand_burst":
 			FoundryFX.sand_burst(get_parent(), pos, BED.x)
+			_art.shatter()
 			Sfx.play(&"sand_burst", pos, 2.0)
 			Sfx.play(&"reveal_fanfare", pos, -2.0, 0.0)
 			Juice.reveal(pos)
+		&"ready":
+			# Cooled: a hiss of steam, a pop and a hop say "smash me now".
+			FoundryFX.steam_puff(get_parent(), pos, 0.6)
+			Sfx.play(&"steam_hiss", pos, -6.0)
+			Sfx.play(&"pop", pos, -2.0, 0.0)
+			_art.bump(false)
 		&"gong":
 			Sfx.play(&"statue_gong", pos, 0.0, 0.03)
 			Juice.shake_at(pos, 0.4)

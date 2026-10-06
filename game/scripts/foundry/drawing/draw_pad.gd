@@ -273,7 +273,7 @@ func _rebuild_preview() -> void:
 	_preview_dirty = false
 	var res := CastMeshBuilder.build(drawing, 0.6, 0.08)
 	_preview_mesh.mesh = res.mesh
-	_stats_label.text = "" if drawing.is_empty() else "Metallbedarf: %s l" % ("%.1f" % (res.volume * 1000.0)).replace(".", ",")
+	_stats_label.text = "" if drawing.is_empty() else metal_need_text(drawing)
 	if _preview_tween:
 		_preview_tween.kill()
 	if not drawing.is_empty():
@@ -558,12 +558,18 @@ class _Canvas:
 			queue_redraw()
 
 	func _draw() -> void:
-		draw_style_box(_paper, Rect2(Vector2.ZERO, size))
+		# The sheet sits slightly crooked under two strips of tape; only the paper is
+		# turned, the ink keeps the exact input mapping.
+		var centre := size * 0.5
+		draw_set_transform(centre, deg_to_rad(-1.2), Vector2.ONE)
+		draw_style_box(_paper, Rect2(-centre, size))
+		_draw_fibres(Rect2(-centre, size))
+		for side in [-1.0, 1.0]:
+			draw_set_transform(centre + Vector2(side * size.x * 0.36, -size.y * 0.5 + 6.0), deg_to_rad(side * 8.0 - 1.2), Vector2.ONE)
+			draw_rect(Rect2(Vector2(-58, -16), Vector2(116, 32)), Color("#e9dcc0", 0.82))
+			draw_rect(Rect2(Vector2(-58, -16), Vector2(116, 32)), Color("#cdbd98", 0.6), false, 1.5)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		var r := ink_rect()
-		var dot := UITheme.PAPER.darkened(0.09)
-		for i in range(1, 12):
-			for j in range(1, 12):
-				draw_circle(r.position + r.size * Vector2(i, j) / 12.0, 2.5, dot, true, -1.0, true)
 		var width := pad.brush * r.size.x
 		for s in pad.drawing.strokes:
 			_draw_ink(s, width, UITheme.INK)
@@ -573,6 +579,18 @@ class _Canvas:
 			draw_arc(c, width * 0.5, 0.0, TAU, 40, Color(UITheme.INK, 0.55), 2.5, true)
 			if pad._pad_device >= 0:
 				draw_circle(c, 4.0, UITheme.ACCENT_DARK, true, -1.0, true)
+
+	## Faint paper fibres and specks (fixed seed, so the sheet never flickers).
+	func _draw_fibres(r: Rect2) -> void:
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 4242
+		for i in 140:
+			var p := r.position + Vector2(rng.randf(), rng.randf()) * r.size
+			var d := Vector2.from_angle(rng.randf() * TAU) * rng.randf_range(4.0, 14.0)
+			draw_line(p, p + d, Color(UITheme.PAPER.darkened(rng.randf_range(0.05, 0.1)), 0.7), 1.0, true)
+		for i in 60:
+			var p := r.position + Vector2(rng.randf(), rng.randf()) * r.size
+			draw_circle(p, rng.randf_range(0.6, 1.4), Color(UITheme.PAPER.darkened(0.14), 0.6), true, -1.0, true)
 
 	func _draw_ink(points: PackedVector2Array, width: float, color: Color) -> void:
 		if points.is_empty():
@@ -585,3 +603,14 @@ class _Canvas:
 			draw_circle(pts[i], width * 0.5, color, true, -1.0, true)
 			if i > 0:
 				draw_line(pts[i - 1], pts[i], color, width, true)
+
+
+
+## How much melt the mold will need for this drawing, as a share of a crucible
+## (same size, thickness and litres-per-m³ the mold box uses).
+static func metal_need_text(drawing: Drawing) -> String:
+	var built := CastMeshBuilder.build(drawing, MoldBox.CAST_SIZE, MoldBox.CAST_THICKNESS)
+	var litres := maxf(0.15, float(built.get("volume", 0.0)) * MoldBox.LITRES_PER_M3)
+	var share := litres / Crucible.CAPACITY
+	var part := "¼" if share <= 0.3 else ("½" if share <= 0.6 else ("¾" if share <= 0.85 else "1"))
+	return "Metallbedarf: %s l (≈ %s Tiegel)" % [("%.1f" % litres).replace(".", ","), part]

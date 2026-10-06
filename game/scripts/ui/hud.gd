@@ -53,6 +53,9 @@ func _ready() -> void:
 	_root.add_child(_station_bubble)
 	_held_bubble = PromptBubble.new()
 	_root.add_child(_held_bubble)
+	var card := NextStepCard.new()
+	card.world = world
+	_root.add_child(card)
 	_banner_layer = _layer_control()
 	_fly_layer = _layer_control()
 	var pause_layer := CanvasLayer.new()
@@ -130,7 +133,7 @@ func _build_money() -> void:
 	_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.35))
 	_label.add_theme_constant_override("shadow_offset_y", 4)
 	_label.add_theme_constant_override("shadow_offset_x", 0)
-	_label.custom_minimum_size.x = 120
+	_label.custom_minimum_size.x = 0
 	_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	row.add_child(_label)
 	_delta = Label.new()
@@ -282,13 +285,14 @@ static func popup(parent: Node3D, pos: Vector3, text: String, color := UITheme.A
 	var l := Label3D.new()
 	l.text = text
 	l.font = UITheme.display_font()
-	l.font_size = 104
-	l.outline_size = 26
+	# Small enough to sit at the casting (cap height ≈ 4 % of the screen at play distance).
+	l.font_size = 64
+	l.outline_size = 18
 	l.modulate = color
 	l.outline_modulate = UITheme.INK
 	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	l.no_depth_test = true
-	l.pixel_size = 0.0032
+	l.pixel_size = 0.0022
 	l.render_priority = 10
 	l.outline_render_priority = 9
 	# Animated in _process by the tween: render where we put it.

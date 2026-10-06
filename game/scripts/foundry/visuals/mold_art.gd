@@ -11,6 +11,7 @@ extends Node3D
 ## or a shovel in a spare sand heap sits beside it. Visual only: MoldBox
 ## keeps its sand collider (top at BED.y) and gameplay.
 
+const _ClodSpray := preload("res://scripts/foundry/visuals/clod_spray.gd")
 const WALL := 0.08
 const RIM := 0.06
 ## Depth of an imprint below the sand top (cast thickness + a hair).
@@ -68,6 +69,22 @@ func set_cavities(signature: String, cavities: Array) -> void:
 	var tex := _edge_field(cavities)
 	_sand.set_shader_parameter(&"edge_field", tex)
 	_cavity.set_shader_parameter(&"edge_field", tex)
+
+
+## The mold breaks open: chunky sand clods fly out of the bed, bounce and sink
+## away, the sand top turns loose and broken and the flask jumps. Visual only.
+func shatter() -> void:
+	_hop_vel -= 3.5
+	_shake = 1.0
+	_params.loose = 1.0
+	_params.firm = 0.2
+	if _sand == null:
+		return
+	var clods := Node3D.new()
+	clods.set_script(_ClodSpray)
+	add_child(clods)
+	clods.call(&"spray", _bed, StationKit.surface("loose_sand", {base_color = Color("#c9a774"), macro = 0.12, grain = 0.12,
+		contact_dark = 0.15, roughness_base = 0.97, noise_scale = 3.0}))
 
 
 ## Juice: a ram squashes the flask and makes it hop; a hammer blow shakes it.
@@ -218,8 +235,8 @@ func _dressing(variant: int) -> void:
 	var wood := StationKit.wood("tool_handle", {base_color = Color("#a27a52"), grain_color = Color("#6b4b32"), weathering = 0.15})
 	var iron := StationKit.metal("tool_iron", {steel_color = Color("#454341"), rust = 0.5, dents = 0.2, metallic_steel = 0.6})
 	if variant % 2 == 0:
-		# Sand heap at the front-left corner with a shovel stuck in it.
-		var heap := Vector3(-hx - 0.32, 0.0, hz + 0.22)
+		# Sand heap at the back-left corner (clear of the pouring side) with a shovel in it.
+		var heap := Vector3(-hx - 0.32, 0.0, -hz - 0.1)
 		var dome := PackedVector2Array()
 		for i in 7:
 			var k := 1.0 - i / 6.0
