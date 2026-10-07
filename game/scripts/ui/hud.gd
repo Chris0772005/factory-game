@@ -258,7 +258,8 @@ func _next_banner() -> void:
 	b.subtitle = entry[2]
 	_banner_layer.add_child(b)
 	var vp := _root.get_viewport_rect().size
-	b.position = Vector2(vp.x * 0.5, vp.y * 0.3) - b.size * 0.5
+	# Upper fifth: above the heads of the crew at the mold, never over faces.
+	b.position = Vector2(vp.x * 0.5, vp.y * 0.19) - b.size * 0.5
 	b.finished.connect(_next_banner)
 	_banner = b
 	if not _banner_queue.is_empty():

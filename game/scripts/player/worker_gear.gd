@@ -106,9 +106,9 @@ static func _add_shell(st: SurfaceTool) -> void:
 ## Raised ribs over the crown from the front to the back – the signature of a
 ## hard hat: a tall centre ridge flanked by two lower, shorter ribs.
 static func _add_crest(st: SurfaceTool) -> void:
-	_add_rib(st, 0.0, 1.3, 0.1, 0.06)
+	_add_rib(st, 0.0, 1.3, 0.12, 0.042)
 	for side in [-1.0, 1.0]:
-		_add_rib(st, side * 0.17, 1.12, 0.055, 0.032)
+		_add_rib(st, side * 0.17, 1.12, 0.06, 0.024)
 
 
 ## One rib running front to back in the plane x = `offset` (shell space), over
