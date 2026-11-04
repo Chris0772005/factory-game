@@ -50,6 +50,7 @@ var mask: Image
 var detail: Image
 
 var _wear: Array = []
+var _island_noise: FastNoiseLite
 ## 1 m cell -> [[centre, radius], ...] of covered round footprints.
 var _cover_grid := {}
 var _w := 0
@@ -171,7 +172,7 @@ func _paint_mask() -> void:
 	for y in _h:
 		for x in _w:
 			var p := MASK_ORIGIN + (Vector2(x, y) + Vector2(0.5, 0.5)) / MASK_PPM
-			var v := _zones(p)
+			var v := _zones(p, walks)
 			var i := y * _w + x
 			for c in 4:
 				_ch[c][i] = v[c]
@@ -240,7 +241,7 @@ func _details(p: Vector2, dirt: float, walks: Array) -> Array:
 
 
 ## Zone weights at a world point: [dirt, gravel, soot, sand].
-func _zones(p: Vector2) -> Array:
+func _zones(p: Vector2, walks: Array) -> Array:
 	# Worn work area with soft, wide borders (the shader breaks them up).
 	var q := (p - WORK_CENTER).abs() - WORK_HALF + Vector2(WORK_CORNER, WORK_CORNER)
 	var sd := Vector2(maxf(q.x, 0.0), maxf(q.y, 0.0)).length() + minf(maxf(q.x, q.y), 0.0) - WORK_CORNER
@@ -249,6 +250,10 @@ func _zones(p: Vector2) -> Array:
 	dirt = maxf(dirt, _capsule(p, Vector2(6.0, 1.6), Vector2(YARD_MAX.x + 0.5, GATE_Z), 0.75))
 	dirt = maxf(dirt, _capsule(p, Vector2(-6.8, -4.2), Vector2(SHED_CENTER.x + SHED_SIZE.x * 0.5, SHED_CENTER.y + 0.3), 0.7))
 	dirt = maxf(dirt, 0.45 * _disc(p, SPAWN_CENTER + Vector2(0.0, -0.4), 1.3))
+	# Turf survives in islands where nobody walks: away from the walkways and
+	# the stations, so the work area is not one flat brown slab.
+	if dirt > 0.2:
+		dirt *= 1.0 - 0.9 * _grass_island(p, walks)
 	for k in _wear:
 		dirt = maxf(dirt, 0.8 * _disc(p, k[0], k[1] * 0.55))
 	# Gravel drip strip along the house and the stone landing at the back door.
@@ -264,6 +269,27 @@ func _zones(p: Vector2) -> Array:
 	if molds.size() >= 2:
 		sand = maxf(sand, 0.6 * _capsule(p, molds[0], molds[1], 0.9))
 	return [dirt, gravel, soot, sand]
+
+
+## 0..1: how much a surviving patch of lawn covers `p` (noise blobs, kept
+## clear of walkways, stations and the spawn).
+func _grass_island(p: Vector2, walks: Array) -> float:
+	if _island_noise == null:
+		_island_noise = FastNoiseLite.new()
+		_island_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+		_island_noise.seed = 7
+		_island_noise.frequency = 0.38
+		_island_noise.fractal_octaves = 2
+	var island := smoothstep(0.18, 0.42, _island_noise.get_noise_2dv(p))
+	if island <= 0.0:
+		return 0.0
+	var clear := 1.0
+	for w in walks:
+		clear = minf(clear, 1.0 - _capsule(p, w[0], w[1], float(w[2]) + 0.9))
+	for s in station_spots:
+		clear = minf(clear, 1.0 - _disc(p, s[0], float(s[1]) * 1.35))
+	clear = minf(clear, 1.0 - _disc(p, SPAWN_CENTER, 2.6))
+	return island * clear
 
 
 ## 1 inside the disc, fading to 0 over the outer 40 %.

@@ -68,6 +68,9 @@ void fragment() {
 	vec3 dirt = mix(dirt_mid.rgb, dirt_light.rgb, smoothstep(0.42, 0.72, dry));
 	dirt = mix(dirt, dirt_dark.rgb, smoothstep(0.56, 0.8, env_fbm(xz * 0.35 + 23.0)) * 0.55);
 	dirt *= 1.0 + grain * 0.2 + n_fine * 0.1;
+	// Macro value variation (~1.5 m blobs, +-10 %) so the work area never reads
+	// as one flat slab from the high camera.
+	dirt *= 1.0 + (env_fbm(xz * 0.67 + 51.0) - 0.5) * 0.2;
 	float d = smoothstep(0.38, 0.62, z.r + n_edge * 0.55 + n_fine * 0.15);
 	float g = smoothstep(0.4, 0.6, z.g + n_edge * 0.35 + n_fine * 0.1);
 	vec4 dm = details(xz + warp * 0.4);

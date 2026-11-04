@@ -19,6 +19,10 @@ const DEPTH := 0.072
 ## Edge distance field over the bed: pixels per metre and range (m).
 const FIELD_PPM := 100.0
 const FIELD_RANGE := 0.1
+## Riser cup: inner radius and rim/bottom heights relative to the bed top.
+const RISER_R := 0.05
+const RISER_TOP := 0.06
+const RISER_BOTTOM := -0.04
 
 ## Everything that hops with the flask (castings go in here too).
 var root: Node3D
@@ -34,6 +38,9 @@ var _hop_vel := 0.0
 var _shake := 0.0
 var _burn := 0.0
 var _params := {firm = 0.45, rake = 1.0, loose = 0.0, stamps = 0.0}
+var _riser_metal: MeshInstance3D
+var _riser_mat: ShaderMaterial
+var _overflow_cd := 0.0
 
 
 func build(bed: Vector3, variant: int) -> void:
@@ -50,6 +57,7 @@ func build(bed: Vector3, variant: int) -> void:
 	_flask(variant)
 	_sand_top = StationKit.add(root, _top_mesh([]), _sand)
 	_dressing(variant)
+	_riser()
 
 
 ## Rebuilds the sand surface around `cavities`: Array of [slot centre
@@ -85,6 +93,58 @@ func shatter() -> void:
 	add_child(clods)
 	clods.call(&"spray", _bed, StationKit.surface("loose_sand", {base_color = Color("#c9a774"), macro = 0.12, grain = 0.12,
 		contact_dark = 0.15, roughness_base = 0.97, noise_scale = 3.0}))
+
+
+## Riser cup at the front-right corner of the bed: a collar of rammed sand
+## whose glowing metal rises with the fill, so everyone around the mold reads
+## "how full" at a glance; it spills over with sparks when the mold is full.
+func _riser() -> void:
+	var pos := riser_position(_bed)
+	var collar := PackedVector2Array([Vector2(RISER_R + 0.035, -0.002), Vector2(RISER_R + 0.03, 0.03),
+		Vector2(RISER_R + 0.012, RISER_TOP), Vector2(RISER_R, RISER_TOP - 0.004), Vector2(RISER_R, RISER_BOTTOM),
+		Vector2(0.0, RISER_BOTTOM)])
+	StationKit.add(root, StationKit.lathe(collar, 20, 35.0), StationKit.surface("riser_sand", {base_color = Color("#b48d5c"),
+		macro = 0.1, grain = 0.16, contact_dark = 0.3, roughness_base = 0.96, noise_scale = 6.0}), Transform3D(Basis(), pos))
+	_riser_metal = MeshInstance3D.new()
+	var disc := CylinderMesh.new()
+	disc.top_radius = RISER_R - 0.002
+	disc.bottom_radius = RISER_R - 0.002
+	disc.height = 0.012
+	disc.radial_segments = 16
+	_riser_metal.mesh = disc
+	_riser_mat = MetalMaterial.create(&"alu")
+	_riser_mat.set_shader_parameter(&"glow_scale", 1.7)
+	_riser_metal.material_override = _riser_mat
+	_riser_metal.position = pos
+	_riser_metal.visible = false
+	root.add_child(_riser_metal)
+
+
+## Local position of the riser cup's base on the bed (clear of every cavity layout).
+static func riser_position(bed: Vector3) -> Vector3:
+	return Vector3(bed.x * 0.5 - 0.085, bed.y, bed.z * 0.5 - 0.095)
+
+
+## Alloy shown in the riser (as in the cavities).
+func set_riser_alloy(alloy: StringName) -> void:
+	if _riser_mat and _riser_mat.get_meta(&"alloy", &"") != alloy:
+		_riser_mat.set_meta(&"alloy", alloy)
+		MetalMaterial.set_alloy(_riser_mat, alloy)
+
+
+func _update_riser(delta: float, state: int, fill: float, temperature: float) -> void:
+	if _riser_metal == null:
+		return
+	var poured := state >= MoldBox.State.FILLING and fill > 0.01
+	_riser_metal.visible = poured
+	if not poured:
+		return
+	_riser_metal.position.y = _bed.y + lerpf(RISER_BOTTOM + 0.008, RISER_TOP - 0.004, clampf(fill, 0.0, 1.0))
+	MetalMaterial.set_temperature(_riser_mat, clampf(temperature, 0.0, 1.0))
+	_overflow_cd -= delta
+	if state == MoldBox.State.FILLING and fill >= 0.98 and _overflow_cd <= 0.0:
+		_overflow_cd = 0.35
+		FoundryFX.sparks(self, root.global_transform * (riser_position(_bed) + Vector3(0, RISER_TOP, 0)), 8)
 
 
 ## Juice: a ram squashes the flask and makes it hop; a hammer blow shakes it.
@@ -129,6 +189,7 @@ func update(delta: float, state: int, rams: int, fill: float, temperature: float
 	for m in [_sand, _cavity]:
 		m.set_shader_parameter(&"burn", _burn)
 		m.set_shader_parameter(&"glow", glow)
+	_update_riser(delta, state, fill, temperature)
 
 
 ## Imprint outlines of `drawing` as a cast of `size`: Array of shapes, each an

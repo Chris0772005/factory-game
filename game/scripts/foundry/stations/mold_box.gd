@@ -371,6 +371,7 @@ func _update_visuals() -> void:
 		_cavity_sig = sig
 		_rebuild_cavities()
 	var alloy := FoundryRules.alloy_for(cast_mix)
+	_art.set_riser_alloy(alloy)
 	for i in _metals.size():
 		var fill := fills[i] if i < fills.size() else 0.0
 		var metal := _metals[i]

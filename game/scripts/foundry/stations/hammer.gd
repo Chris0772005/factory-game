@@ -66,18 +66,37 @@ func on_released(by: Node) -> void:
 		axis_lock_angular_z = false
 
 
-func held_hint(_player: Node) -> String:
-	return "[F] Zuschlagen"
+## What a swing would do right now: only a cooled, full mold breaks open.
+func held_hint(player: Node) -> String:
+	var mold := _target(player)
+	if mold == null:
+		return "[F] Zuschlagen"
+	match mold.state:
+		MoldBox.State.READY:
+			return "[F] Zuschlagen – Form aufbrechen!"
+		MoldBox.State.COOLING:
+			return "Noch zu heiß – abkühlen lassen"
+		MoldBox.State.RAMMED, MoldBox.State.FILLING:
+			return "Erst Metall gießen"
+		_:
+			return "Form ist leer"
+
+
+## The mold in front of the carrier, else the nearest one within reach.
+func _target(player: Node) -> MoldBox:
+	var body := player as Node3D
+	var target := MoldBox.find_at(get_tree(), body.global_position + body.global_transform.basis.z * 1.0)
+	if target == null:
+		for node in get_tree().get_nodes_in_group(&"molds"):
+			if (node as Node3D).global_position.distance_to(body.global_position) < REACH:
+				target = node
+	return target
 
 
 func use_start(player: Node) -> void:
 	_swing = 1.0
 	Sfx.play(&"pickup", global_position, -8.0)
-	var target := MoldBox.find_at(get_tree(), (player as Node3D).global_position + (player as Node3D).global_transform.basis.z * 1.0)
-	if target == null:
-		for node in get_tree().get_nodes_in_group(&"molds"):
-			if (node as Node3D).global_position.distance_to((player as Node3D).global_position) < REACH:
-				target = node
+	var target := _target(player)
 	if target:
 		target.hit(true)
 	if Network.is_online():
