@@ -84,7 +84,7 @@ func _sync_money(amount: int) -> void:
 
 
 func _on_session_started() -> void:
-	if attract_mode:
+	if attract_mode or not is_inside_tree():
 		return
 	if multiplayer.is_server():
 		# Offline player (if any) becomes the host's player.
@@ -101,7 +101,7 @@ func _on_peer_joined(_id: int) -> void:
 
 ## A client has its world loaded: give it a worker, or send it to our level first.
 func _on_peer_ready(id: int, level: String) -> void:
-	if attract_mode or not multiplayer.is_server():
+	if attract_mode or not is_inside_tree() or not multiplayer.is_server():
 		return
 	if level != level_path():
 		Network.send_travel(id, level_path())
@@ -125,6 +125,9 @@ func travel_to(path: String) -> void:
 
 
 func _on_peer_left(id: int) -> void:
+	# A world on its way out (level change) no longer has a multiplayer API.
+	if not is_inside_tree():
+		return
 	if not attract_mode and multiplayer.is_server() and entities.has_node(str(id)):
 		var p: Player = entities.get_node(str(id))
 		p.release()
