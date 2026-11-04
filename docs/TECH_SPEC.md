@@ -50,3 +50,29 @@ class_name FoundryFX                     # static sand_burst(parent, pos, size),
 
 Ofen (Schrott rein, Blasebalg), Tiegel (tragbar, Inhalt + Temperatur, Gießen), Formkasten (Kavitäten, Stampfen,
 Füllen, Abkühlen, Zerschlagen), Hammer, Modellbank (öffnet DrawPad), Verkaufskiste, `CastPiece` (Item mit Zeichnungs-Code, Legierung, Note).
+
+## Modul F – Hallen & Levelwechsel (`game/scripts/levels/`, `net/network.gd`)
+
+- `FoundryLevel extends GameWorld`: gemeinsame Basis von Hinterhof und Garage (Gieß-Entities, Upgrades, Spielstand,
+  Hallen-Freischaltung). Ein Level überschreibt `build_stations()`, optional `spawn_items()`, `hammer_spot()`,
+  `spawn_position(i)`, `respawn_point()`, `upgrade_tier()`.
+- Freischalten: Upgrade mit `unlock = true` → `FoundryLevel.on_unlock(id)` → Banner für alle → nach 3,5 s
+  `travel_to(path)` (speichert `level` in `SaveGame`, „Solo“/„Hosten“ setzen dort fort).
+- Koop-Beitritt: **erst Szene laden, dann verbinden** (`Network.join_after_load` → `GameWorld._ready` →
+  `Network.connect_pending`). Der Client meldet sein Level (`Network.announce_level` → Host-Signal `peer_ready`);
+  der Host gibt ihm erst dann einen Arbeiter oder schickt ihn ins richtige Level (`send_travel`).
+- Levelwechsel: `Network.travel(path)` – Clients tauschen den Peer unter dem Iris-Cover aus, laden das Level und
+  verbinden neu (gleicher Weg wie ein frischer Beitritt). Test: `tests/test_net_travel.tscn`.
+
+## Modul G – Garage (`levels/garage.gd`, `environment/garage_set.gd`, `garage_lighting.gd`)
+
+- Puppenhaus-Ansicht: Front offen, Dach und Türsturz nur als Schattenwerfer, Wände mit `env_cutaway`
+  (globaler Shader-Parameter `cutaway_target`, gesetzt von `CameraRig`; Wände sind `camera_passthrough`).
+- Boden `env_concrete.gdshader` (Fugen, Flecken-Array aus dem Stations-Layout, Parkbucht-Linie, Einfahrt-Pflaster).
+  Achtung lavapipe: in Shader-Schleifen keine teuren Noise-Aufrufe und Uniform-Arrays immer in voller Länge setzen.
+- Stationen neu: `QuenchTrough` + `WaterBucket` (Abschrecken: `MoldBox.quench()`, Rissrisiko = Anteil verbleibender
+  Abkühlzeit × 0,85, Defekt `crack`), `CrateDelivery` + `SealedCrate` (`FoundryRules.CRATES`, Mischung schmilzt als
+  eine Charge), `OrderBoard` (Aufträge, Bonus beim Verkauf über `SellCrate`; erste Karte = Bronzefreund-Auftrag),
+  HUD `OrdersPanel`. Formkästen kühlen 14 s (`MoldBox.cool_time`).
+- Upgrades Stufe 1 (`Upgrades.CATALOG`, `tier = 1`): Gießbaum, Härteöl, Elektrogebläse, Stammkunde.
+- Test: `tests/test_garage.tscn`; Bilder: `scenes/garage_showcase.tscn -- --cam=wide|quench`.

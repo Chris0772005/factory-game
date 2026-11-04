@@ -293,6 +293,8 @@ func quench() -> bool:
 	state = State.READY
 	_cool_left = 0.0
 	_hits = 0
+	# The glow dies at once: the visible half of the "zisch".
+	metal_temperature = minf(metal_temperature, 0.12)
 	_broadcast_state()
 	_fx_all(&"explode" if exploding else &"quench", interact_point())
 	var above := interact_point() + Vector3(0, 1.1, 0)
@@ -513,9 +515,11 @@ func _fx(kind: StringName, pos: Vector3) -> void:
 			Sfx.play(&"statue_gong", pos, 0.0, 0.03)
 			Juice.shake_at(pos, 0.4)
 		&"quench":
-			# Water on hot sand: a tower of steam, a long hiss, the flask jumps.
-			for k in 3:
-				FoundryFX.steam_puff(get_parent(), pos + Vector3(randf_range(-0.5, 0.5), 0.05, randf_range(-0.3, 0.3)), 2.2)
+			# Water on hot sand: a tower of steam over the whole bed (and a second
+			# wave a moment later), a long hiss, the flask jumps.
+			metal_temperature = minf(metal_temperature, 0.12)
+			_steam_wave(pos, 6, 3.0)
+			get_tree().create_timer(0.22).timeout.connect(_steam_wave.bind(pos, 4, 2.4))
 			Sfx.play(&"steam_blast", pos, 0.0, 0.05)
 			_art.bump(true)
 			Juice.impact(pos, 0.45, 0.05)
@@ -530,6 +534,14 @@ func _fx(kind: StringName, pos: Vector3) -> void:
 		&"splash":
 			FoundryFX.steam_puff(get_parent(), pos, 0.3)
 			Sfx.play(&"water_splash", pos, -6.0)
+
+
+func _steam_wave(pos: Vector3, puffs: int, strength: float) -> void:
+	if not is_inside_tree():
+		return
+	for k in puffs:
+		var at := pos + Vector3(randf_range(-BED.x * 0.4, BED.x * 0.4), 0.05, randf_range(-BED.z * 0.35, BED.z * 0.35))
+		FoundryFX.steam_puff(get_parent(), at, strength * randf_range(0.8, 1.15))
 
 
 func _popup_all(pos: Vector3, text: String, color: Color) -> void:
