@@ -19,8 +19,13 @@ var _shown := ""
 func _ready() -> void:
 	theme_type_variation = &"HudPill"
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Offsets from the top-right corner (setting `position` would be relative to
+	# the HUD's size at creation and can land off-screen).
 	set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	position = Vector2(-460, 36)
+	offset_left = -460
+	offset_right = -40
+	offset_top = 36
+	grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	custom_minimum_size = Vector2(420, 0)
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 2)
