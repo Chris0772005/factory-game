@@ -17,6 +17,33 @@ const SCRAP := {
 	&"scrap_ring": {metal = &"gold", amount = 0.1, name = "Omas Ring", color = Color("#ffcf3f"), size = Vector3(0.09, 0.03, 0.09)},
 }
 
+## Sealed crates (garage): unknown mixes, revealed only by the casting.
+## weight = relative chance; mix = metal -> litres.
+const CRATES := {
+	&"cable": {name = "Kupferkabel", weight = 30, mix = {&"copper": 1.3}},
+	&"fittings": {name = "Messingbeschläge", weight = 28, mix = {&"zinc_brass": 0.9, &"copper": 0.4}},
+	&"roof": {name = "Kirchendach-Kupfer", weight = 18, mix = {&"patina_copper": 1.2, &"copper": 0.2}},
+	&"watchmaker": {name = "Uhrmacher-Nachlass", weight = 14, mix = {&"copper": 0.8, &"zinc_brass": 0.3, &"gold": 0.15}},
+	&"jewellery": {name = "Omas Schmuckkästchen", weight = 3, mix = {&"gold": 0.5, &"copper": 0.2}},
+	&"hubcaps": {name = "Alte Radkappen", weight = 7, mix = {&"alu": 1.4}},
+}
+## Price of one sealed crate.
+const CRATE_PRICE := 30
+
+
+## Random crate contents id (weights above).
+static func roll_crate() -> StringName:
+	var total := 0
+	for k in CRATES:
+		total += int(CRATES[k].weight)
+	var r := randi() % total
+	for k in CRATES:
+		r -= int(CRATES[k].weight)
+		if r < 0:
+			return k
+	return &"cable"
+
+
 ## Base price per square metre of relief before alloy and grade multipliers.
 const PRICE_PER_M2 := 420.0
 
@@ -60,10 +87,12 @@ static func alloy_for(mix: Dictionary) -> StringName:
 		return &"alu"
 	var share := func(k): return mix.get(k, 0.0) / total
 	var gold: float = share.call(&"gold")
-	var copper: float = share.call(&"copper")
+	var copper: float = share.call(&"copper") + share.call(&"patina_copper")
 	var zinc: float = share.call(&"zinc_brass")
 	if gold >= 0.3:
 		return &"gold"
+	if share.call(&"patina_copper") >= 0.4:
+		return &"verdigris"
 	if gold >= 0.06 and copper + zinc >= 0.3:
 		return &"rotgold"
 	if copper + zinc >= 0.5:

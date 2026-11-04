@@ -81,12 +81,54 @@ func _run() -> void:
 		thickness = 0.07})
 	await _frames(90)
 	_check(hot.temperature == 0.0, "hot casting quenched in the trough (temp %.2f)" % hot.temperature)
+
+	# Sealed crates: too poor first, then buy one and melt it.
+	var delivery: CrateDelivery = _first(CrateDelivery)
+	_check(delivery != null, "crate delivery is there")
+	if delivery:
+		world.money = 10
+		me.global_position = delivery.global_position + Vector3(-1.0, 0.1, 0)
+		delivery.interact(me)
+		await _frames(5)
+		_check(me.held == null and world.money == 10, "no crate without the money")
+		world.money = 100
+		delivery.interact(me)
+		await _frames(5)
+		var crate := me.held as SealedCrate
+		_check(crate != null and world.money == 100 - FoundryRules.CRATE_PRICE, "bought a sealed crate (%d $ left)" % world.money)
+		_check(crate != null and FoundryRules.CRATES.has(crate.contents), "crate has rolled contents")
+		var furnace: Furnace = _first(Furnace)
+		var crucible: Crucible = get_tree().get_first_node_in_group(&"crucibles")
+		if crate and furnace and crucible:
+			var expect := 0.0
+			for k in crate.melt_mix():
+				expect += crate.melt_mix()[k]
+			var before := crucible.amount
+			me.release()
+			crate.global_position = furnace.global_position + Vector3(0, 1.0, 0)
+			crate.linear_velocity = Vector3.ZERO
+			await _frames(30)
+			_check(not is_instance_valid(crate) or crate.is_queued_for_deletion(), "furnace swallowed the crate")
+			for i in 60:
+				furnace.interact(me)
+				await _frames(6)
+			_check(absf(crucible.amount - before - expect) < 0.05, "crate melts into the crucible (+%.2f l of %.2f)" % [crucible.amount - before, expect])
+	# The verdigris roof copper makes Grünspan.
+	_check(FoundryRules.alloy_for(FoundryRules.CRATES[&"roof"].mix) == &"verdigris", "church-roof copper casts as Grünspan")
+	_check(FoundryRules.alloy_for(FoundryRules.CRATES[&"watchmaker"].mix) == &"rotgold", "watchmaker's estate casts as Rotgold")
 	_finish()
 
 
 func _finish() -> void:
 	print("GARAGE TESTS %s (%d failures)" % ["PASSED" if _failures == 0 else "FAILED", _failures])
 	get_tree().quit(1 if _failures else 0)
+
+
+func _first(type: Variant) -> Node:
+	for n in world.get_children():
+		if is_instance_of(n, type):
+			return n
+	return null
 
 
 func _count(type: Variant) -> int:

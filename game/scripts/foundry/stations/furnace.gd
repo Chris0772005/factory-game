@@ -11,7 +11,8 @@ const MELT_TIME := 1.6          ## seconds per scrap piece at full heat
 
 var heat := 0.0
 var crucible: Crucible = null
-var charge: Array[StringName] = []
+## Waiting to melt: scrap kinds (StringName) or whole mixes (Dictionary, sealed crates).
+var charge: Array = []
 var _melt_progress := 0.0
 var _fire: FurnaceFire
 var _bellows: Node3D
@@ -161,11 +162,17 @@ func _take_scrap() -> void:
 		return
 	for node in world.entities.get_children():
 		var item := node as Item
-		if item == null or not FoundryRules.SCRAP.has(item.kind) or item.is_held():
+		if item == null or item.is_held():
+			continue
+		var mixed := item.has_method(&"melt_mix")
+		if not mixed and not FoundryRules.SCRAP.has(item.kind):
 			continue
 		var p := item.global_position - global_position
-		if Vector2(p.x, p.z).length() < MOUTH_RADIUS and p.y < HEIGHT + 0.3 and p.y > 0.0:
-			charge.append(item.kind)
+		if Vector2(p.x, p.z).length() < MOUTH_RADIUS and p.y < HEIGHT + 0.4 and p.y > 0.0:
+			# A sealed crate brings a whole mix (Dictionary), scrap its kind.
+			charge.append(item.melt_mix() if mixed else item.kind)
+			if mixed and item.has_method(&"on_melted"):
+				item.on_melted(self)
 			FoundryFX.sparks(self, global_position + Vector3(0, HEIGHT, 0), 8)
 			Sfx.play(&"scrap_clatter", global_position + Vector3(0, HEIGHT, 0))
 			item.queue_free()
@@ -179,5 +186,10 @@ func _melt(delta: float) -> void:
 	_melt_progress += delta * heat / MELT_TIME
 	if _melt_progress >= 1.0:
 		_melt_progress = 0.0
-		var scrap: Dictionary = FoundryRules.SCRAP[charge.pop_front()]
-		crucible.add_melt(scrap.metal, scrap.amount)
+		var next: Variant = charge.pop_front()
+		if next is Dictionary:
+			for metal in next:
+				crucible.add_melt(metal, next[metal])
+		else:
+			var scrap: Dictionary = FoundryRules.SCRAP[next]
+			crucible.add_melt(scrap.metal, scrap.amount)

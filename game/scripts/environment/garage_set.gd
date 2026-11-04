@@ -211,14 +211,9 @@ func _dressing() -> void:
 	_shelving(Vector3(-4.55, 0.0, INNER_MIN.y + 0.28))
 	_pegboard(Vector3(-1.6, 1.55, INNER_MIN.y + 0.02))
 	prop("kaykit_furniture/cabinet_medium.gltf", Vector3(5.35, 0, -2.0), -90.0, {tint = Color("#8f9ca0"), desaturate = 0.4})
-	# Right wall: barrels, a pallet with sacks of moulding sand, a broom.
+	# Right wall: barrels and a broom (the crate delivery is a station).
 	prop("kaykit_prototype/Barrel_A.gltf", Vector3(5.3, 0.4, -3.9), 15.0, {solid = P.CYLINDER, tint = Color("#3f5f8a"), desaturate = 0.3})
 	prop("kaykit_prototype/Barrel_B.gltf", Vector3(5.45, 0.4, -3.1), -30.0, {solid = P.CYLINDER, tint = Color("#8a4b2e"), desaturate = 0.3})
-	prop("kaykit_hexagon/pallet.gltf", Vector3(5.2, 0, 1.6), 90.0, {scale = 0.95, solid = P.NONE})
-	for i in 3:
-		prop("kaykit_hexagon/sack.gltf", Vector3(5.0 + (i % 2) * 0.35, 0.3 + (i / 2) * 0.22, 1.3 + i * 0.3), 80.0 + i * 30.0,
-			{scale = 0.9, solid = P.NONE, tint = Color("#d8c6a4")})
-	WorldBuilder.add_collider(self, Vector3(1.2, 0.8, 1.2), Transform3D(Basis(), Vector3(5.2, 0.4, 1.6)))
 	_broom(Vector3(5.85, 0, 3.2))
 	# A wheelbarrow by the scrap and an extension cable across the floor.
 	prop("kaykit_hexagon/wheelbarrow.gltf", Vector3(-2.7, 0, -4.0), 75.0, {scale = 0.85})

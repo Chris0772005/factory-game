@@ -28,13 +28,18 @@ func build_stations() -> void:
 		# Bigger pour trees hold their heat: wait, or quench (and risk cracks).
 		mold.cool_time = COOL_TIME
 		add_child(mold)
+	var crates := CrateDelivery.new()
+	crates.position = Vector3(4.85, 0, 3.35)
+	crates.rotation.y = -0.35
+	add_child(crates)
 	var trough := QuenchTrough.new()
 	trough.position = Vector3(4.0, 0, 1.0)
 	trough.rotation.y = PI * 0.5
 	add_child(trough)
 	var crate := SellCrate.new()
-	crate.position = Vector3(4.6, 0, 3.4)
-	crate.rotation.y = -0.5
+	# Pickup is out on the driveway, in the evening sun.
+	crate.position = Vector3(3.7, 0, 5.5)
+	crate.rotation.y = 0.25
 	add_child(crate)
 	var board := UpgradeBoard.new()
 	board.position = Vector3(5.65, 0, -0.5)
@@ -46,6 +51,7 @@ func build_stations() -> void:
 
 func build_level() -> void:
 	register_entity("bucket", WaterBucket.create_bucket)
+	register_entity("sealed_crate", SealedCrate.create_crate)
 	super()
 
 
