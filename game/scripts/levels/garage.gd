@@ -32,6 +32,10 @@ func build_stations() -> void:
 	crates.position = Vector3(4.85, 0, 3.35)
 	crates.rotation.y = -0.35
 	add_child(crates)
+	var orders := OrderBoard.new()
+	orders.position = Vector3(5.99, 0, -2.35)
+	orders.rotation.y = -PI * 0.5
+	add_child(orders)
 	var trough := QuenchTrough.new()
 	trough.position = Vector3(4.0, 0, 1.0)
 	trough.rotation.y = PI * 0.5
@@ -60,6 +64,10 @@ func spawn_items() -> void:
 	var trough := find_station(QuenchTrough) as Node3D
 	if trough:
 		spawn_entity({type = "bucket", pos = trough.global_position + Vector3(-0.2, 0.05, 1.0)})
+
+
+func upgrade_tier() -> int:
+	return 1
 
 
 func hammer_spot() -> Vector3:

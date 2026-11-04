@@ -113,6 +113,24 @@ func _run() -> void:
 				furnace.interact(me)
 				await _frames(6)
 			_check(absf(crucible.amount - before - expect) < 0.05, "crate melts into the crucible (+%.2f l of %.2f)" % [crucible.amount - before, expect])
+	# Orders: the first card is the Bronzefreund order; a statue in the sell
+	# crate pays its bonus on top, and the slot refills later.
+	var board: OrderBoard = get_tree().get_first_node_in_group(&"order_boards")
+	var sell: SellCrate = _first(SellCrate)
+	_check(board != null and board.slots[0] == &"bronze_buddy", "first order is the Bronzefreund order")
+	if board and sell:
+		var money_before := world.money
+		var statue: Node3D = world.spawn_entity({type = "statue", pos = sell.global_position + Vector3(0, 0.9, 0), yaw = 0.0,
+			pose = PlayerModel.panic_pose(), alloy = &"bronze"})
+		var base_value: int = statue.value()
+		await _frames(60)
+		_check(world.money == money_before + base_value + 350, "statue sold with the order bonus (+%d $)" % (world.money - money_before))
+		_check(board.slots[0] == &"", "fulfilled order leaves its slot")
+		# Garage upgrades: tier 1 on sale here, the gate tree adds a cavity.
+	_check(world.upgrade_tier() == 1, "garage sells tier-1 upgrades")
+	var cav := (molds[1] as MoldBox).cavities()
+	world.upgrades.load_save(["gate_tree"])
+	_check((molds[1] as MoldBox).cavities() == cav + 1, "Gießbaum adds a cavity (%d -> %d)" % [cav, (molds[1] as MoldBox).cavities()])
 	# The verdigris roof copper makes Grünspan.
 	_check(FoundryRules.alloy_for(FoundryRules.CRATES[&"roof"].mix) == &"verdigris", "church-roof copper casts as Grünspan")
 	_check(FoundryRules.alloy_for(FoundryRules.CRATES[&"watchmaker"].mix) == &"rotgold", "watchmaker's estate casts as Rotgold")

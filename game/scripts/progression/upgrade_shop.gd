@@ -59,7 +59,7 @@ func _refresh() -> void:
 	_money.text = "%s $" % HUD._format(world.money)
 	for c in _list.get_children():
 		c.queue_free()
-	for u in Upgrades.CATALOG:
+	for u in Upgrades.catalog_for(world.upgrade_tier()):
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 16)
 		var text := VBoxContainer.new()

@@ -2,7 +2,7 @@ class_name BoardArt
 extends Node3D
 ## Look of the upgrade pinboard: a village notice board (two timber posts, a
 ## little shingled gable roof, a painted "KATALOG" header plank) with a cork
-## panel full of pinned cards, one per upgrade from Upgrades.CATALOG
+## panel full of pinned cards, one per upgrade of the level's tier (Upgrades.CATALOG)
 ## (handwritten name, note and price), plus a photo, a blueprint and a red
 ## string between two cards. Bought upgrades get a "GEKAUFT" stamp
 ## (`set_owned`). The cards flutter in the breeze. Visual only: UpgradeBoard
@@ -78,8 +78,12 @@ func _cards(rng: RandomNumberGenerator) -> void:
 	var pin_points: Array[Vector3] = []
 	var cols := 3
 	var hand := StationKit.hand_font()
-	for i in Upgrades.CATALOG.size():
-		var u: Dictionary = Upgrades.CATALOG[i]
+	# The board pins the cards of this hall's tier (the shop lists all tiers up to it).
+	var world := get_tree().get_first_node_in_group(&"world") as GameWorld if is_inside_tree() else null
+	var tier := world.upgrade_tier() if world else 0
+	var entries := Upgrades.CATALOG.filter(func(e: Dictionary) -> bool: return int(e.get("tier", 0)) == tier)
+	for i in entries.size():
+		var u: Dictionary = entries[i]
 		var col := i % cols
 		var row := i / cols
 		var at := Vector3(-0.42 + col * 0.42 + rng.randf_range(-0.03, 0.03), CORK_Y + 0.2 - row * 0.4 + rng.randf_range(-0.02, 0.02), 0.022)

@@ -23,7 +23,7 @@ func _ready() -> void:
 		add_child(crate)
 		crate.collision_layer = 0
 		crate.collision_mask = 0
-	StationKit.label(self, "WERTSTOFFHOF-KISTEN · %d $" % FoundryRules.CRATE_PRICE,
+	StationKit.label(self, "WERTSTOFFHOF-KISTEN",
 		Transform3D(Basis(), Vector3(0, 0.2, 0.62)), 64, Color("#f0e2c4"), 800, 0.0012)
 
 
@@ -32,7 +32,8 @@ func interact_point() -> Vector3:
 
 
 func hint(_player: Node) -> String:
-	return "[F] Versiegelte Kiste kaufen · %d $ (Inhalt: Überraschung)" % FoundryRules.CRATE_PRICE
+	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
+	return "[F] Versiegelte Kiste kaufen · %d $ (Inhalt: Überraschung)" % FoundryRules.crate_price(world)
 
 
 func interact(player: Node) -> void:
@@ -40,10 +41,11 @@ func interact(player: Node) -> void:
 	if world == null or not Network.is_sim_authority():
 		return
 	var p := player as Player
-	if world.money < FoundryRules.CRATE_PRICE:
+	var price := FoundryRules.crate_price(world)
+	if world.money < price:
 		world.popup_all(interact_point() + Vector3(0, 0.8, 0), "Zu wenig Geld", Color("#ff6b5a"))
 		return
-	world.add_money(-FoundryRules.CRATE_PRICE)
+	world.add_money(-price)
 	var crate: Node = world.spawn_entity({type = "sealed_crate", pos = p._hand_target(), contents = String(FoundryRules.roll_crate())})
 	if crate is Item:
 		p.grab(crate)

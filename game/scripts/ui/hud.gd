@@ -56,6 +56,9 @@ func _ready() -> void:
 	var card := NextStepCard.new()
 	card.world = world
 	_root.add_child(card)
+	var orders := OrdersPanel.new()
+	orders.world = world
+	_root.add_child(orders)
 	_banner_layer = _layer_control()
 	_fly_layer = _layer_control()
 	var pause_layer := CanvasLayer.new()

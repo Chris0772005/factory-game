@@ -31,6 +31,11 @@ const CRATES := {
 const CRATE_PRICE := 30
 
 
+## Crate price in `world` (the scrapyard-regular upgrade makes it cheaper).
+static func crate_price(world: GameWorld) -> int:
+	return 20 if world and world.has_upgrade(&"scrapyard_regular") else CRATE_PRICE
+
+
 ## Random crate contents id (weights above).
 static func roll_crate() -> StringName:
 	var total := 0

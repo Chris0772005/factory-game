@@ -12,10 +12,20 @@ const CATALOG := [
 	{id = &"gloves", name = "Lederhandschuhe", desc = "25 % mehr Kraft beim Tragen.", cost = 150, tier = 0},
 	{id = &"scrap_premium", name = "Schrott vom Wertstoffhof", desc = "Mehr Kupfer und Messing im Schrott.", cost = 260, tier = 0},
 	{id = &"garage", name = "Garage freischalten", desc = "Mehr Platz, Mehrfach-Gießbaum, Abschrecken.", cost = 900, tier = 0, unlock = true},
+	# Garage (tier 1).
+	{id = &"gate_tree", name = "Gießbaum", desc = "Ein Kanal mehr: jeder Formkasten nimmt noch ein Modell.", cost = 600, tier = 1},
+	{id = &"quench_oil", name = "Härteöl", desc = "Abschrecken in Öl statt Wasser: halbes Rissrisiko.", cost = 420, tier = 1},
+	{id = &"blower", name = "Elektrogebläse", desc = "Der Ofen hält die Hitze doppelt so lange.", cost = 480, tier = 1},
+	{id = &"scrapyard_regular", name = "Stammkunde am Wertstoffhof", desc = "Versiegelte Kisten für 20 statt 30 $.", cost = 350, tier = 1},
 ]
 
 var owned := {}
 var world: GameWorld
+
+
+## Catalogue entries a level offers (its tier and every tier below).
+static func catalog_for(tier: int) -> Array:
+	return CATALOG.filter(func(u: Dictionary) -> bool: return int(u.get("tier", 0)) <= tier)
 
 
 func has(id: StringName) -> bool:
@@ -31,7 +41,7 @@ func info(id: StringName) -> Dictionary:
 
 func can_buy(id: StringName) -> bool:
 	var u := info(id)
-	return not u.is_empty() and not has(id) and world and world.money >= u.cost
+	return not u.is_empty() and not has(id) and world and world.money >= u.cost and int(u.get("tier", 0)) <= world.upgrade_tier()
 
 
 ## Client entry point; forwards to the host.

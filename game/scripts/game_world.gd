@@ -263,6 +263,11 @@ func held_hint(player: Player) -> String:
 	return "[LMB] Ablegen   [RMB] Werfen"
 
 
+## Highest upgrade tier this level sells (levels with progression override).
+func upgrade_tier() -> int:
+	return 0
+
+
 func has_upgrade(id: StringName) -> bool:
 	return upgrades != null and upgrades.has(id)
 

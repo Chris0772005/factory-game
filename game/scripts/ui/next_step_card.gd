@@ -65,6 +65,8 @@ static func next_step(w: GameWorld) -> String:
 			return "Zerschlag die Form – mit dem Hammer geht's schneller."
 	for m: MoldBox in molds:
 		if m.state == MoldBox.State.COOLING:
+			if tree.get_first_node_in_group(&"buckets"):
+				return "Warten – oder mit dem Wassereimer abschrecken (Rissgefahr!)."
 			return "Kurz warten: Der Guss kühlt ab."
 	for m: MoldBox in molds:
 		if m.state == MoldBox.State.PATTERNED:

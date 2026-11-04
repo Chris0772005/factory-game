@@ -102,7 +102,11 @@ func interact(_player: Node) -> void:
 
 func cavities() -> int:
 	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
-	return capacity + (1 if world and world.has_upgrade(&"mold_slot") else 0)
+	var extra := 0
+	if world:
+		extra += 1 if world.has_upgrade(&"mold_slot") else 0
+		extra += 1 if world.has_upgrade(&"gate_tree") else 0
+	return mini(capacity + extra, 4)
 
 
 func has_room() -> bool:
@@ -256,7 +260,13 @@ func quench_risk() -> float:
 		return 1.0
 	if state != State.COOLING:
 		return 0.0
-	return clampf(_cool_left / maxf(cool_time, 0.01), 0.0, 1.0) * 0.85
+	return clampf(_cool_left / maxf(cool_time, 0.01), 0.0, 1.0) * 0.85 * _crack_factor()
+
+
+## Hardening oil (upgrade) halves the crack risk.
+func _crack_factor() -> float:
+	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
+	return 0.5 if world and world.has_upgrade(&"quench_oil") else 1.0
 
 
 ## A bucket of water over the mold. While it cools, the sand flashes to steam
@@ -274,7 +284,7 @@ func quench() -> bool:
 	var cracked := 0
 	for i in patterns.size():
 		var c := 0.0
-		if randf() < risk * 0.85:  # == quench_risk()
+		if randf() < risk * 0.85 * _crack_factor():  # == quench_risk()
 			c = lerpf(0.4, 1.0, risk)
 			cracked += 1
 		_cracks.append(c)

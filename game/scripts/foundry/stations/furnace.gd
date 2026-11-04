@@ -119,7 +119,9 @@ func _physics_process(delta: float) -> void:
 		_roar.stop()
 	if not Network.is_sim_authority():
 		return
-	heat = maxf(0.0, heat - HEAT_DECAY * delta)
+	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
+	var decay := HEAT_DECAY * (0.5 if world and world.has_upgrade(&"blower") else 1.0)
+	heat = maxf(0.0, heat - decay * delta)
 	_dock_crucible()
 	_take_scrap()
 	_melt(delta)
