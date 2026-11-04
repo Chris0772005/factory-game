@@ -335,7 +335,7 @@ func _toggle_coop() -> void:
 
 
 func _on_solo() -> void:
-	_start(LEVEL)
+	_start(SaveGame.saved_level(LEVEL))
 
 
 func _on_host() -> void:
@@ -343,12 +343,14 @@ func _on_host() -> void:
 	if err != OK:
 		_show_status("Hosten fehlgeschlagen (%s)" % error_string(err))
 		return
-	_start(LEVEL)
+	_start(SaveGame.saved_level(LEVEL))
 
 
+## Loads the backyard, then connects; the host sends us on if it plays elsewhere.
 func _on_join() -> void:
-	var err := Network.join(_ip.text.strip_edges())
-	if err != OK:
-		_show_status("Verbindung fehlgeschlagen (%s)" % error_string(err))
+	var address := _ip.text.strip_edges()
+	if address.is_empty():
+		_show_status("Bitte die Adresse des Hosts eingeben")
 		return
+	Network.join_after_load(address)
 	_start(LEVEL)

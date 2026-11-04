@@ -26,6 +26,9 @@ var _next_item_id := 0
 
 func _ready() -> void:
 	add_to_group(&"world")
+	if not attract_mode:
+		# A queued join connects only now, with this world (and its spawner) in the tree.
+		Network.connect_pending()
 	entities = Node3D.new()
 	entities.name = "Entities"
 	add_child(entities)
@@ -40,6 +43,7 @@ func _ready() -> void:
 	Network.peer_joined.connect(_on_peer_joined)
 	Network.peer_left.connect(_on_peer_left)
 	Network.session_started.connect(_on_session_started)
+	Network.peer_ready.connect(_on_peer_ready)
 	build_level()
 	if attract_mode:
 		return
@@ -80,20 +84,48 @@ func _sync_money(amount: int) -> void:
 
 
 func _on_session_started() -> void:
+	if attract_mode:
+		return
 	if multiplayer.is_server():
 		# Offline player (if any) becomes the host's player.
 		if not entities.has_node("1"):
 			spawn_player(1)
+	else:
+		Network.announce_level(level_path())
 
 
-func _on_peer_joined(id: int) -> void:
-	if multiplayer.is_server():
+func _on_peer_joined(_id: int) -> void:
+	# The worker spawns once the client says which level it loaded (_on_peer_ready).
+	pass
+
+
+## A client has its world loaded: give it a worker, or send it to our level first.
+func _on_peer_ready(id: int, level: String) -> void:
+	if attract_mode or not multiplayer.is_server():
+		return
+	if level != level_path():
+		Network.send_travel(id, level_path())
+		return
+	if not entities.has_node(str(id)):
 		spawn_player(id)
-		physics_sync.send_snapshot.call_deferred(id)
+	physics_sync.send_snapshot.call_deferred(id)
+
+
+## Scene file this world was loaded from (identifies the level across peers).
+func level_path() -> String:
+	return scene_file_path
+
+
+## Host: takes everyone to another level, saving first.
+func travel_to(path: String) -> void:
+	if not Network.is_sim_authority():
+		return
+	SaveGame.save(self, path)
+	Network.travel(path)
 
 
 func _on_peer_left(id: int) -> void:
-	if multiplayer.is_server() and entities.has_node(str(id)):
+	if not attract_mode and multiplayer.is_server() and entities.has_node(str(id)):
 		var p: Player = entities.get_node(str(id))
 		p.release()
 		p.queue_free()

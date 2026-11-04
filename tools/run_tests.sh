@@ -36,4 +36,13 @@ timeout -s KILL 150 "$GODOT" --headless --path . res://tests/test_net_foundry.ts
 wait $host_pid
 grep -hE "^\[|SCRIPT ERROR" /tmp/fg_host2_$PORT.log /tmp/fg_client2_$PORT.log
 grep -q "FAIL\|SCRIPT ERROR" /tmp/fg_host2_$PORT.log /tmp/fg_client2_$PORT.log && fail=1
+echo "== Network level change (host travels, client follows) =="
+timeout -s KILL 120 "$GODOT" --headless --path . res://tests/test_net_travel.tscn -- --host --port=$PORT --role=host --no-save > /tmp/fg_host3_$PORT.log 2>&1 &
+host_pid=$!
+sleep 3
+timeout -s KILL 110 "$GODOT" --headless --path . res://tests/test_net_travel.tscn -- --join=127.0.0.1 --port=$PORT --role=client --no-save > /tmp/fg_client3_$PORT.log 2>&1
+wait $host_pid
+grep -hE "^\[|SCRIPT ERROR" /tmp/fg_host3_$PORT.log /tmp/fg_client3_$PORT.log
+grep -q "FAIL\|SCRIPT ERROR" /tmp/fg_host3_$PORT.log /tmp/fg_client3_$PORT.log && fail=1
+grep -q "NET TRAVEL PASSED" /tmp/fg_client3_$PORT.log || fail=1
 exit $fail

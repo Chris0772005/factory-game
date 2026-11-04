@@ -1,5 +1,6 @@
 class_name SaveGame
-## Host-side save file: money, upgrades and the gallery of best castings.
+## Host-side save file: money, upgrades, the level to resume in and the gallery
+## of best castings.
 ##
 ## Only real play sessions touch the file. Tests (scenes under `res://tests/`),
 ## showcase/screenshot runs (`--shot=`), attract-mode menu backgrounds and runs
@@ -27,13 +28,15 @@ static func is_active() -> bool:
 	return true
 
 
-static func save(world: GameWorld) -> void:
+## `level`: scene to resume in (defaults to the world's own level).
+static func save(world: GameWorld, level := "") -> void:
 	if not is_active():
 		return
 	var data := {
 		version = VERSION,
 		money = world.money,
 		upgrades = world.upgrades.to_save() if world.upgrades else [],
+		level = level if level != "" else world.level_path(),
 	}
 	var f := FileAccess.open(PATH, FileAccess.WRITE)
 	if f:
@@ -52,6 +55,18 @@ static func load_into(world: GameWorld) -> bool:
 	if world.upgrades:
 		world.upgrades.load_save(data.get("upgrades", []))
 	return true
+
+
+## Level the saved game continues in (the backyard on a fresh install).
+static func saved_level(fallback: String) -> String:
+	if not is_active() or not FileAccess.file_exists(PATH):
+		return fallback
+	var f := FileAccess.open(PATH, FileAccess.READ)
+	var data = JSON.parse_string(f.get_as_text()) if f else null
+	if typeof(data) != TYPE_DICTIONARY:
+		return fallback
+	var level := str(data.get("level", ""))
+	return level if level != "" and ResourceLoader.exists(level) else fallback
 
 
 static func reset() -> void:

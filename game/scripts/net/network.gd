@@ -8,6 +8,8 @@ signal session_started
 signal peer_joined(id: int)
 signal peer_left(id: int)
 signal session_ended(reason: String)
+## Host only: a client has its world loaded and says which level it is.
+signal peer_ready(id: int, level: String)
 
 const MENU_SCENE := "res://scenes/main_menu.tscn"
 
@@ -16,6 +18,11 @@ const MAX_PLAYERS := 4
 
 ## Shown by the main menu after a session ends unexpectedly.
 var last_message := ""
+## A join waits until the level scene is loaded (`connect_pending`): a client
+## that connects first loses every spawn the host sends before its world exists.
+var _pending_join := {}
+var _address := "127.0.0.1"
+var _port := PORT
 
 
 func _ready() -> void:
@@ -32,7 +39,7 @@ func _ready() -> void:
 		if arg == "--host":
 			host(port)
 		elif arg.begins_with("--join="):
-			join(arg.trim_prefix("--join="), port)
+			join_after_load(arg.trim_prefix("--join="), port)
 
 
 func host(port := PORT) -> Error:
@@ -46,12 +53,66 @@ func host(port := PORT) -> Error:
 
 
 func join(address: String, port := PORT) -> Error:
+	_address = address
+	_port = port
 	var peer := ENetMultiplayerPeer.new()
 	var err := peer.create_client(address, port)
 	if err != OK:
 		return err
 	multiplayer.multiplayer_peer = peer
 	return OK
+
+
+## Queues a join for when the next level has loaded (see `connect_pending`).
+func join_after_load(address: String, port := PORT) -> void:
+	_pending_join = {address = address, port = port}
+
+
+## Called by GameWorld before it builds the level: connects a queued join.
+func connect_pending() -> void:
+	if _pending_join.is_empty():
+		return
+	var p := _pending_join
+	_pending_join = {}
+	var err := join(p.address, p.port)
+	if err != OK:
+		_end_session("Verbindung fehlgeschlagen (%s)." % error_string(err))
+
+
+## Client: tells the host which level it has loaded (GameWorld, once connected).
+func announce_level(level: String) -> void:
+	_hello.rpc_id(1, level)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _hello(level: String) -> void:
+	if multiplayer.is_server():
+		peer_ready.emit(multiplayer.get_remote_sender_id(), level)
+
+
+## Host (or solo): moves everyone to the level at `path`. Clients reload it
+## and reconnect, so they take the same, tested path as a fresh join.
+func travel(path: String) -> void:
+	if is_online() and multiplayer.is_server():
+		_travel.rpc(path)
+	Transition.change_scene(path)
+
+
+## Host: sends one client to `path` (it joined while we are in another level).
+func send_travel(peer: int, path: String) -> void:
+	_travel.rpc_id(peer, path)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _travel(path: String) -> void:
+	Transition.change_scene(path, func() -> void:
+		# Swap the peer out before closing it, so no "host left" fires.
+		var old := multiplayer.multiplayer_peer
+		multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
+		if old:
+			old.close()
+		join_after_load(_address, _port)
+	)
 
 
 func is_online() -> bool:

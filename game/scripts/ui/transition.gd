@@ -3,7 +3,7 @@ extends CanvasLayer
 ## Scene transitions: an ink iris with a molten rim closes over the screen, the scene
 ## changes underneath, and the iris opens again once the new scene has settled.
 ## Lives on the root viewport, so it survives scene changes. Blocks input while covered.
-##   Transition.change_scene(path)   cover → change_scene_to_file → reveal
+##   Transition.change_scene(path[, before])   cover → before() → change_scene_to_file → reveal
 ##   Transition.cover(callback)      cover, then call `callback` (e.g. Network.leave)
 ##   Transition.reveal()             open from fully covered (menus call this on _ready)
 
@@ -35,9 +35,12 @@ static func busy() -> bool:
 	return _instance != null and is_instance_valid(_instance) and _instance._progress > 0.001
 
 
-static func change_scene(path: String) -> void:
+## `before` runs while the screen is covered, right before the scene changes.
+static func change_scene(path: String, before := Callable()) -> void:
 	var t := instance()
 	t._cover.call_deferred(func() -> void:
+		if before.is_valid():
+			before.call()
 		t._reveal_on_change = true
 		t.get_tree().change_scene_to_file(path)
 	)
