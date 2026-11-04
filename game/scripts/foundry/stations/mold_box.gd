@@ -34,6 +34,11 @@ var _last_ram_time := 0.0
 var _last_pour_time := -10.0
 var _pour_gap_flagged := false
 var _cool_left := 0.0
+## Seconds a full mold cools before it can be smashed (levels with bigger
+## pour trees set more; a bucket of water skips it: `quench`).
+var cool_time := COOL_TIME
+## Crack severity 0..1 per cavity, rolled when the mold is quenched hot.
+var _cracks: Array[float] = []
 var _hits := 0
 var _built := {}               ## code -> CastMeshBuilder result
 var _outlines := {}            ## code -> MoldArt.outlines result
@@ -175,7 +180,7 @@ func receive_metal(litres: float, temperature: float, mix: Dictionary, rate: flo
 	_distribute(litres)
 	if _total_fill() >= 0.999:
 		state = State.COOLING
-		_cool_left = COOL_TIME
+		_cool_left = cool_time
 		_broadcast_state()
 
 
@@ -245,6 +250,51 @@ func _simulate(delta: float) -> void:
 			_sync_fill.rpc(PackedFloat32Array(fills), metal_temperature, FoundryRules.alloy_for(cast_mix), _cool_left)
 
 
+## Chance 0..1 that a casting cracks if the mold were quenched now.
+func quench_risk() -> float:
+	if state == State.FILLING:
+		return 1.0
+	if state != State.COOLING:
+		return 0.0
+	return clampf(_cool_left / maxf(cool_time, 0.01), 0.0, 1.0) * 0.85
+
+
+## A bucket of water over the mold. While it cools, the sand flashes to steam
+## and the mold is ready at once, but every casting may crack: the risk is the
+## share of cooling time still left (hotter = riskier). Water on liquid metal
+## (still pouring) is a steam explosion that cracks and spatters everything.
+## Returns true when it changed the mold. Host only.
+func quench() -> bool:
+	if state != State.COOLING and state != State.FILLING:
+		_fx_all(&"splash", interact_point())
+		return false
+	var exploding := state == State.FILLING
+	var risk := 1.0 if exploding else clampf(_cool_left / maxf(cool_time, 0.01), 0.0, 1.0)
+	_cracks.clear()
+	var cracked := 0
+	for i in patterns.size():
+		var c := 0.0
+		if randf() < risk * 0.85:  # == quench_risk()
+			c = lerpf(0.4, 1.0, risk)
+			cracked += 1
+		_cracks.append(c)
+	if exploding:
+		defects["spatter"] = 1.0
+	state = State.READY
+	_cool_left = 0.0
+	_hits = 0
+	_broadcast_state()
+	_fx_all(&"explode" if exploding else &"quench", interact_point())
+	var above := interact_point() + Vector3(0, 1.1, 0)
+	if exploding:
+		_popup_all(above, "DAMPFEXPLOSION!", Color("#ff6b5a"))
+	elif cracked > 0:
+		_popup_all(above, "ZISCH!  Riss?", Color("#ffb347"))
+	else:
+		_popup_all(above, "ZISCH!", Color("#9fd8ff"))
+	return true
+
+
 ## Hammer (or bare hands) hit on a ready mold. Host only.
 func hit(with_hammer: bool) -> void:
 	if state != State.READY:
@@ -270,8 +320,11 @@ func _break_open() -> void:
 			any_fail = true
 			stamps.append([slot + Vector3(0, 0.5, 0), "Fehlguss!", Color("#ff6b5a")])
 			continue
-		var q := FoundryRules.score(ram_quality, fill, defects)
-		var data := {type = "cast", code = patterns[i], alloy = alloy, quality = q, defects = defects.duplicate(),
+		var piece_defects := defects.duplicate()
+		if i < _cracks.size() and _cracks[i] > 0.0:
+			piece_defects["crack"] = _cracks[i]
+		var q := FoundryRules.score(ram_quality, fill, piece_defects)
+		var data := {type = "cast", code = patterns[i], alloy = alloy, quality = q, defects = piece_defects,
 			temperature = 0.45, pos = slot, size = CAST_SIZE, thickness = CAST_THICKNESS}
 		var piece: CastPiece = world.spawn_entity(data) if world else null
 		if piece:
@@ -286,6 +339,7 @@ func _break_open() -> void:
 	patterns.clear()
 	fills.clear()
 	needs.clear()
+	_cracks.clear()
 	cast_mix = {}
 	defects = {}
 	metal_temperature = 0.0
@@ -448,6 +502,24 @@ func _fx(kind: StringName, pos: Vector3) -> void:
 		&"gong":
 			Sfx.play(&"statue_gong", pos, 0.0, 0.03)
 			Juice.shake_at(pos, 0.4)
+		&"quench":
+			# Water on hot sand: a tower of steam, a long hiss, the flask jumps.
+			for k in 3:
+				FoundryFX.steam_puff(get_parent(), pos + Vector3(randf_range(-0.5, 0.5), 0.05, randf_range(-0.3, 0.3)), 2.2)
+			Sfx.play(&"steam_blast", pos, 0.0, 0.05)
+			_art.bump(true)
+			Juice.impact(pos, 0.45, 0.05)
+		&"explode":
+			for k in 5:
+				FoundryFX.steam_puff(get_parent(), pos + Vector3(randf_range(-0.7, 0.7), 0.1, randf_range(-0.4, 0.4)), 3.5)
+			FoundryFX.sparks(get_parent(), pos + Vector3(0, 0.2, 0), 60)
+			Sfx.play(&"steam_blast", pos, 4.0, 0.0)
+			Sfx.play(&"sand_burst", pos, 0.0)
+			_art.shatter()
+			Juice.impact(pos, 0.8, 0.09)
+		&"splash":
+			FoundryFX.steam_puff(get_parent(), pos, 0.3)
+			Sfx.play(&"water_splash", pos, -6.0)
 
 
 func _popup_all(pos: Vector3, text: String, color: Color) -> void:

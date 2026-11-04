@@ -28,6 +28,8 @@ static func score(ram_quality: float, fill_ratio: float, defects: Dictionary) ->
 	s -= 0.25 * defects.get("cold_shut", 0.0)
 	s -= 0.2 * defects.get("misrun", 0.0)
 	s -= 0.1 * defects.get("flash", 0.0)
+	# Quenched while too hot (MoldBox.quench).
+	s -= 0.3 * defects.get("crack", 0.0)
 	if fill_ratio < 0.9:
 		s -= (0.9 - fill_ratio) * 0.8
 	return clampf(s, 0.0, 1.0)

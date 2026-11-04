@@ -177,6 +177,27 @@ def main():
         part = band(n, lo, hi) * np.clip(1.0 - np.abs(x / d - (0.3 + 0.2 * k)) * 3.0, 0, 1)
         sweep += part
     save("throw_whoosh", sweep * swell + low(noise(d), 160) * swell * 0.3, 0.8)
+    # Garage (appended): water for the quench trough and the bucket.
+    # Splash: a soft body thump, a bright spray burst and a few bubble blips.
+    blips = np.zeros(int(SR * 0.7))
+    for k in range(6):
+        f0 = rng.uniform(500, 1100)
+        b = t(0.06)
+        blip = np.sin(2 * np.pi * np.cumsum(np.linspace(f0, f0 * 1.8, len(b))) / SR) * env(0.06, 0.002, 0.02)
+        s0 = int(SR * rng.uniform(0.05, 0.5))
+        blips[s0 : s0 + len(blip)] += blip * 0.35
+    spray = band(noise(0.7), 900, 6000) * env(0.7, 0.003, 0.12)
+    save("water_splash", mix(thump(75, 0.3) * 0.7, spray, blips), 0.8)
+    # Bucket scooped through the water: gurgling band noise with a wobble.
+    d = 0.9
+    x = t(d)
+    wobble = 0.55 + 0.45 * np.sin(2 * np.pi * 9.0 * x + 2.0 * np.sin(2 * np.pi * 2.3 * x))
+    gurgle = band(noise(d), 300, 1400) * wobble * np.sin(np.pi * np.clip(x / d, 0, 1)) ** 0.7
+    save("bucket_fill", mix(gurgle, blips[: len(x)] * 0.7), 0.7)
+    # Quench: a long roaring hiss over a low rumble.
+    d = 2.6
+    blast = high(noise(d), 1800) * env(d, 0.01, 0.9) + low(noise(d), 180, 3) * env(d, 0.02, 0.5) * 2.0
+    save("steam_blast", blast, 0.85)
 
 
 if __name__ == "__main__":

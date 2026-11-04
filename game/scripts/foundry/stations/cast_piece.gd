@@ -53,6 +53,28 @@ static func from_data(data: Dictionary) -> CastPiece:
 	return piece
 
 
+func _ready() -> void:
+	add_to_group(&"castings")
+
+
+## Cold at once (water). Visual only, so every peer may call it.
+func quench_local() -> void:
+	temperature = 0.0
+	MetalMaterial.set_temperature(_material, 0.0)
+
+
+## Host: quench on every peer.
+func quench_all() -> void:
+	quench_local()
+	if Network.is_online() and multiplayer.is_server():
+		_quench_remote.rpc()
+
+
+@rpc("authority", "call_remote", "reliable")
+func _quench_remote() -> void:
+	quench_local()
+
+
 func _physics_process(delta: float) -> void:
 	if temperature > 0.0:
 		temperature = maxf(0.0, temperature - delta / COOL_TIME)

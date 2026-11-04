@@ -5,6 +5,8 @@ extends FoundryLevel
 ## the stations the crew already knows. Set: GarageSet, light: GarageLighting.
 
 const SPAWN := Vector3(0.6, 0.2, 3.4)
+## Mold cooling in the garage (the backyard's is MoldBox.COOL_TIME = 4.5 s).
+const COOL_TIME := 14.0
 
 
 func build_stations() -> void:
@@ -23,7 +25,13 @@ func build_stations() -> void:
 	for i in 2:
 		var mold := MoldBox.new()
 		mold.position = Vector3(-0.9 + i * 2.7, 0, 0.3)
+		# Bigger pour trees hold their heat: wait, or quench (and risk cracks).
+		mold.cool_time = COOL_TIME
 		add_child(mold)
+	var trough := QuenchTrough.new()
+	trough.position = Vector3(4.0, 0, 1.0)
+	trough.rotation.y = PI * 0.5
+	add_child(trough)
 	var crate := SellCrate.new()
 	crate.position = Vector3(4.6, 0, 3.4)
 	crate.rotation.y = -0.5
@@ -34,6 +42,18 @@ func build_stations() -> void:
 	add_child(board)
 	var stations: Array = get_children().filter(func(n: Node) -> bool: return n is Node3D and not n is WorldEnvironment and not n is Light3D)
 	GarageSet.build(self, stations)
+
+
+func build_level() -> void:
+	register_entity("bucket", WaterBucket.create_bucket)
+	super()
+
+
+func spawn_items() -> void:
+	super()
+	var trough := find_station(QuenchTrough) as Node3D
+	if trough:
+		spawn_entity({type = "bucket", pos = trough.global_position + Vector3(-0.2, 0.05, 1.0)})
 
 
 func hammer_spot() -> Vector3:
