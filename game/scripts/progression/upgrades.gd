@@ -57,6 +57,8 @@ func buy(id: StringName) -> bool:
 		"%s gekauft!" % u.name, UITheme.ACCENT)
 	_broadcast()
 	changed.emit()
+	if u.get("unlock", false) and world.has_method(&"on_unlock"):
+		world.on_unlock(id)
 	return true
 
 

@@ -134,8 +134,13 @@ func _on_peer_left(id: int) -> void:
 func spawn_player(id: int) -> Player:
 	var index := entities.get_children().filter(func(n): return n is Player).size()
 	var data := {type = "player", id = id, color = PLAYER_COLORS[index % PLAYER_COLORS.size()],
-		pos = Vector3(index * 1.2, 0.2, 5)}
+		pos = spawn_position(index)}
 	return _spawn(data)
+
+
+## Where the `index`-th worker appears when joining (levels override).
+func spawn_position(index: int) -> Vector3:
+	return Vector3(index * 1.2, 0.2, 5)
 
 
 func spawn_item(kind: StringName, color: Color, size: Vector3, mass: float, pos: Vector3) -> Item:
@@ -218,6 +223,25 @@ func banner_near(pos: Vector3, text: String, color: Color, subtitle: String, goo
 @rpc("authority", "call_remote", "reliable")
 func _banner_remote(pos: Vector3, text: String, color: Color, subtitle: String, good: bool) -> void:
 	_banner_local(pos, text, color, subtitle, good)
+
+
+## Banner for every player, wherever they stand (host calls this).
+func banner_all(text: String, color: Color, subtitle: String) -> void:
+	_banner_everywhere(text, color, subtitle)
+	if Network.is_online() and multiplayer.is_server():
+		_banner_everywhere_remote.rpc(text, color, subtitle)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _banner_everywhere_remote(text: String, color: Color, subtitle: String) -> void:
+	_banner_everywhere(text, color, subtitle)
+
+
+func _banner_everywhere(text: String, color: Color, subtitle: String) -> void:
+	if attract_mode:
+		return
+	HUD.banner(text, color, subtitle)
+	Sfx.play_ui(&"grade_good", -2.0)
 
 
 func _banner_local(pos: Vector3, text: String, color: Color, subtitle: String, good: bool) -> void:

@@ -38,3 +38,10 @@ common/physics_interpolation=true
 lights_and_shadows/directional_shadow/soft_shadow_filter_quality=3
 anti_aliasing/quality/msaa_3d=2
 anti_aliasing/quality/screen_space_aa=1
+
+[shader_globals]
+
+cutaway_target={
+"type": "vec4",
+"value": Vector4(0, -100, 0, 0)
+}

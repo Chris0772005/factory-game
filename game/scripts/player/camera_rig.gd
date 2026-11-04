@@ -42,6 +42,9 @@ const PROBE_MARGIN := 0.2
 ## Arm length back out after a collision: settles in ~0.25 s.
 const EXTEND_HALF_LIFE := 0.07
 const MIN_ARM := 0.8
+## Radius (m) of the see-through circle that interior walls open around the
+## line of sight to the worker (shaders/env_cutaway.gdshaderinc).
+const CUTAWAY_RADIUS := 1.6
 ## Further than this from the pivot (respawn, teleport) the camera cuts instead of flying.
 const SNAP_DISTANCE := 8.0
 
@@ -96,6 +99,7 @@ func _enter_tree() -> void:
 
 func _exit_tree() -> void:
 	Juice.unregister_rig(self)
+	RenderingServer.global_shader_parameter_set(&"cutaway_target", Vector4(0, -100, 0, 0))
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -165,6 +169,9 @@ func _process(delta: float) -> void:
 	global_transform = Transform3D(basis, pivot)
 	camera.transform = Transform3D(Basis.from_euler(Juice.shake_angles()), Vector3(0.0, 0.0, _arm) + Juice.shake_offset())
 	camera.fov = FOV + SPRINT_FOV * _sprint - 8.0 * w - 4.0 * zoom + Juice.fov_offset()
+	# Interior set pieces (env_cutaway) dissolve between the lens and the worker.
+	RenderingServer.global_shader_parameter_set(&"cutaway_target",
+		Vector4(anchor.x, anchor.y - 0.3, anchor.z, CUTAWAY_RADIUS))
 
 
 ## Gamepad orbit: response curve, max speeds and a short ramp so it never jerks.

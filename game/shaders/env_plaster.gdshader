@@ -6,6 +6,7 @@ shader_type spatial;
 render_mode diffuse_burley, specular_schlick_ggx;
 
 #include "res://shaders/env_common.gdshaderinc"
+#include "res://shaders/env_cutaway.gdshaderinc"
 
 uniform vec4 plaster : source_color = vec4(0.890, 0.804, 0.690, 1.0);
 uniform vec4 grime : source_color = vec4(0.52, 0.47, 0.44, 1.0);
@@ -15,6 +16,10 @@ uniform float chips : hint_range(0.0, 1.0) = 0.6;
 uniform float streaks : hint_range(0.0, 1.0) = 0.5;
 // 1 = bare brickwork everywhere (chimneys, garden walls).
 uniform float brickwork : hint_range(0.0, 1.0) = 0.0;
+// Interior walls dissolve around the camera's line of sight (env_cutaway).
+uniform bool cutaway = false;
+// Brick wainscot up to this height (0 = none), plaster above.
+uniform float brick_below = 0.0;
 
 varying vec3 v_world;
 
@@ -23,6 +28,9 @@ void vertex() {
 }
 
 void fragment() {
+	if (cutaway) {
+		env_cutaway(v_world, CAMERA_POSITION_WORLD, FRAGCOORD.xy);
+	}
 	vec3 wn = (INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz;
 	vec2 uv = abs(wn.x) > 0.5 ? v_world.zy : v_world.xy;
 	if (abs(wn.y) > 0.6) {
@@ -40,6 +48,9 @@ void fragment() {
 	// Chipped plaster revealing bricks.
 	float chipn = env_fbm(uv * 0.75 + 11.0) + fine * 0.06;
 	float chip = max(smoothstep(0.735, 0.75, chipn) * chips, brickwork);
+	if (brick_below > 0.0) {
+		chip = max(chip, 1.0 - smoothstep(brick_below - 0.02, brick_below, v_world.y + (fine - 0.5) * 0.03));
+	}
 	float rim = max(smoothstep(0.715, 0.735, chipn) * chips - chip, 0.0);
 	if (chip > 0.0) {
 		vec2 b = uv * vec2(4.0, 11.8);

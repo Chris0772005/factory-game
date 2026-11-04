@@ -1,20 +1,11 @@
-extends GameWorld
+extends FoundryLevel
 ## Level 1 – Hinterhof: a bucket furnace, a scrap heap and two sand molds
 ## in a fenced backyard at dusk. The set (ground, grass, fences, house, shed,
 ## string lights, props, neighbourhood) is built by YardSet, the lighting by
 ## YardLighting (scripts/environment/).
 
 
-func build_level() -> void:
-	register_entity("crucible", Crucible.create_crucible)
-	register_entity("hammer", Hammer.create_hammer)
-	register_entity("cast", CastPiece.from_data)
-	register_entity("statue", BronzeStatue.from_data)
-	upgrades = Upgrades.new()
-	upgrades.name = "Upgrades"
-	upgrades.world = self
-	add_child(upgrades)
-	upgrades.changed.connect(_apply_upgrades)
+func build_stations() -> void:
 	_build_environment()
 
 	var furnace := Furnace.new()
@@ -41,32 +32,6 @@ func build_level() -> void:
 	var stations: Array = [furnace, scrap, bench, crate, board]
 	stations.append_array(get_children().filter(func(n: Node) -> bool: return n is MoldBox))
 	YardSet.build(self, stations)
-
-	if Network.is_sim_authority():
-		# Menu backgrounds show the yard as on a fresh install and never save.
-		if not attract_mode:
-			SaveGame.load_into(self)
-			money_changed.connect(func(_m): _autosave())
-			upgrades.changed.connect(_autosave)
-		spawn_entity({type = "crucible", pos = furnace.global_position + Vector3(0, 0.15, 0)})
-		spawn_entity({type = "hammer", pos = Vector3(1.5, 0.1, 2.6)})
-
-
-func _apply_upgrades() -> void:
-	for p in get_tree().get_nodes_in_group(&"players"):
-		p.strength = Player.STRENGTH * (1.25 if has_upgrade(&"gloves") else 1.0)
-
-
-var _save_pending := false
-
-
-func _autosave() -> void:
-	if _save_pending:
-		return
-	_save_pending = true
-	await get_tree().create_timer(1.0).timeout
-	_save_pending = false
-	SaveGame.save(self)
 
 
 ## Sky, post-processing, key and fill light (also used by the asset contact sheet).
