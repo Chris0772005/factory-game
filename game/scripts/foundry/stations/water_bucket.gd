@@ -74,6 +74,10 @@ func held_hint(player: Node) -> String:
 	if not full:
 		return "[F] Wasser schöpfen" if _trough_near(player) else "Leer – am Wassertrog füllen"
 	var mold := _mold_ahead(player)
+	if mold == null:
+		var pit := BellPit.near_worker(get_tree(), player as Node3D, REACH)
+		if pit and pit.state == BellPit.State.COOLING:
+			return "[F] Glocke abschrecken?!  Sie springt garantiert."
 	if mold and mold.state == MoldBox.State.COOLING:
 		return "[F] Abschrecken – sofort fertig, aber Rissgefahr (%d %%)" % roundi(mold.quench_risk() * 100)
 	if mold and mold.state == MoldBox.State.FILLING:
@@ -91,9 +95,12 @@ func use_start(player: Node) -> void:
 		return
 	_set_full(false)
 	var mold := _mold_ahead(player)
+	var pit := BellPit.near_worker(get_tree(), player as Node3D, REACH) if mold == null else null
 	_fx_all(&"tip")
 	if mold:
 		mold.quench()
+	elif pit and pit.state == BellPit.State.COOLING:
+		pit.quench()
 	else:
 		var ahead := (player as Node3D).global_position + (player as Node3D).global_transform.basis.z * 0.9
 		_splash_at(ahead)

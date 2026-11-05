@@ -71,6 +71,11 @@ func on_released(by: Node) -> void:
 func held_hint(player: Node) -> String:
 	var mold := _target(player)
 	if mold == null:
+		var pit := BellPit.near_worker(get_tree(), player as Node3D, REACH)
+		if pit and pit.state == BellPit.State.READY:
+			return "[F] Lehmmantel aufschlagen!"
+		if _bell_near(player):
+			return "[F] Glocke anschlagen"
 		return "[F] Zuschlagen"
 	match mold.state:
 		MoldBox.State.READY:
@@ -88,12 +93,30 @@ func _target(player: Node) -> MoldBox:
 	return MoldBox.near_worker(get_tree(), player as Node3D, REACH)
 
 
+## A bell within a hammer's swing of the worker.
+func _bell_near(player: Node) -> Bell:
+	var body := player as Node3D
+	for node in get_tree().get_nodes_in_group(&"bells"):
+		var bell := node as Bell
+		if bell.global_position.distance_to(body.global_position) < bell.mouth_radius + 1.2 and not bell.is_held():
+			return bell
+	return null
+
+
 func use_start(player: Node) -> void:
 	_swing = 1.0
 	Sfx.play(&"pickup", global_position, -8.0)
 	var target := _target(player)
 	if target:
 		target.hit(true)
+	else:
+		var pit := BellPit.near_worker(get_tree(), player as Node3D, REACH)
+		if pit and pit.state == BellPit.State.READY:
+			pit.hit(true)
+		else:
+			var bell := _bell_near(player)
+			if bell:
+				bell.ring_all(1.0)
 	if Network.is_online():
 		_swing_fx.rpc()
 

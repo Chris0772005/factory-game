@@ -128,6 +128,11 @@ func held_hint(_player: Node) -> String:
 		if flow * MAX_POUR_RATE > MoldBox.SAFE_POUR_RATE:
 			line += " · zu schnell!"
 		return line
+	var probe := lip_position()
+	probe.y = 0.8
+	var pit := BellPit.find_at(get_tree(), probe)
+	if pit and pit.state in [BellPit.State.TURNED, BellPit.State.FILLING]:
+		return "[F halten] In die Glockenform gießen · %d %%  (nicht absetzen!)" % roundi(pit.fill / maxf(pit.need, 0.01) * 100.0)
 	return "[F halten] Gießen · %.1f l · %d °C" % [amount, roundi(200 + temperature * 1100)]
 
 
@@ -196,8 +201,11 @@ func _pour(litres: float, rate: float, delta: float) -> void:
 		mix[k] -= share[k]
 	amount -= litres
 	var mold := MoldBox.find_at(get_tree(), pour_target)
+	var pit := BellPit.find_at(get_tree(), pour_target) if mold == null else null
 	if mold:
 		mold.receive_metal(litres, temperature, share, rate, delta)
+	elif pit:
+		pit.receive_metal(litres, temperature, share, rate, delta)
 	elif randf() < delta * 1.5:
 		FoundryFX.sparks(get_parent(), pour_target, 6)
 	if amount <= 0.001:

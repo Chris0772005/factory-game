@@ -19,6 +19,7 @@ func build_level() -> void:
 	register_entity("hammer", Hammer.create_hammer)
 	register_entity("cast", CastPiece.from_data)
 	register_entity("statue", BronzeStatue.from_data)
+	register_entity("bell", Bell.from_data)
 	upgrades = Upgrades.new()
 	upgrades.name = "Upgrades"
 	upgrades.world = self

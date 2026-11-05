@@ -39,7 +39,79 @@ func _run() -> void:
 	var ms := Time.get_ticks_msec() - t0
 	_check(wav != null and wav.data.size() > BellTone.RATE * 2 * 2, "tone rendered (%.1f s, %d ms)" % [wav.data.size() / 2.0 / BellTone.RATE, ms])
 	_check(BellTone.stream(bell, 0.35, &"bronze") == wav, "tone is cached")
+	await _pit_round()
 	_finish()
+
+
+## A full bell in a pit (staged in the garage): profile, turning, a pour in
+## two crucibles with a short break, cooling, digging out, ringing, selling.
+func _pit_round() -> void:
+	var world: GameWorld = load("res://scenes/garage.tscn").instantiate()
+	add_child(world)
+	await _frames(10)
+	var pit := BellPit.new()
+	pit.position = Vector3(-1.0, 0, -1.2)
+	world.add_child(pit)
+	var bench := ModelBench.new()
+	bench.bell_mode = true
+	bench.position = Vector3(-1.0, 0, -3.6)
+	world.add_child(bench)
+	await _frames(5)
+	var me := world.local_player()
+	_check(not bench.submit(DrawingSamples.smiley().to_code()) or pit.state == BellPit.State.PROFILED, "bench sends drawings to the pit")
+	if pit.state != BellPit.State.EMPTY:
+		pit.state = BellPit.State.EMPTY
+	_check(bench.submit(DrawingSamples.bell().to_code()) and pit.state == BellPit.State.PROFILED, "bell profile reaches the pit")
+	for i in BellPit.TURNS_NEEDED:
+		pit.interact(me)
+	_check(pit.state == BellPit.State.TURNED and pit.need > 3.0, "turning the strickle shapes the mold (needs %.1f l)" % pit.need)
+	var half := pit.need * 0.5
+	pit.receive_metal(half, 0.95, {&"copper": half * 0.9, &"zinc_brass": half * 0.1}, 0.5, 1.0 / 60.0)
+	_check(pit.state == BellPit.State.FILLING, "first crucible goes in")
+	pit.receive_metal(pit.need - half + 0.01, 0.95, {&"copper": half}, 0.5, 1.0 / 60.0)
+	_check(pit.state == BellPit.State.COOLING and pit.defects.get("cold_shut", 0.0) == 0.0, "a quick second crucible fills it without a cold shut")
+	pit._cool_left = 0.01
+	await _frames(3)
+	_check(pit.state == BellPit.State.READY, "the bell cools")
+	for i in BellPit.DIG_HITS:
+		pit.hit(true)
+	await _frames(5)
+	var bells := get_tree().get_nodes_in_group(&"bells")
+	_check(bells.size() == 1, "digging out lifts the bell")
+	if bells.is_empty():
+		return
+	var b := bells[0] as Bell
+	_check(b.alloy == &"bronze" and b.verdict() == "rein", "bronze bell, pure (%s %s)" % [b.alloy, b.verdict()])
+	_check(b.note() == BellTone.note_name(BellTone.prime(bell_profile_of(b), 0.35, &"bronze")), "rings in %s" % b.note())
+	_check(b.value() > 100, "worth %d $" % b.value())
+	await _frames(40)
+	_check(b._player.stream != null, "the bell rang at the reveal")
+	var crate: SellCrate = world.find_children("*", "SellCrate", true, false)[0]
+	var before := world.money
+	b.global_position = crate.global_position + Vector3(0, 0.6, 0)
+	b.linear_velocity = Vector3.ZERO
+	await _frames(30)
+	_check(world.money > before, "bell sold (+%d $)" % (world.money - before))
+	# Quenched hot, a bell cracks.
+	bench.submit(DrawingSamples.bell().to_code())
+	for i in BellPit.TURNS_NEEDED:
+		pit.interact(me)
+	pit.receive_metal(pit.need + 0.01, 0.95, {&"copper": pit.need}, 0.5, 1.0 / 60.0)
+	_check(pit.quench() and pit.cracked, "water on a hot bell cracks it")
+	for i in BellPit.DIG_HITS_BARE_HANDS:
+		pit.hit(false)
+	await _frames(5)
+	var cracked: Array = get_tree().get_nodes_in_group(&"bells").filter(func(n): return (n as Bell).cracked)
+	_check(cracked.size() == 1 and (cracked[0] as Bell).verdict() == "gesprungen", "the cracked bell is 'gesprungen'")
+
+
+func bell_profile_of(b: Bell) -> BellProfile:
+	return b.profile
+
+
+func _frames(n: int) -> void:
+	for i in n:
+		await get_tree().physics_frame
 
 
 func _finish() -> void:

@@ -9,6 +9,15 @@ const PROMPTS := [
 	"ein Monster", "deinen Namen", "eine Krone", "ein Auto", "einen Kaktus", "eine Ente",
 ]
 
+const BELL_PROMPTS := [
+	"eine Kirchenglocke", "eine Kuhglocke", "eine Schiffsglocke", "eine Glocke für den Turm",
+	"die schiefste Glocke der Welt", "eine Glocke mit Taille", "eine Weihnachtsglocke",
+]
+
+## Profile bench (Glockengießerei): the pad draws bell silhouettes and the
+## drawing goes to the nearest free bell pit instead of a mold.
+@export var bell_mode := false
+
 var _pad_layer: CanvasLayer
 
 
@@ -26,12 +35,13 @@ func interact_point() -> Vector3:
 
 
 func hint(_player: Node) -> String:
-	return "[F] Modell zeichnen"
+	return "[F] Glocke zeichnen (Profil)" if bell_mode else "[F] Modell zeichnen"
 
 
 func interact(player: Node) -> void:
 	var p := player as Player
-	var prompt: String = "Zeichne: " + PROMPTS[randi() % PROMPTS.size()]
+	var prompts: Array = BELL_PROMPTS if bell_mode else PROMPTS
+	var prompt: String = "Zeichne: " + prompts[randi() % prompts.size()]
 	if not Network.is_online() or p.peer_id == multiplayer.get_unique_id():
 		_open_pad(prompt)
 	else:
@@ -55,6 +65,10 @@ func _open_pad(prompt: String) -> void:
 	_pad_layer.layer = 10
 	add_child(_pad_layer)
 	var pad := DrawPad.new()
+	pad.bell_mode = bell_mode
+	var pit := _nearest_pit(false)
+	if pit:
+		pad.bell_radius = pit.mouth_radius
 	pad.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_pad_layer.add_child(pad)
 	pad.finished.connect(func(drawing: Drawing): _close_pad(drawing.to_code() if drawing and not drawing.is_empty() else ""))
@@ -85,10 +99,37 @@ func _submit_remote(code: String) -> void:
 	submit(code)
 
 
-## Places a drawing into the closest mold box with room. Host only.
+func _nearest_pit(free_only: bool) -> BellPit:
+	var best: BellPit = null
+	var best_d := INF
+	for node in get_tree().get_nodes_in_group(&"bell_pits"):
+		var pit := node as BellPit
+		var d := pit.global_position.distance_to(global_position)
+		if d < best_d and (not free_only or pit.state == BellPit.State.EMPTY):
+			best_d = d
+			best = pit
+	return best
+
+
+## Places a drawing into the closest mold box with room (or, in bell mode,
+## the closest free bell pit). Host only.
 func submit(code: String) -> bool:
 	if Drawing.from_code(code) == null:
 		return false
+	if bell_mode:
+		var world_b := get_tree().get_first_node_in_group(&"world") as GameWorld
+		var pit := _nearest_pit(true)
+		if pit == null:
+			if world_b:
+				world_b.popup_all(interact_point() + Vector3(0, 0.6, 0), "Keine freie Gießgrube!", Color("#ff6b5a"))
+			return false
+		if not pit.add_profile(code):
+			if world_b:
+				world_b.popup_all(interact_point() + Vector3(0, 0.6, 0), "Das ist keine Glocke – Silhouette zeichnen!", Color("#ff6b5a"))
+			return false
+		if world_b:
+			world_b.popup_all(pit.interact_point() + Vector3(0, 0.6, 0), "Schablone eingesetzt!", Color("#fff8ec"))
+		return true
 	var best: MoldBox = null
 	var best_d := INF
 	for node in get_tree().get_nodes_in_group(&"molds"):
