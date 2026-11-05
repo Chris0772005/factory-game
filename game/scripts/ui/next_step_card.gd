@@ -64,6 +64,9 @@ static func next_step(w: GameWorld) -> String:
 	for node in w.entities.get_children():
 		if node is CastPiece or node is BronzeStatue:
 			return "Wirf die Gussteile in die Verkaufskiste."
+	var bell_step := _bell_step(tree)
+	if not bell_step.is_empty():
+		return bell_step
 	var molds := tree.get_nodes_in_group(&"molds")
 	for m: MoldBox in molds:
 		if m.state == MoldBox.State.READY:
@@ -83,3 +86,26 @@ static func next_step(w: GameWorld) -> String:
 			return "Trag den glühenden Tiegel zur Form und gieß (F halten)."
 		return "Wirf Schrott in den Ofen und tritt den Blasebalg."
 	return "Zeichne an der Werkbank ein Modell."
+
+
+## Bell halls: the next step at the busiest casting pit ("" when no pit is in use).
+static func _bell_step(tree: SceneTree) -> String:
+	var pits := tree.get_nodes_in_group(&"bell_pits")
+	if pits.is_empty():
+		return ""
+	for p: BellPit in pits:
+		if p.state == BellPit.State.READY:
+			return "Schlag den Lehmmantel auf – die Glocke wartet!"
+	for p: BellPit in pits:
+		if p.state == BellPit.State.FILLING:
+			return "Weitergießen! Eine Pause macht einen Kaltlauf."
+		if p.state == BellPit.State.COOLING:
+			return "Die Glocke kühlt ab – kein Wasser, sonst springt sie!"
+	for p: BellPit in pits:
+		if p.state == BellPit.State.TURNED:
+			return "Beide Tiegel füllen und in einem Zug in die Grube gießen."
+		if p.state == BellPit.State.PROFILED:
+			return "Dreh die Schablone an der Gießgrube (F, im Takt)."
+	if tree.get_nodes_in_group(&"molds").any(func(m: MoldBox) -> bool: return m.state != MoldBox.State.EMPTY):
+		return ""
+	return "Zeichne an der Profilbank eine Glocken-Silhouette."

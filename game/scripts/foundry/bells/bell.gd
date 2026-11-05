@@ -35,6 +35,9 @@ static func from_data(data: Dictionary) -> Bell:
 	b.cracked = data.get("cracked", false)
 	b.temperature = data.get("temperature", 0.0)
 	b.position = data.pos
+	# A bell stands on its mouth: it may slide and sway, but never roll away.
+	b.axis_lock_angular_x = true
+	b.axis_lock_angular_z = true
 	b.profile = BellProfile.from_drawing(Drawing.from_code(b.code))
 	if b.profile == null:
 		b.profile = BellProfile.from_drawing(DrawingSamples.bell())
@@ -95,11 +98,18 @@ func note() -> String:
 
 ## "rein", "leicht schief", "schief" or "gesprungen".
 func verdict() -> String:
-	return "gesprungen" if cracked else BellTone.verdict(profile)
+	if cracked:
+		return "gesprungen"
+	var p := purity()
+	return "rein" if p >= 0.85 else ("leicht schief" if p >= 0.6 else "schief")
 
 
 func purity() -> float:
-	return 0.15 if cracked else BellTone.purity(profile)
+	if cracked:
+		return 0.15
+	var world := get_tree().get_first_node_in_group(&"world") as GameWorld if is_inside_tree() else null
+	var tuned := 0.15 if world and world.has_upgrade(&"bell_tuner") else 0.0
+	return minf(1.0, BellTone.purity(profile) + tuned)
 
 
 func value() -> int:

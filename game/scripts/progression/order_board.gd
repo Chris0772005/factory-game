@@ -15,6 +15,13 @@ const REFILL_DELAY := 12.0
 ## `alloy`, &"" = any, with quality >= `min`).
 const TEMPLATES := [
 	{id = &"bronze_buddy", kind = &"statue", title = "Bronzefreund für den Vorgarten", need = "Eine Bronzestatue in Sturzpose", reward = 350, weight = 2},
+	# Glockengießerei (tier 2). kind &"bell": optional note (letter), alloy,
+	# purity (min), cracked (required), max_freq (Hz).
+	{id = &"church_bell", kind = &"bell", tier = 2, note = "G", purity = 0.6, title = "Kirchenglocke in G", need = "Glocke in G (jede Oktave) · mind. leicht schief", reward = 600, weight = 3},
+	{id = &"cow_bell", kind = &"bell", tier = 2, purity = 0.85, title = "Kuhglocke für die Alm", need = "Eine reine Glocke", reward = 250, weight = 4},
+	{id = &"ship_bell", kind = &"bell", tier = 2, alloy = &"brass", title = "Schiffsglocke aus Messing", need = "Glocke aus Messing", reward = 450, weight = 3},
+	{id = &"deep_bell", kind = &"bell", tier = 2, max_freq = 400.0, title = "Tiefe Turmglocke", need = "Glocke in G4 oder tiefer (große Grube)", reward = 700, weight = 2},
+	{id = &"museum_bell", kind = &"bell", tier = 2, cracked = true, title = "Gesprungene Glocke fürs Museum", need = "Eine gesprungene Glocke (!)", reward = 300, weight = 1},
 	{id = &"knocker", kind = &"cast", alloy = &"brass", min = 0.35, title = "Türklopfer aus Messing", need = "Messing · mind. Gut", reward = 90, weight = 5},
 	{id = &"trophy", kind = &"cast", alloy = &"", min = 0.6, title = "Pokal für den Kegelverein", need = "Beliebiges Metall · mind. Fein", reward = 110, weight = 5},
 	{id = &"plaque", kind = &"cast", alloy = &"verdigris", min = 0.35, title = "Grünspan-Plakette fürs Rathaus", need = "Grünspan · mind. Gut", reward = 160, weight = 3},
@@ -23,6 +30,8 @@ const TEMPLATES := [
 	{id = &"mirror", kind = &"cast", alloy = &"", min = 0.95, title = "Spiegelguss für die Galerie", need = "Beliebig · Spiegelguss", reward = 300, weight = 1},
 ]
 
+## Order on the first card when the board is built (the hall's signature job).
+var first_order := &"bronze_buddy"
 ## Active orders: template ids, &"" for an empty slot.
 var slots: Array[StringName] = []
 var _refill := [0.0, 0.0, 0.0]
@@ -36,7 +45,7 @@ func _ready() -> void:
 	slots.resize(SLOTS)
 	slots.fill(&"")
 	if Network.is_sim_authority():
-		slots[0] = &"bronze_buddy"
+		slots[0] = first_order
 		for i in range(1, SLOTS):
 			slots[i] = _roll()
 	Network.peer_ready.connect(_on_peer_ready)
@@ -66,6 +75,21 @@ static func matches(t: Dictionary, piece: Node) -> bool:
 		return false
 	if t.kind == &"statue":
 		return piece is BronzeStatue
+	if t.kind == &"bell":
+		if not piece is Bell:
+			return false
+		var bell := piece as Bell
+		if t.get("cracked", false):
+			return bell.cracked
+		if bell.cracked:
+			return false
+		if t.has("note") and bell.note().rstrip("0123456789") != t.note:
+			return false
+		if t.has("alloy") and bell.alloy != t.alloy:
+			return false
+		if bell.purity() < float(t.get("purity", 0.0)):
+			return false
+		return bell.frequency() <= float(t.get("max_freq", INF))
 	if not piece is CastPiece:
 		return false
 	var cast := piece as CastPiece
@@ -87,7 +111,10 @@ func _take(piece: Node) -> int:
 
 
 func _roll() -> StringName:
-	var pool := TEMPLATES.filter(func(t: Dictionary) -> bool: return not slots.has(t.id))
+	# Orders of this hall's tier (tier-1 cast orders stay in the mix later on).
+	var world := get_tree().get_first_node_in_group(&"world") as GameWorld if is_inside_tree() else null
+	var tier := maxi(world.upgrade_tier() if world else 1, 1)
+	var pool := TEMPLATES.filter(func(t: Dictionary) -> bool: return not slots.has(t.id) and int(t.get("tier", 1)) <= tier)
 	var total := 0
 	for t in pool:
 		total += int(t.weight)

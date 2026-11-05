@@ -145,8 +145,10 @@ func _turn() -> void:
 	var now := Time.get_ticks_msec() / 1000.0
 	var interval := now - _last_turn_time
 	_last_turn_time = now
-	_turn_score += 1.0 if turns == 0 or (interval > 0.3 and interval < 1.0) else 0.45
-	turns += 1
+	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
+	var step := 2 if world and world.has_upgrade(&"strickle_crank") else 1
+	_turn_score += (1.0 if turns == 0 or (interval > 0.3 and interval < 1.0) else 0.45) * step
+	turns = mini(turns + step, TURNS_NEEDED)
 	_fx_all(&"turn")
 	if turns >= TURNS_NEEDED:
 		turn_quality = _turn_score / TURNS_NEEDED

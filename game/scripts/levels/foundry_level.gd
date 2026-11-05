@@ -6,8 +6,9 @@ extends GameWorld
 
 const BACKYARD := "res://scenes/backyard.tscn"
 const GARAGE := "res://scenes/garage.tscn"
+const BELL_FOUNDRY := "res://scenes/bell_foundry.tscn"
 ## Unlock upgrade id -> level it opens.
-const UNLOCKS := {&"garage": GARAGE}
+const UNLOCKS := {&"garage": GARAGE, &"bell_foundry": BELL_FOUNDRY}
 ## Seconds between "freigeschaltet" and the move, so everyone sees the banner.
 const TRAVEL_DELAY := 3.5
 

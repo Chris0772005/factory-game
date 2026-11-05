@@ -9,13 +9,7 @@ extends Node3D
 ##
 ## Everything is CC0 or procedural (KayKit props via PropKit, docs/ASSETS.md).
 
-const INNER_MIN := Vector2(-6.0, -4.6)
-## Inner extent; z of INNER_MAX is the door line.
-const INNER_MAX := Vector2(6.0, 4.4)
-const HEIGHT := 2.9
 const WALL := 0.24
-## Back-wall window above the model benches (x from, x to, sill, top).
-const WINDOW := Vector4(0.6, 4.2, 1.35, 2.3)
 ## Where the station wagon is parked (left bay, nose to the back wall).
 const CAR_POS := Vector3(-4.35, 0.0, 1.55)
 const P := PropKit.Solid
@@ -23,6 +17,17 @@ const CAMERA_PASSTHROUGH := &"camera_passthrough"
 ## Length of the `stains` array in env_concrete.gdshader.
 const MAX_STAINS := 12
 
+## Inner floor rectangle (x, z); z of inner_max is the open front (door line).
+## Subclasses (other halls) set these before `_build`.
+var inner_min := Vector2(-6.0, -4.6)
+var inner_max := Vector2(6.0, 4.4)
+var height := 2.9
+## Back-wall window (x from, x to, sill, top).
+var window := Vector4(0.6, 4.2, 1.35, 2.3)
+## Painted parking-bay line on the floor (world x); < -50 = none.
+var bay_line_x := CAR_POS.x + 1.45
+## Extra env_concrete parameters (colours) for other halls.
+var floor_params := {}
 var stations: Array = []
 var _passthrough: Array[RID] = []
 var _wall_mat: ShaderMaterial
@@ -38,12 +43,17 @@ static func build(world: Node3D, level_stations: Array) -> GarageSet:
 	return set
 
 
-func _build() -> void:
+## Wall and trim materials (halls override for their own look).
+func _materials() -> void:
 	_wall_mat = EnvMesh.material("garage_wall", "res://shaders/env_plaster.gdshader", {
 		plaster = Color("#d8cab4"), grime = Color("#6f655c"), brick = Color("#a65a42"), mortar = Color("#c9b9a2"),
 		chips = 0.45, streaks = 0.25, cutaway = true, brick_below = 0.95})
 	_trim_mat = EnvMesh.wood("garage_trim", {base_color = Color("#5f6f73"), grain_color = Color("#3c474a"),
 		weathering = 0.45, paint = 0.8, paint_color = Color("#3f6f78"), roughness_base = 0.7})
+
+
+func _build() -> void:
+	_materials()
 	_floor()
 	_walls()
 	_front()
@@ -72,8 +82,10 @@ func _floor() -> void:
 	plane.size = Vector2(40.0, 40.0)
 	var mat := ShaderMaterial.new()
 	mat.shader = load("res://shaders/env_concrete.gdshader")
-	mat.set_shader_parameter(&"door_z", INNER_MAX.y + WALL * 0.5)
-	mat.set_shader_parameter(&"bay_line_x", CAR_POS.x + 1.45)
+	mat.set_shader_parameter(&"door_z", inner_max.y + WALL * 0.5)
+	mat.set_shader_parameter(&"bay_line_x", bay_line_x)
+	for k in floor_params:
+		mat.set_shader_parameter(k, floor_params[k])
 	var stains := _stains()
 	var count := mini(stains.size(), MAX_STAINS)
 	# Uniform arrays must be passed at their declared length.
@@ -94,40 +106,43 @@ func _stains() -> PackedVector4Array:
 			out.append(Vector4(p.x, p.y, 1.7, 1.0))
 		elif s is MoldBox:
 			out.append(Vector4(p.x, p.y, 1.35, 2.0))
-	out.append(Vector4(CAR_POS.x, CAR_POS.z + 0.6, 0.75, 0.0))
-	out.append(Vector4(CAR_POS.x + 0.3, CAR_POS.z - 0.9, 0.35, 0.0))
-	out.append(Vector4(5.3, -3.9, 0.55, 3.0))
-	out.append(Vector4(-5.45, -2.4, 0.45, 3.0))
+	out.append_array(_extra_stains())
 	return out
+
+
+## Set-specific stains (garage: oil under the car, rust rings under barrels).
+func _extra_stains() -> PackedVector4Array:
+	return PackedVector4Array([Vector4(CAR_POS.x, CAR_POS.z + 0.6, 0.75, 0.0), Vector4(CAR_POS.x + 0.3, CAR_POS.z - 0.9, 0.35, 0.0),
+		Vector4(5.3, -3.9, 0.55, 3.0), Vector4(-5.45, -2.4, 0.45, 3.0)])
 
 
 # --- Walls -----------------------------------------------------------------------
 
 func _walls() -> void:
-	var x0 := INNER_MIN.x - WALL * 0.5
-	var x1 := INNER_MAX.x + WALL * 0.5
-	var zb := INNER_MIN.y - WALL * 0.5
-	var zf := INNER_MAX.y + WALL * 0.5
+	var x0 := inner_min.x - WALL * 0.5
+	var x1 := inner_max.x + WALL * 0.5
+	var zb := inner_min.y - WALL * 0.5
+	var zf := inner_max.y + WALL * 0.5
 	var width := x1 - x0 + WALL
 	# Back wall around the window.
-	var wx0 := WINDOW.x
-	var wx1 := WINDOW.y
-	_wall_box(Vector3((x0 - WALL * 0.5 + wx0) * 0.5, HEIGHT * 0.5, zb), Vector3(wx0 - (x0 - WALL * 0.5), HEIGHT, WALL))
-	_wall_box(Vector3((wx1 + x1 + WALL * 0.5) * 0.5, HEIGHT * 0.5, zb), Vector3(x1 + WALL * 0.5 - wx1, HEIGHT, WALL))
-	_wall_box(Vector3((wx0 + wx1) * 0.5, WINDOW.z * 0.5, zb), Vector3(wx1 - wx0, WINDOW.z, WALL))
-	_wall_box(Vector3((wx0 + wx1) * 0.5, (WINDOW.w + HEIGHT) * 0.5, zb), Vector3(wx1 - wx0, HEIGHT - WINDOW.w, WALL))
-	_window(Vector3((wx0 + wx1) * 0.5, (WINDOW.z + WINDOW.w) * 0.5, zb), Vector2(wx1 - wx0, WINDOW.w - WINDOW.z))
+	var wx0 := window.x
+	var wx1 := window.y
+	_wall_box(Vector3((x0 - WALL * 0.5 + wx0) * 0.5, height * 0.5, zb), Vector3(wx0 - (x0 - WALL * 0.5), height, WALL))
+	_wall_box(Vector3((wx1 + x1 + WALL * 0.5) * 0.5, height * 0.5, zb), Vector3(x1 + WALL * 0.5 - wx1, height, WALL))
+	_wall_box(Vector3((wx0 + wx1) * 0.5, window.z * 0.5, zb), Vector3(wx1 - wx0, window.z, WALL))
+	_wall_box(Vector3((wx0 + wx1) * 0.5, (window.w + height) * 0.5, zb), Vector3(wx1 - wx0, height - window.w, WALL))
+	_window(Vector3((wx0 + wx1) * 0.5, (window.z + window.w) * 0.5, zb), Vector2(wx1 - wx0, window.w - window.z))
 	# Side walls run from the back wall to the door line.
 	var depth := zf - zb + WALL
-	_wall_box(Vector3(x0, HEIGHT * 0.5, (zb + zf) * 0.5), Vector3(WALL, HEIGHT, depth))
-	_wall_box(Vector3(x1, HEIGHT * 0.5, (zb + zf) * 0.5), Vector3(WALL, HEIGHT, depth))
+	_wall_box(Vector3(x0, height * 0.5, (zb + zf) * 0.5), Vector3(WALL, height, depth))
+	_wall_box(Vector3(x1, height * 0.5, (zb + zf) * 0.5), Vector3(WALL, height, depth))
 	# Painted skirting along the inside: reads the floor/wall seam from above.
 	var skirt := EnvMesh.surface("garage_skirt", {base_color = Color("#4b4a4c"), roughness_base = 0.6, contact_dark = 0.2})
 	var pieces := []
-	pieces.append(EnvMesh.piece(EnvMesh.box(Vector3(width - WALL * 2.0, 0.12, 0.03)), Transform3D(Basis(), Vector3(0, 0.06, INNER_MIN.y + 0.015))))
+	pieces.append(EnvMesh.piece(EnvMesh.box(Vector3(width - WALL * 2.0, 0.12, 0.03)), Transform3D(Basis(), Vector3(0, 0.06, inner_min.y + 0.015))))
 	for sx: float in [-1.0, 1.0]:
-		var x := (INNER_MIN.x + 0.015) if sx < 0.0 else (INNER_MAX.x - 0.015)
-		pieces.append(EnvMesh.piece(EnvMesh.box(Vector3(0.03, 0.12, INNER_MAX.y - INNER_MIN.y)), Transform3D(Basis(), Vector3(x, 0.06, (INNER_MIN.y + INNER_MAX.y) * 0.5))))
+		var x := (inner_min.x + 0.015) if sx < 0.0 else (inner_max.x - 0.015)
+		pieces.append(EnvMesh.piece(EnvMesh.box(Vector3(0.03, 0.12, inner_max.y - inner_min.y)), Transform3D(Basis(), Vector3(x, 0.06, (inner_min.y + inner_max.y) * 0.5))))
 	EnvMesh.add(self, EnvMesh.merge(pieces), skirt)
 
 
@@ -160,13 +175,13 @@ func _window(center: Vector3, size: Vector2) -> void:
 # --- Front: corner pillars, the door header as a shadow only --------------------
 
 func _front() -> void:
-	var zf := INNER_MAX.y + WALL * 0.5
+	var zf := inner_max.y + WALL * 0.5
 	# Brick pillars finish the side walls at the door line.
 	var brick := EnvMesh.material("garage_brick", "res://shaders/env_plaster.gdshader", {
 		brick = Color("#a65a42"), mortar = Color("#c9b9a2"), brickwork = 1.0, cutaway = true})
-	for x: float in [INNER_MIN.x - WALL * 0.5, INNER_MAX.x + WALL * 0.5]:
-		var size := Vector3(0.42, HEIGHT, 0.42)
-		var c := Vector3(x, HEIGHT * 0.5, zf)
+	for x: float in [inner_min.x - WALL * 0.5, inner_max.x + WALL * 0.5]:
+		var size := Vector3(0.42, height, 0.42)
+		var c := Vector3(x, height * 0.5, zf)
 		var body := WorldBuilder.add_collider(self, size, Transform3D(Basis(), c))
 		body.add_to_group(CAMERA_PASSTHROUGH)
 		_passthrough.append(body.get_rid())
@@ -174,20 +189,23 @@ func _front() -> void:
 	# The lintel and the rolled-up door would cross the middle of the screen
 	# from the game camera: they only cast their shadow, which frames the
 	# sun shaft through the door.
-	var header := EnvMesh.add(self, EnvMesh.box(Vector3(INNER_MAX.x - INNER_MIN.x + WALL * 2.0, 0.7, 0.5), 0.0), brick,
-		Transform3D(Basis(), Vector3(0, HEIGHT - 0.35, zf)))
+	var header := EnvMesh.add(self, EnvMesh.box(Vector3(inner_max.x - inner_min.x + WALL * 2.0, 0.7, 0.5), 0.0), brick,
+		Transform3D(Basis(), Vector3(0, height - 0.35, zf)))
 	if header:
 		header.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
-	if not EnvMesh.visual():
-		return
-	# Hand-painted shop sign on the back wall, over the pegboard.
-	StationKit.label(self, "GIESSEREI", Transform3D(Basis(), Vector3(-1.6, 2.3, INNER_MIN.y + 0.012)), 120, Color("#5b2f22"), 800, 0.0016)
+	if EnvMesh.visual():
+		_sign()
+
+
+## Hand-painted shop sign on the back wall, over the pegboard.
+func _sign() -> void:
+	StationKit.label(self, "GIESSEREI", Transform3D(Basis(), Vector3(-1.6, 2.3, inner_min.y + 0.012)), 120, Color("#5b2f22"), 800, 0.0016)
 
 
 ## Shadows only: the interior is shaded from the low sun without hiding it from the camera.
 func _roof() -> void:
-	var size := Vector3(INNER_MAX.x - INNER_MIN.x + WALL * 2.0 + 0.6, 0.2, INNER_MAX.y - INNER_MIN.y + WALL * 2.0 + 0.5)
-	var mi := EnvMesh.add(self, EnvMesh.box(size, 0.0), _wall_mat, Transform3D(Basis(), Vector3(0, HEIGHT + 0.1, (INNER_MIN.y + INNER_MAX.y) * 0.5 + 0.1)))
+	var size := Vector3(inner_max.x - inner_min.x + WALL * 2.0 + 0.6, 0.2, inner_max.y - inner_min.y + WALL * 2.0 + 0.5)
+	var mi := EnvMesh.add(self, EnvMesh.box(size, 0.0), _wall_mat, Transform3D(Basis(), Vector3(0, height + 0.1, (inner_min.y + inner_max.y) * 0.5 + 0.1)))
 	if mi:
 		mi.name = "RoofShadow"
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
@@ -208,8 +226,8 @@ func _dressing() -> void:
 	prop("kaykit_prototype/Can_A.gltf", Vector3(-3.15, 0, 3.9), 25.0, {solid = P.NONE, tint = Color("#a33b2e"), desaturate = 0.2})
 	prop("kaykit_prototype/Can_B.gltf", Vector3(-3.4, 0, 4.05), -10.0, {solid = P.NONE, tint = Color("#3f6f78"), desaturate = 0.2})
 	# Back wall: steel shelving with boxes and paint tins, the pegboard, a cabinet.
-	_shelving(Vector3(-4.55, 0.0, INNER_MIN.y + 0.28))
-	_pegboard(Vector3(-1.6, 1.55, INNER_MIN.y + 0.02))
+	_shelving(Vector3(-4.55, 0.0, inner_min.y + 0.28))
+	_pegboard(Vector3(-1.6, 1.55, inner_min.y + 0.02))
 	prop("kaykit_furniture/cabinet_medium.gltf", Vector3(5.35, 0, -2.0), -90.0, {tint = Color("#8f9ca0"), desaturate = 0.4})
 	# Right wall: barrels and a broom (the crate delivery is a station).
 	prop("kaykit_prototype/Barrel_A.gltf", Vector3(5.3, 0.4, -3.9), 15.0, {solid = P.CYLINDER, tint = Color("#3f5f8a"), desaturate = 0.3})
@@ -319,7 +337,7 @@ func _cable() -> void:
 		return
 	var mat := EnvMesh.surface("garage_cable", {base_color = Color("#d06a2a"), roughness_base = 0.45, contact_dark = 0.0})
 	var pts := PackedVector3Array()
-	var start := Vector3(INNER_MAX.x - 0.02, 0.35, -0.6)
+	var start := Vector3(inner_max.x - 0.02, 0.35, -0.6)
 	pts.append(start)
 	pts.append(start + Vector3(-0.08, -0.32, 0))
 	for i in 9:
@@ -341,7 +359,7 @@ func _lamps() -> void:
 	tube.emission = Color("#dfe8ff")
 	tube.emission_energy_multiplier = 3.2
 	for x: float in [-3.0, 2.4]:
-		var c := Vector3(x, 2.55, INNER_MIN.y + 0.09)
+		var c := Vector3(x, 2.55, inner_min.y + 0.09)
 		EnvMesh.add(self, EnvMesh.box(Vector3(1.3, 0.07, 0.1), 0.01), housing, Transform3D(Basis(), c), false)
 		EnvMesh.add(self, EnvMesh.cylinder(0.022, 0.022, 1.2, 8), tube, Transform3D(Basis(Vector3.BACK, PI * 0.5), c + Vector3(0, -0.05, 0.03)), false)
 		var light := OmniLight3D.new()
@@ -364,7 +382,7 @@ func _lamps() -> void:
 		add_child(fill)
 	# Warm caged bulkhead lamp on the left wall by the door.
 	var bulb := EnvMesh.material("garage_bulb", "res://shaders/env_bulb.gdshader", {energy = 2.0})
-	var post := Vector3(INNER_MIN.x + 0.12, 2.2, 3.6)
+	var post := Vector3(inner_min.x + 0.12, 2.2, 3.6)
 	EnvMesh.add(self, EnvMesh.sphere(0.09, 10, 6), bulb, Transform3D(Basis(), post), false)
 	var warm := OmniLight3D.new()
 	warm.light_color = Color("#ffb877")
@@ -377,12 +395,12 @@ func _lamps() -> void:
 # --- Outside ----------------------------------------------------------------------
 
 func _outside() -> void:
-	var zf := INNER_MAX.y + WALL * 0.5
+	var zf := inner_max.y + WALL * 0.5
 	prop("kaykit_city/streetlight.gltf", Vector3(7.6, 0, zf + 5.2), 180.0, {scale = 0.95, solid = P.CYLINDER})
 	for i in 7:
-		prop("kaykit_city/bush.gltf", Vector3(INNER_MIN.x - 1.2 - (i % 2) * 0.3, 0, zf + 0.4 + i * 0.85), i * 40.0, {scale = 1.1, solid = P.NONE})
-		prop("kaykit_city/bush.gltf", Vector3(INNER_MAX.x + 1.1 + (i % 2) * 0.3, 0, zf + 0.6 + i * 0.85), i * 55.0, {scale = 1.05, solid = P.NONE})
-	prop("kaykit_city/dumpster.gltf", Vector3(INNER_MAX.x + 1.5, 0, -1.5), 90.0, {scale = 0.8})
+		prop("kaykit_city/bush.gltf", Vector3(inner_min.x - 1.2 - (i % 2) * 0.3, 0, zf + 0.4 + i * 0.85), i * 40.0, {scale = 1.1, solid = P.NONE})
+		prop("kaykit_city/bush.gltf", Vector3(inner_max.x + 1.1 + (i % 2) * 0.3, 0, zf + 0.6 + i * 0.85), i * 55.0, {scale = 1.05, solid = P.NONE})
+	prop("kaykit_city/dumpster.gltf", Vector3(inner_max.x + 1.5, 0, -1.5), 90.0, {scale = 0.8})
 	prop("kaykit_city/firehydrant.gltf", Vector3(5.6, 0, zf + 6.4), 0.0, {scale = 0.9, solid = P.CYLINDER})
 	# Neighbours across the street, and behind the garage.
 	prop("kaykit_city/building_A_withoutBase.gltf", Vector3(-6.0, 0, zf + 14.0), 180.0, {solid = P.NONE, desaturate = 0.5})
@@ -392,7 +410,7 @@ func _outside() -> void:
 	prop("kaykit_city/building_A_withoutBase.gltf", Vector3(1.0, 0, -11.5), 0.0, {solid = P.NONE, desaturate = 0.5})
 	prop("kaykit_city/building_F_withoutBase.gltf", Vector3(10.0, 0, -11.0), 0.0, {solid = P.NONE, desaturate = 0.5})
 	# Low walls keep workers on the driveway.
-	for x: float in [INNER_MIN.x - 1.0, INNER_MAX.x + 1.0]:
+	for x: float in [inner_min.x - 1.0, inner_max.x + 1.0]:
 		WorldBuilder.add_collider(self, Vector3(0.4, 1.2, 7.0), Transform3D(Basis(), Vector3(x, 0.6, zf + 3.5)))
 	WorldBuilder.add_collider(self, Vector3(16.0, 1.2, 0.4), Transform3D(Basis(), Vector3(0, 0.6, zf + 7.2)))
 
@@ -423,8 +441,8 @@ func _reflection_probe() -> void:
 	var probe := ReflectionProbe.new()
 	probe.name = "GarageReflections"
 	probe.update_mode = ReflectionProbe.UPDATE_ONCE
-	probe.size = Vector3(12.8, 3.2, 9.6)
-	probe.position = Vector3(0, 1.5, (INNER_MIN.y + INNER_MAX.y) * 0.5)
+	probe.size = Vector3(inner_max.x - inner_min.x + 0.8, height + 0.3, inner_max.y - inner_min.y + 0.6)
+	probe.position = Vector3((inner_min.x + inner_max.x) * 0.5, height * 0.5, (inner_min.y + inner_max.y) * 0.5)
 	probe.interior = true
 	probe.ambient_mode = ReflectionProbe.AMBIENT_COLOR
 	probe.ambient_color = Color("#3a3446")

@@ -40,6 +40,7 @@ func _run() -> void:
 	_check(wav != null and wav.data.size() > BellTone.RATE * 2 * 2, "tone rendered (%.1f s, %d ms)" % [wav.data.size() / 2.0 / BellTone.RATE, ms])
 	_check(BellTone.stream(bell, 0.35, &"bronze") == wav, "tone is cached")
 	await _pit_round()
+	await _hall_round()
 	_finish()
 
 
@@ -103,6 +104,101 @@ func _pit_round() -> void:
 	await _frames(5)
 	var cracked: Array = get_tree().get_nodes_in_group(&"bells").filter(func(n): return (n as Bell).cracked)
 	_check(cracked.size() == 1 and (cracked[0] as Bell).verdict() == "gesprungen", "the cracked bell is 'gesprungen'")
+
+
+## The Glockengießerei level: stations, unlock, bell orders and upgrades.
+func _hall_round() -> void:
+	for w in get_children():
+		if w is GameWorld:
+			w.queue_free()
+	await _frames(3)
+	var world: GameWorld = load("res://scenes/bell_foundry.tscn").instantiate()
+	add_child(world)
+	await _frames(10)
+	var pits := get_tree().get_nodes_in_group(&"bell_pits")
+	var benches := world.get_children().filter(func(n): return n is ModelBench and n.bell_mode)
+	_check(pits.size() == 2 and benches.size() == 2, "hall has two pits and two profile benches")
+	_check(get_tree().get_nodes_in_group(&"crucibles").size() == 2, "two crucibles for one long pour")
+	_check(world.upgrade_tier() == 2 and Upgrades.catalog_for(1).any(func(u): return u.id == &"bell_foundry"), "the garage sells the bell foundry")
+	_check(FoundryLevel.UNLOCKS.get(&"bell_foundry", "") == world.level_path(), "the unlock leads here")
+	var board: OrderBoard = get_tree().get_first_node_in_group(&"order_boards")
+	_check(board != null and board.slots[0] == &"church_bell", "first order: a church bell in G")
+	# Order matching with real bells (big pit = deep bell).
+	var big := pits.filter(func(p): return (p as BellPit).mouth_radius > 0.4)[0] as BellPit
+	var deep: Bell = world.spawn_entity({type = "bell", code = DrawingSamples.bell().to_code(), alloy = "bronze", radius = big.mouth_radius,
+		quality = 0.8, pos = Vector3(0, 0.6, 3.0)})
+	var cracked: Bell = world.spawn_entity({type = "bell", code = DrawingSamples.bell().to_code(), alloy = "brass", radius = 0.35,
+		quality = 0.8, cracked = true, pos = Vector3(1.5, 0.6, 3.0)})
+	await _frames(3)
+	_check(OrderBoard.matches(OrderBoard.template(&"deep_bell"), deep), "the big pit's bell is deep enough (%s, %.0f Hz)" % [deep.note(), deep.frequency()])
+	_check(OrderBoard.matches(OrderBoard.template(&"museum_bell"), cracked) and not OrderBoard.matches(OrderBoard.template(&"ship_bell"), cracked),
+		"a cracked bell suits the museum, not a ship")
+	_check(not OrderBoard.matches(OrderBoard.template(&"church_bell"), deep) or deep.note().begins_with("G"), "church order wants the note G")
+	# Upgrades: crank doubles turns, tuner makes a crooked bell sound better.
+	var crooked: Bell = world.spawn_entity({type = "bell", code = DrawingSamples.crooked_bell().to_code(), alloy = "bronze", radius = 0.35,
+		quality = 0.8, pos = Vector3(-1.5, 0.6, 3.0)})
+	await _frames(2)
+	var before := crooked.purity()
+	world.upgrades.load_save(["strickle_crank", "bell_tuner"])
+	_check(crooked.purity() > before, "Stimmbank: purer bell (%.2f -> %.2f)" % [before, crooked.purity()])
+	var pit := pits[0] as BellPit
+	pit.add_profile(DrawingSamples.bell().to_code())
+	pit.interact(world.local_player())
+	_check(pit.turns == 2, "Kurbel: one press turns twice")
+	await _hoist_round(world, deep)
+
+
+## One worker moves the heavy bell with the chain hoist and sells it.
+func _hoist_round(world: GameWorld, bell: Bell) -> void:
+	var hoist: ChainHoist = get_tree().get_first_node_in_group(&"hoists")
+	var pendant: Item = get_tree().get_first_node_in_group(&"hoist_pendants")
+	_check(hoist != null and pendant != null, "hall has a chain hoist with its pendant")
+	if hoist == null or pendant == null:
+		return
+	var me := world.local_player()
+	_check(bell.mass * 9.8 > Player.STRENGTH, "the big bell (%.0f kg) is too heavy for one worker" % bell.mass)
+	# Stood next to the big pit, as if just dug out.
+	bell.global_position = Vector3(1.2, 0.05, 1.4)
+	bell.linear_velocity = Vector3.ZERO
+	await _frames(30)
+	_check(absf(bell.rotation.x) < 0.01 and absf(bell.rotation.z) < 0.01, "the bell stays upright")
+	# Take the pendant and walk to the bell.
+	await _frames(60)
+	await _walk(me, Vector3(pendant.global_position.x, 0.05, pendant.global_position.z + 0.7))
+	me.facing = PI
+	pendant.global_position = me._hand_target()
+	await _frames(2)
+	me.grab(pendant)
+	await _frames(5)
+	_check(me.held == pendant, "worker carries the pendant")
+	await _walk(me, Vector3(bell.global_position.x, 0.05, bell.global_position.z + ChainHoist.HOOK_AHEAD))
+	await _frames(120)
+	var h := hoist.hook_position()
+	_check(Vector2(h.x - bell.global_position.x, h.z - bell.global_position.z).length() < ChainHoist.GRAB_RADIUS,
+		"the hook followed the pendant over the bell")
+	pendant.use_start(me)
+	await _frames(240)
+	_check(hoist.load == bell and bell.global_position.y > 0.5, "hook lifted the bell (y %.2f)" % bell.global_position.y)
+	var crate: SellCrate = world.find_children("*", "SellCrate", true, false)[0]
+	var before := world.money
+	await _walk(me, Vector3(crate.global_position.x, 0.05, crate.global_position.z + ChainHoist.HOOK_AHEAD))
+	await _frames(240)
+	pendant.use_start(me)
+	await _frames(300)
+	_check(not is_instance_valid(bell) or bell.is_queued_for_deletion(), "the bell went into the sell crate")
+	_check(world.money > before, "sold by crane (+%d $)" % (world.money - before))
+
+
+func _walk(me: Player, to: Vector3) -> void:
+	var from := me.global_position
+	var steps := maxi(1, ceili(from.distance_to(to) / 0.12))
+	var had := me.held
+	for i in steps:
+		me._do_teleport(from.lerp(to, float(i + 1) / steps))
+		await _frames(2)
+		if had and me.held == null:
+			push_warning("lost the held item while walking")
+			had = null
 
 
 func bell_profile_of(b: Bell) -> BellProfile:

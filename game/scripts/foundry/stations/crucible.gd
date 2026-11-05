@@ -224,6 +224,8 @@ func _lip_local() -> Vector3:
 
 func capacity() -> float:
 	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
+	if world and world.has_upgrade(&"crucible_huge"):
+		return 8.0
 	return 5.0 if world and world.has_upgrade(&"crucible_big") else CAPACITY
 
 

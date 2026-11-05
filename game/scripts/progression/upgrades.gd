@@ -17,6 +17,11 @@ const CATALOG := [
 	{id = &"quench_oil", name = "Härteöl", desc = "Abschrecken in Öl statt Wasser: halbes Rissrisiko.", cost = 420, tier = 1},
 	{id = &"blower", name = "Elektrogebläse", desc = "Der Ofen hält die Hitze doppelt so lange.", cost = 480, tier = 1},
 	{id = &"scrapyard_regular", name = "Stammkunde am Wertstoffhof", desc = "Versiegelte Kisten für 20 statt 30 $.", cost = 350, tier = 1},
+	{id = &"bell_foundry", name = "Glockengießerei pachten", desc = "Eine echte Halle: Glocken zeichnen, drehen, gießen, läuten.", cost = 4000, tier = 1, unlock = true},
+	# Glockengießerei (tier 2).
+	{id = &"crucible_huge", name = "Gießpfanne", desc = "Der Tiegel fasst 8 Liter – eine kleine Glocke in einem Zug.", cost = 900, tier = 2},
+	{id = &"strickle_crank", name = "Kurbel an der Schablone", desc = "Jeder Dreh zählt doppelt.", cost = 650, tier = 2},
+	{id = &"bell_tuner", name = "Stimmbank", desc = "Glocken werden nachgestimmt: klingen reiner.", cost = 1200, tier = 2},
 ]
 
 var owned := {}
