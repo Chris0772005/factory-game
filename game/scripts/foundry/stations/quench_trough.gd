@@ -6,8 +6,9 @@ extends Node3D
 
 const SIZE := Vector3(1.5, 0.62, 0.72)
 const WATER_Y := 0.5
-## Bucket reach from the trough's centre.
-const REACH := 1.5
+## Bucket reach from the tub's rim (horizontal, m): the carried bucket hangs
+## ~0.7 m in front of the worker, so they stand about that far off the rim.
+const REACH := 1.4
 
 var _water_mat: ShaderMaterial
 var _stir := 0.0
@@ -72,6 +73,14 @@ func _build_art() -> void:
 	water.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(water)
 	StationKit.label(self, "WASSER", Transform3D(Basis(), Vector3(0, 0.36, hz + 0.03)), 72, Color("#e9e3d6"), 800, 0.0012)
+
+
+## Horizontal distance from `p` to the tub's footprint (0 inside).
+func distance_to(p: Vector3) -> float:
+	var local := to_local(p)
+	var dx := maxf(absf(local.x) - SIZE.x * 0.5, 0.0)
+	var dz := maxf(absf(local.z) - SIZE.z * 0.5, 0.0)
+	return Vector2(dx, dz).length()
 
 
 func interact_point() -> Vector3:

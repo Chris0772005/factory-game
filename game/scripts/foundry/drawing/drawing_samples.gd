@@ -11,6 +11,30 @@ static func smiley() -> Drawing:
 	return d
 
 
+## Bell silhouette (right half): narrow crown, straight waist, flared sound bow.
+static func bell() -> Drawing:
+	var d := Drawing.new()
+	d.add_stroke(_densified(_bell_outline(0.0), 0.015))
+	return d
+
+
+## The same bell drawn with a shaky hand: a crooked-sounding bell.
+static func crooked_bell() -> Drawing:
+	var d := Drawing.new()
+	d.add_stroke(_densified(_bell_outline(0.045), 0.015))
+	return d
+
+
+static func _bell_outline(wobble: float) -> PackedVector2Array:
+	var shape := [Vector2(0.18, 0.12), Vector2(0.24, 0.16), Vector2(0.25, 0.3), Vector2(0.26, 0.45),
+		Vector2(0.29, 0.6), Vector2(0.34, 0.72), Vector2(0.4, 0.8), Vector2(0.43, 0.86)]
+	var pts := PackedVector2Array()
+	for i in shape.size():
+		var v: Vector2 = shape[i]
+		pts.append(Vector2(0.5 + v.x + (wobble if i % 2 == 0 else -wobble), v.y))
+	return pts
+
+
 static func letter_o() -> Drawing:
 	var d := Drawing.new()
 	d.add_stroke(_arc(Vector2(0.5, 0.5), Vector2(0.3, 0.42), -90.0, 275.0))

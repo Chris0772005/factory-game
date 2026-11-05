@@ -45,4 +45,13 @@ wait $host_pid
 grep -hE "^\[|SCRIPT ERROR" /tmp/fg_host3_$PORT.log /tmp/fg_client3_$PORT.log
 grep -q "FAIL\|SCRIPT ERROR" /tmp/fg_host3_$PORT.log /tmp/fg_client3_$PORT.log && fail=1
 grep -q "NET TRAVEL PASSED" /tmp/fg_client3_$PORT.log || fail=1
+echo "== Network co-op garage round (bucket, quench, crate) =="
+timeout -s KILL 150 "$GODOT" --headless --path . res://tests/test_net_garage.tscn -- --host --port=$PORT --role=host --no-save > /tmp/fg_host4_$PORT.log 2>&1 &
+host_pid=$!
+sleep 3
+timeout -s KILL 140 "$GODOT" --headless --path . res://tests/test_net_garage.tscn -- --join=127.0.0.1 --port=$PORT --role=client --no-save > /tmp/fg_client4_$PORT.log 2>&1
+wait $host_pid
+grep -hE "^\[|SCRIPT ERROR" /tmp/fg_host4_$PORT.log /tmp/fg_client4_$PORT.log
+grep -q "FAIL\|SCRIPT ERROR" /tmp/fg_host4_$PORT.log /tmp/fg_client4_$PORT.log && fail=1
+grep -q "NET GARAGE PASSED" /tmp/fg_client4_$PORT.log || fail=1
 exit $fail

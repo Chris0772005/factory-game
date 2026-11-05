@@ -30,6 +30,11 @@ const HINT_FULL := "Das Blatt ist voll!   ·   Rückgängig, Löschen oder Ferti
 
 var drawing := Drawing.new()
 var prompt := ""
+## Bell mode (Glockengießerei): the stroke is a bell's silhouette around the
+## centre line; the preview turns it on a lathe and names its note.
+var bell_mode := false
+## Mouth radius (m) of the bell pit the drawing goes to (preview and stats).
+var bell_radius := 0.35
 ## Seconds left on the countdown.
 var time_left := 0.0
 
@@ -271,9 +276,14 @@ func _refresh() -> void:
 
 func _rebuild_preview() -> void:
 	_preview_dirty = false
-	var res := CastMeshBuilder.build(drawing, 0.6, 0.08)
-	_preview_mesh.mesh = res.mesh
-	_stats_label.text = "" if drawing.is_empty() else metal_need_text(drawing)
+	if bell_mode:
+		var profile := BellProfile.from_drawing(drawing)
+		_preview_mesh.mesh = profile.mesh(0.3) if profile else null
+		_stats_label.text = "" if drawing.is_empty() else bell_text(drawing, bell_radius)
+	else:
+		var res := CastMeshBuilder.build(drawing, 0.6, 0.08)
+		_preview_mesh.mesh = res.mesh
+		_stats_label.text = "" if drawing.is_empty() else metal_need_text(drawing)
 	if _preview_tween:
 		_preview_tween.kill()
 	if not drawing.is_empty():
@@ -466,7 +476,11 @@ func _build_preview() -> SubViewport:
 	var cam := Camera3D.new()
 	cam.fov = 34
 	vp.add_child(cam)
-	cam.look_at_from_position(Vector3(0, 1.36, 1.1), Vector3(0, -0.07, 0.04))
+	if bell_mode:
+		# A standing bell: look at it from the side, a little from above.
+		cam.look_at_from_position(Vector3(0, 0.62, 1.25), Vector3(0, 0.14, 0))
+	else:
+		cam.look_at_from_position(Vector3(0, 1.36, 1.1), Vector3(0, -0.07, 0.04))
 	return vp
 
 
@@ -571,6 +585,8 @@ class _Canvas:
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		var r := ink_rect()
 		var width := pad.brush * r.size.x
+		if pad.bell_mode:
+			_draw_axis(r, width)
 		for s in pad.drawing.strokes:
 			_draw_ink(s, width, UITheme.INK)
 		_draw_ink(pad._stroke, width, UITheme.INK)
@@ -579,6 +595,23 @@ class _Canvas:
 			draw_arc(c, width * 0.5, 0.0, TAU, 40, Color(UITheme.INK, 0.55), 2.5, true)
 			if pad._pad_device >= 0:
 				draw_circle(c, 4.0, UITheme.ACCENT_DARK, true, -1.0, true)
+
+	## Bell mode: dashed centre line and the strokes mirrored in pale ink, so
+	## the player sees the whole bell they are turning.
+	func _draw_axis(r: Rect2, width: float) -> void:
+		var x := r.position.x + r.size.x * 0.5
+		var y := r.position.y
+		while y < r.end.y:
+			draw_line(Vector2(x, y), Vector2(x, minf(y + 18.0, r.end.y)), Color(UITheme.ACCENT_DARK, 0.55), 3.0, true)
+			y += 30.0
+		var ghost := Color(UITheme.INK, 0.22)
+		var strokes: Array = pad.drawing.strokes.duplicate()
+		strokes.append(pad._stroke)
+		for s: PackedVector2Array in strokes:
+			var mirrored := PackedVector2Array()
+			for p in s:
+				mirrored.append(Vector2(1.0 - p.x, p.y))
+			_draw_ink(mirrored, width, ghost)
 
 	## Faint paper fibres and specks (fixed seed, so the sheet never flickers).
 	func _draw_fibres(r: Rect2) -> void:
@@ -608,6 +641,16 @@ class _Canvas:
 
 ## How much melt the mold will need for this drawing, as a share of a crucible
 ## (same size, thickness and litres-per-m³ the mold box uses).
+## Bell mode stats: metal, note and how clean it will ring (bronze).
+static func bell_text(drawing: Drawing, mouth_radius: float) -> String:
+	var profile := BellProfile.from_drawing(drawing)
+	if profile == null:
+		return "Zeichne die Glocken-Silhouette: von der Krone oben bis zum Rand unten"
+	var f := BellTone.prime(profile, mouth_radius, &"bronze")
+	return "Glocke in %s · %s · ≈ %s l Bronze" % [BellTone.note_name(f), BellTone.verdict(profile),
+		("%.1f" % profile.litres(mouth_radius)).replace(".", ",")]
+
+
 static func metal_need_text(drawing: Drawing) -> String:
 	var built := CastMeshBuilder.build(drawing, MoldBox.CAST_SIZE, MoldBox.CAST_THICKNESS)
 	var litres := maxf(0.15, float(built.get("volume", 0.0)) * MoldBox.LITRES_PER_M3)

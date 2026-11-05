@@ -2,7 +2,8 @@ class_name Hammer
 extends Item
 ## Sledgehammer for breaking molds open. Swing with the use button.
 
-const REACH := 2.0
+## How far from a mold's rim a swing still lands (the head reaches over the flask).
+const REACH := 1.2
 ## Carried upright by the handle at the hips, head up, just in front of the
 ## worker (instead of floating at head height); swings forward from there.
 const CARRY_OFFSET := Vector2(0.6, 0.48)
@@ -84,13 +85,7 @@ func held_hint(player: Node) -> String:
 
 ## The mold in front of the carrier, else the nearest one within reach.
 func _target(player: Node) -> MoldBox:
-	var body := player as Node3D
-	var target := MoldBox.find_at(get_tree(), body.global_position + body.global_transform.basis.z * 1.0)
-	if target == null:
-		for node in get_tree().get_nodes_in_group(&"molds"):
-			if (node as Node3D).global_position.distance_to(body.global_position) < REACH:
-				target = node
-	return target
+	return MoldBox.near_worker(get_tree(), player as Node3D, REACH)
 
 
 func use_start(player: Node) -> void:

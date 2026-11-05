@@ -8,8 +8,8 @@ const RADIUS := 0.17
 const HEIGHT := 0.3
 ## Carried by the bail at the hip, a little in front.
 const CARRY_OFFSET := Vector2(0.5, 0.42)
-## How far in front of the carrier the water lands.
-const REACH := 1.6
+## How far from a mold's rim the water still reaches it.
+const REACH := 1.0
 
 var full := false
 var _water: MeshInstance3D
@@ -110,19 +110,13 @@ func _splash_at(pos: Vector3) -> void:
 
 func _trough_near(player: Node) -> bool:
 	for node in get_tree().get_nodes_in_group(&"quench_troughs"):
-		if (node as Node3D).global_position.distance_to((player as Node3D).global_position) < QuenchTrough.REACH:
+		if (node as QuenchTrough).distance_to((player as Node3D).global_position) < QuenchTrough.REACH:
 			return true
 	return false
 
 
 func _mold_ahead(player: Node) -> MoldBox:
-	var body := player as Node3D
-	var mold := MoldBox.find_at(get_tree(), body.global_position + body.global_transform.basis.z * 1.0)
-	if mold == null:
-		for node in get_tree().get_nodes_in_group(&"molds"):
-			if (node as Node3D).global_position.distance_to(body.global_position) < REACH:
-				mold = node
-	return mold
+	return MoldBox.near_worker(get_tree(), player as Node3D, REACH)
 
 
 func _set_full(value: bool) -> void:

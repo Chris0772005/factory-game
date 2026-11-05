@@ -58,6 +58,31 @@ static func find_at(tree: SceneTree, point: Vector3) -> MoldBox:
 	return null
 
 
+## Horizontal distance from `p` to the flask's footprint (0 inside).
+func distance_to(p: Vector3) -> float:
+	var local := to_local(p)
+	var dx := maxf(absf(local.x) - BED.x * 0.5, 0.0)
+	var dz := maxf(absf(local.z) - BED.z * 0.5, 0.0)
+	return Vector2(dx, dz).length()
+
+
+## The mold a worker at `body` is working on: the one in front of them, else
+## the closest whose rim is within `reach` (tools held out in front keep the
+## worker a little back from the flask).
+static func near_worker(tree: SceneTree, body: Node3D, reach := 1.0) -> MoldBox:
+	var ahead := find_at(tree, body.global_position + body.global_transform.basis.z * 1.0)
+	if ahead:
+		return ahead
+	var best: MoldBox = null
+	var best_d := reach
+	for node in tree.get_nodes_in_group(&"molds"):
+		var d := (node as MoldBox).distance_to(body.global_position)
+		if d < best_d:
+			best_d = d
+			best = node
+	return best
+
+
 func _ready() -> void:
 	# The station never moves but its art is animated per frame (Art Bible 9.1):
 	# without interpolation it shows each frame's pose instead of lagging a tick.
