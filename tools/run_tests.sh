@@ -54,4 +54,13 @@ wait $host_pid
 grep -hE "^\[|SCRIPT ERROR" /tmp/fg_host4_$PORT.log /tmp/fg_client4_$PORT.log
 grep -q "FAIL\|SCRIPT ERROR" /tmp/fg_host4_$PORT.log /tmp/fg_client4_$PORT.log && fail=1
 grep -q "NET GARAGE PASSED" /tmp/fg_client4_$PORT.log || fail=1
+echo "== Network co-op bell (profile, strickle, pour, dig out) =="
+timeout -s KILL 160 "$GODOT" --headless --path . res://tests/test_net_bells.tscn -- --host --port=$PORT --role=host --no-save > /tmp/fg_host5_$PORT.log 2>&1 &
+host_pid=$!
+sleep 3
+timeout -s KILL 150 "$GODOT" --headless --path . res://tests/test_net_bells.tscn -- --join=127.0.0.1 --port=$PORT --role=client --no-save > /tmp/fg_client5_$PORT.log 2>&1
+wait $host_pid
+grep -hE "^\[|SCRIPT ERROR" /tmp/fg_host5_$PORT.log /tmp/fg_client5_$PORT.log
+grep -q "FAIL\|SCRIPT ERROR" /tmp/fg_host5_$PORT.log /tmp/fg_client5_$PORT.log && fail=1
+grep -q "NET BELLS PASSED" /tmp/fg_client5_$PORT.log || fail=1
 exit $fail

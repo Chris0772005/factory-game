@@ -137,6 +137,7 @@ func add_profile(drawing_code: String) -> bool:
 	turns = 0
 	_turn_score = 0.0
 	state = State.PROFILED
+	_rebuild_form()
 	_broadcast_state()
 	return true
 
@@ -233,6 +234,7 @@ func _dig_out() -> void:
 	turns = 0
 	fill = 0.0
 	_profile = null
+	_rebuild_form()
 	_broadcast_state()
 	if bell:
 		_present.call_deferred(bell)

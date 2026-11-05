@@ -76,3 +76,24 @@ Füllen, Abkühlen, Zerschlagen), Hammer, Modellbank (öffnet DrawPad), Verkaufs
   HUD `OrdersPanel`. Formkästen kühlen 14 s (`MoldBox.cool_time`).
 - Upgrades Stufe 1 (`Upgrades.CATALOG`, `tier = 1`): Gießbaum, Härteöl, Elektrogebläse, Stammkunde.
 - Test: `tests/test_garage.tscn`; Bilder: `scenes/garage_showcase.tscn -- --cam=wide|quench`.
+
+## Modul H – Glockengießerei (`foundry/bells/`, `levels/bell_foundry.gd`, `environment/bell_hall_set.gd`)
+
+- `BellProfile`: längster Strich einer Zeichnung = Silhouette (Abstand zur Mittellinie x = 0,5 = Radius, y = Höhe),
+  28 Stützstellen Krone→Mund, Drehkörper (`StationKit.lathe`, hohl, Wand 0,16 × Mundradius), Volumen → Liter
+  (`LITRES_PER_M3` = 260 wie Formkästen). `lumpiness`/`irregularity` aus der zweiten Differenz der Rohkontur.
+- `BellTone`: Grundton f ∝ Wand/D² (bei fester relativer Wand ∝ 1/D), Legierungsfaktor, Schlankheit; Partialtöne
+  der Moll-Terz-Glocke (Unterton 0,5 · Prim 1 · Terz 1,2 · Quinte 1,5 · Nominal 2 · 3 · 4), schiefe Kontur verstimmt
+  sie; Modalsynthese per Rotationsoszillator in `AudioStreamWAV` (22,05 kHz, ≤ 7 s, ~120 ms, gecacht).
+  Notennamen deutsch (H = B♮). Hörproben: `tools/bell_audition.gd`.
+- `BellPit` (Zustände EMPTY → PROFILED → TURNED → FILLING → COOLING → READY): Schablone drehen (Takt = Qualität,
+  Upgrade Kurbel ×2), Guss in einem Zug (Pause > 2,5 s = Kaltlauf), 16 s Abkühlen, Wasser = gesprungen,
+  Lehmmantel aufschlagen → `Bell` steigt heraus, läutet, Banner mit Note.
+- `Bell` (Item): Achsen gegen Umkippen gesperrt, läutet bei Hammer und hartem Aufprall (`ring_all`), Wert aus Größe,
+  Legierung, Reinheit und Note. `ModelBench.bell_mode` + `DrawPad.bell_mode` (Mittellinie, gespiegelte Hälfte, Ton-Vorschau).
+- `ChainHoist` + `ChainHoist.Pendant`: Brückenkran; der Haken hängt `HOOK_AHEAD` vor dem Arbeiter mit der Steuerbirne,
+  Last per Feder am Haken (bleibt dynamisch → normal repliziert). Federn: k ≤ ~400 bei 60 Hz, sonst instabil.
+- Aufträge Stufe 2 (`OrderBoard.TEMPLATES`, `kind = &"bell"`: Note, Legierung, Reinheit, gesprungen, max. Frequenz),
+  erste Karte je Halle über `OrderBoard.first_order`. Upgrades Stufe 2: Gießpfanne (8 l), Kurbel, Stimmbank.
+- Tests: `tests/test_bells.tscn` (Profil, Ton, Grube, Halle, Kran), `tests/test_net_bells.tscn` (Koop);
+  Bilder: `scenes/bell_showcase.tscn -- --cam=hall|pour|reveal`.
