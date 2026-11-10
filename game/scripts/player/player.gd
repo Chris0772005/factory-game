@@ -36,6 +36,10 @@ var held_local_point := Vector3.ZERO
 var using := false
 ## Host-side: the station F went down at, for stations that take a held F.
 var _station: Node3D = null
+## First person: this worker aims with the eyes (set by the owning peer and
+## replicated), so reach, grab and hold follow the view instead of the body.
+var aims := false
+var look_pitch := 0.0
 ## Local-only: a UI (like the draw pad) has the input.
 var ui_locked := false
 var input_dir := Vector2.ZERO
@@ -177,6 +181,8 @@ func _move(delta: float) -> void:
 		# The body looks where the eyes look: hands, held things and the
 		# station in front all follow the view.
 		facing = _camera_rig.yaw + PI
+		aims = true
+		look_pitch = _camera_rig.pitch
 	elif dir.length_squared() > 0.01:
 		facing = lerp_angle(facing, atan2(dir.x, dir.z), 1.0 - exp(-12.0 * delta))
 	rotation.y = facing
@@ -208,6 +214,15 @@ func _push_bodies() -> void:
 			body.apply_impulse(push * 0.6 * minf(velocity.length(), 4.0) * 0.1, c.get_position() - body.global_position)
 
 
+## Eye position and view direction of an aiming (first-person) worker.
+func eye_position() -> Vector3:
+	return global_position + Vector3(0, CameraRig.EYE_HEIGHT, 0)
+
+
+func look_direction() -> Vector3:
+	return (global_transform.basis.z * cos(look_pitch) + Vector3.UP * sin(look_pitch)).normalized()
+
+
 ## Where the held object's grab point is pulled to. Items may set their own carry
 ## pose with `carry_offset(player) -> Vector2(distance, height)` (the crucible is
 ## held low at the hips); everything else floats at HOLD_DISTANCE / HOLD_HEIGHT.
@@ -216,6 +231,14 @@ func _hand_target() -> Vector3:
 	var item := held_item()
 	if item and item.has_method("carry_offset"):
 		carry = item.carry_offset(self)
+	elif aims:
+		# Held in front of the eyes, a little below the line of sight.
+		# Never closer than arm's length or below the knees, so the load
+		# cannot get under the carrier's own feet.
+		var p := clampf(look_pitch, -0.95, 0.6)
+		var height := clampf(CameraRig.EYE_HEIGHT - 0.32 + sin(p) * 0.95, 0.55, 2.0)
+		var reach := maxf(cos(p) * 0.95, 0.9)
+		return global_position + Vector3(0, height, 0) + global_transform.basis.z * reach
 	return global_position + Vector3(0, carry.y, 0) + global_transform.basis.z * carry.x
 
 
@@ -253,7 +276,10 @@ func grab_candidate() -> RigidBody3D:
 	var sphere := SphereShape3D.new()
 	sphere.radius = GRAB_RANGE * 0.6
 	query.shape = sphere
-	query.transform = Transform3D(Basis(), global_position + Vector3(0, 0.9, 0) + global_transform.basis.z * 0.9)
+	var centre := global_position + Vector3(0, 0.9, 0) + global_transform.basis.z * 0.9
+	if aims:
+		centre = eye_position() + look_direction() * 1.15
+	query.transform = Transform3D(Basis(), centre)
 	query.exclude = [get_rid()]
 	var sim := Network.is_sim_authority()
 	var best: RigidBody3D = null
@@ -262,7 +288,7 @@ func grab_candidate() -> RigidBody3D:
 		var body := hit.collider as RigidBody3D
 		if body == null or (body.freeze and sim):
 			continue
-		var d := body.global_position.distance_to(_hand_target())
+		var d := body.global_position.distance_to(centre if aims else _hand_target())
 		if d < best_dist:
 			best_dist = d
 			best = body
@@ -351,6 +377,8 @@ func nearest_interactable() -> Node3D:
 	var best: Node3D = null
 	var best_d := INTERACT_RANGE
 	var probe := global_position + Vector3(0, 0.9, 0) + global_transform.basis.z * 0.6
+	if aims:
+		probe = eye_position() + look_direction() * 1.2
 	for node in get_tree().get_nodes_in_group(&"interactable"):
 		var n := node as Node3D
 		var point: Vector3 = n.interact_point() if n.has_method("interact_point") else n.global_position
@@ -541,12 +569,14 @@ func _broadcast_state(delta: float) -> void:
 	if _net_accum < 1.0 / NET_RATE:
 		return
 	_net_accum = 0.0
-	_state.rpc(global_position, facing, velocity, holding, held_name)
+	_state.rpc(global_position, facing, velocity, holding, held_name, aims, look_pitch)
 
 
 @rpc("authority", "call_remote", "unreliable_ordered")
-func _state(pos: Vector3, yaw: float, vel: Vector3, is_holding: bool, item_name: String) -> void:
+func _state(pos: Vector3, yaw: float, vel: Vector3, is_holding: bool, item_name: String, aiming: bool, pitch: float) -> void:
 	_net_target = pos
+	aims = aiming
+	look_pitch = pitch
 	if not _snapshots.is_empty() and (_snapshots[-1][1] as Vector3).distance_to(pos) > 3.0:
 		# Teleport or respawn: jump there instead of flying across the yard.
 		_snapshots.clear()

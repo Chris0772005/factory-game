@@ -106,6 +106,10 @@ func _ready() -> void:
 	if first_person:
 		pitch = deg_to_rad(-8.0)
 		camera.cull_mask &= ~SELF_LAYER
+		if target is Player and StationKit.visual():
+			var hands := FirstPersonHands.new()
+			hands.player = target as Player
+			camera.add_child(hands)
 	_view_yaw = yaw
 	_view_pitch = pitch
 	if DisplayServer.get_name() != "headless":

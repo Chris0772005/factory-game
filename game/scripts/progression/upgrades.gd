@@ -9,7 +9,10 @@ const CATALOG := [
 	{id = &"bellows_foot", name = "Fußblasebalg", desc = "Jeder Tritt bringt 50 % mehr Hitze.", cost = 120, tier = 0},
 	{id = &"crucible_big", name = "Großer Tiegel", desc = "Fasst 5 statt 3 Liter.", cost = 180, tier = 0},
 	{id = &"mold_slot", name = "Dritte Kavität", desc = "Jeder Formkasten nimmt ein Modell mehr.", cost = 220, tier = 0},
-	{id = &"gloves", name = "Lederhandschuhe", desc = "25 % mehr Kraft beim Tragen.", cost = 150, tier = 0},
+	{id = &"gloves", name = "Lederhandschuhe", desc = "25 % mehr Kraft beim Tragen, 30 % schneller im Schrott wühlen.", cost = 150, tier = 0},
+	{id = &"shovel", name = "Schaufel", desc = "Doppelt so schnell durch den Schrottberg.", cost = 90, tier = 0},
+	{id = &"magnet", name = "Magnet am Seil", desc = "Jeder Griff in den Schrott holt zwei Teile heraus.", cost = 240, tier = 0},
+	{id = &"detector", name = "Metalldetektor", desc = "Piept bei Wertvollem: seltene Funde gut doppelt so oft.", cost = 420, tier = 0},
 	{id = &"scrap_premium", name = "Schrott vom Wertstoffhof", desc = "Mehr Kupfer und Messing im Schrott.", cost = 260, tier = 0},
 	{id = &"garage", name = "Garage freischalten", desc = "Mehr Platz, Mehrfach-Gießbaum, Abschrecken.", cost = 900, tier = 0, unlock = true},
 	# Garage (tier 1).

@@ -14,6 +14,8 @@ const SCRAP := {
 	&"scrap_can": {metal = &"alu", amount = 0.35, name = "Dose", color = Color("#c9d3dc"), size = Vector3(0.14, 0.24, 0.14)},
 	&"scrap_key": {metal = &"zinc_brass", amount = 0.25, name = "Schlüssel", color = Color("#d9b44a"), size = Vector3(0.2, 0.05, 0.1)},
 	&"scrap_pipe": {metal = &"copper", amount = 0.5, name = "Kupferrohr", color = Color("#c8763f"), size = Vector3(0.5, 0.09, 0.09)},
+	&"scrap_kettle": {metal = &"copper", amount = 1.2, name = "Kupferkessel", color = Color("#b8652f"), size = Vector3(0.3, 0.26, 0.3)},
+	&"scrap_tooth": {metal = &"gold", amount = 0.05, name = "Goldzahn", color = Color("#ffd75e"), size = Vector3(0.06, 0.07, 0.06)},
 	&"scrap_ring": {metal = &"gold", amount = 0.1, name = "Omas Ring", color = Color("#ffcf3f"), size = Vector3(0.09, 0.03, 0.09)},
 }
 
