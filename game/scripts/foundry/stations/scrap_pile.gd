@@ -97,6 +97,9 @@ func _find(p: Player) -> void:
 	if world == null:
 		return
 	stock -= 1
+	var guide := get_tree().get_first_node_in_group(&"guides") as Guide
+	if guide:
+		guide.note(&"dig")
 	var count := 2 if world.has_upgrade(&"magnet") else 1
 	var top := global_position + Vector3(0, 0.75, 0)
 	var out := (p.global_position - global_position) if p else Vector3.BACK
@@ -113,6 +116,16 @@ func _find(p: Player) -> void:
 			world.popup_all(top + Vector3(0, 0.6, 0), "%s! ✨" % info.name, Color("#ffcf3f"))
 			_fx_all(&"rare")
 	_fx_all(&"find")
+
+
+## Host: a machine takes one find out of the heap (&"" when it is empty).
+func take_one() -> StringName:
+	if stock <= 0:
+		return &""
+	stock -= 1
+	_dirty = true
+	_fx_all(&"rummage")
+	return _roll()
 
 
 func _roll() -> StringName:

@@ -108,6 +108,7 @@ func on_great_bell_delivered(_bell: Bell, fulfilled: bool) -> void:
 	if not fulfilled:
 		banner_all("AUSGELIEFERT!", UITheme.ACCENT, "Eine Riesenglocke – aber nicht die bestellte Kaiserglocke")
 		return
+	guide.note(&"great_bell")
 	banner_all("DIE KAISERGLOCKE LÄUTET!", Color("#ffd75e"), "Der Dom hat seine Glocke")
 	var crew: Array[String] = []
 	var count := get_tree().get_nodes_in_group(&"players").size()

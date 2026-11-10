@@ -37,6 +37,7 @@ static func save(world: GameWorld, level := "") -> void:
 		money = world.money,
 		upgrades = world.upgrades.to_save() if world.upgrades else [],
 		level = level if level != "" else world.level_path(),
+		guide = (world.get("guide") as Guide).index if world.get("guide") else 0,
 	}
 	var f := FileAccess.open(PATH, FileAccess.WRITE)
 	if f:
@@ -54,6 +55,8 @@ static func load_into(world: GameWorld) -> bool:
 	world.money_changed.emit(world.money)
 	if world.upgrades:
 		world.upgrades.load_save(data.get("upgrades", []))
+	if world.get("guide"):
+		(world.get("guide") as Guide).load_index(int(data.get("guide", 0)))
 	return true
 
 

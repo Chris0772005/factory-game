@@ -146,3 +146,28 @@ Füllen, Abkühlen, Zerschlagen), Hammer, Modellbank (öffnet DrawPad), Verkaufs
 - Netz: Host entscheidet; Zustand zuverlässig per RPC, Nachzügler über `peer_ready`; das Fundstück ist kein Entity,
   jeder Peer baut dasselbe kleine Mesh.
 - Tests: `tests/test_search.tscn`, `tests/test_net_search.tscn`.
+
+## Modul K – Ego-Perspektive, Wühlen, Leitfaden, Schrottlinie
+
+**Ego-Perspektive** (`player/camera_rig.gd`, `player/player.gd`, `player/first_person_hands.gd`)
+- `CameraRig.first_person_default` (static, true). Headless bleibt `first_person` aus; Tests steuern über `facing`.
+- Eigener Körper liegt auf `SELF_LAYER` (1<<9) und ist aus der Cull-Maske der eigenen Kamera genommen. Mitspieler sehen ihn normal.
+- `Player.eye_position()`, `look_direction()`; `aims`/`look_pitch` gehen im `_state`-rpc mit. Griff, Tragen und Reichweite folgen dem Blick.
+  Tragepunkt ist begrenzt (Höhe ≥ 0,55, Abstand ≥ 0,9), sonst reitet der Spieler auf dem gehaltenen Teil.
+- Stationen können gehaltenes F bekommen: `interact_tick(player, delta)`.
+
+**Schrotthaufen** (`foundry/stations/scrap_pile.gd`, Gruppe `scrap_piles`)
+- F halten wühlt (`DIG_TIME` 2,2 s, geteilt durch `dig_speed()` aus Handschuhen/Schaufel/Magnet). Vorrat `STOCK_MAX` 30, füllt sich nach.
+- `_roll()` würfelt den Fund; Detektor erhöht die Chance auf Seltenes (`DETECTOR_BOOST`). `take_one()` ist der Zugang für Maschinen.
+
+**Leitfaden** (`progression/guide.gd` Klasse `Guide`, Gruppe `guides`; `ui/mail_panel.gd`)
+- Briefe von Onkel Heinz (`LETTERS`): je ein Ziel, ein Bonus, ein nächster Schritt. Host prüft `_reached(i)` und schickt `_sync(i, new_letter)`.
+- Stationen melden per `guide.note(&"dig" | &"sold" | &"great_bell")`. Der Stand (`index`) liegt im Spielstand.
+- `MailPanel` unten links: neuer Brief klappt 14 s auf, danach nur die Zeile „ZIEL“.
+
+**Schrottlinie** (`foundry/auto/scrap_line.gd` Klasse `ScrapLine`, Gruppe `scrap_lines`; `shaders/fx_belt.gdshader`)
+- `ScrapLine.build_for(level)` legt in jeder Halle ein Band vom Haufen zum nächsten Ofen an; sichtbar und fest erst mit Upgrade.
+- Upgrade `conveyor`: Teile in den Trichter werfen, das Band (`BELT_SPEED`) trägt sie in den Ofen (`_deliver` → `furnace.charge`).
+- Upgrade `robot_arm`: Greifarm (Zwei-Gelenk-IK, `ARM_CYCLE` 3,4 s) holt mit `pile.take_one()` selbst und legt aufs Band.
+- Simulation nur beim Host; Teile auf dem Band werden per rpc gespiegelt.
+- Test: `tests/test_auto.tscn`. Bilder: `scenes/dig_showcase.tscn -- --cam=line|arm`.

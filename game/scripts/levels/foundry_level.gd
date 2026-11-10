@@ -13,6 +13,7 @@ const UNLOCKS := {&"garage": GARAGE, &"bell_foundry": BELL_FOUNDRY, &"iron_hall"
 ## Seconds between "freigeschaltet" and the move, so everyone sees the banner.
 const TRAVEL_DELAY := 3.5
 
+var guide: Guide
 var _save_pending := false
 
 
@@ -27,7 +28,12 @@ func build_level() -> void:
 	upgrades.world = self
 	add_child(upgrades)
 	upgrades.changed.connect(_apply_upgrades)
+	guide = Guide.new()
+	guide.name = "Guide"
+	guide.world = self
+	add_child(guide)
 	build_stations()
+	ScrapLine.build_for(self)
 	var hunt := SearchHunt.new()
 	hunt.name = "SearchHunt"
 	hunt.world = self
@@ -38,6 +44,7 @@ func build_level() -> void:
 			SaveGame.load_into(self)
 			money_changed.connect(func(_m): _autosave())
 			upgrades.changed.connect(_autosave)
+			guide.changed.connect(func(_n): _autosave())
 		spawn_items()
 
 

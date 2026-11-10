@@ -15,7 +15,7 @@ echo "== Factory simulation =="
 timeout -s KILL 150 "$GODOT" --headless --path . res://tests/test_factory.tscn 2>&1 | grep -E "ok |FAIL|TESTS|stress|SCRIPT ERROR" || fail=1
 
 echo "== Drawing, FX, foundry round, garage, bells, Eisenhalle =="
-for t in test_drawing test_fx test_foundry test_garage test_bells test_iron_hall test_search test_scrap; do
+for t in test_drawing test_fx test_foundry test_garage test_bells test_iron_hall test_search test_scrap test_auto; do
   timeout -s KILL 300 "$GODOT" --headless --path . res://tests/$t.tscn 2>&1 | grep -E "FAIL|TESTS|SCRIPT ERROR" || fail=1
 done
 
