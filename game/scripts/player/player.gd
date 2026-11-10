@@ -90,11 +90,22 @@ func _ready() -> void:
 		_camera_rig.target = self
 		add_child(_camera_rig)
 		_camera_rig.top_level = true
+		if _camera_rig.first_person:
+			_hide_own_body()
 		if DisplayServer.get_name() != "headless":
 			var highlight := TargetHighlight.new()
 			highlight.name = &"TargetHighlight"
 			highlight.player = self
 			add_child(highlight)
+
+
+## First person: the local worker's meshes move to a layer the own lens
+## skips. Gear is added later, so this repeats now and then.
+func _hide_own_body() -> void:
+	while is_inside_tree() and _camera_rig and _camera_rig.first_person:
+		for mi in _model.find_children("*", "GeometryInstance3D", true, false):
+			(mi as GeometryInstance3D).layers = CameraRig.SELF_LAYER
+		await get_tree().create_timer(1.0).timeout
 
 
 func is_local() -> bool:
@@ -162,7 +173,11 @@ func _move(delta: float) -> void:
 	var horizontal := Vector3(velocity.x, 0, velocity.z).move_toward(target, accel * speed * delta)
 	velocity.x = horizontal.x
 	velocity.z = horizontal.z
-	if dir.length_squared() > 0.01:
+	if _camera_rig and _camera_rig.first_person:
+		# The body looks where the eyes look: hands, held things and the
+		# station in front all follow the view.
+		facing = _camera_rig.yaw + PI
+	elif dir.length_squared() > 0.01:
 		facing = lerp_angle(facing, atan2(dir.x, dir.z), 1.0 - exp(-12.0 * delta))
 	rotation.y = facing
 	var was_airborne := not is_on_floor()

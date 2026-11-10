@@ -59,6 +59,22 @@ func _ready() -> void:
 	var orders := OrdersPanel.new()
 	orders.world = world
 	_root.add_child(orders)
+	# First person: a small dot marks where the worker looks and reaches.
+	if CameraRig.first_person_default:
+		var dot := Panel.new()
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color(1, 1, 1, 0.75)
+		sb.set_corner_radius_all(4)
+		sb.border_color = Color(0, 0, 0, 0.45)
+		sb.set_border_width_all(1)
+		dot.add_theme_stylebox_override("panel", sb)
+		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		dot.set_anchors_preset(Control.PRESET_CENTER)
+		dot.offset_left = -4
+		dot.offset_top = -4
+		dot.offset_right = 4
+		dot.offset_bottom = 4
+		_root.add_child(dot)
 	var search := SearchPanel.new()
 	search.world = world
 	_root.add_child(search)

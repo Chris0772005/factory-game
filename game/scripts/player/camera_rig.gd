@@ -47,6 +47,21 @@ const MIN_ARM := 0.8
 const CUTAWAY_RADIUS := 1.6
 ## Further than this from the pivot (respawn, teleport) the camera cuts instead of flying.
 const SNAP_DISTANCE := 8.0
+## First person: eye height above the feet, field of view, pitch limits.
+const EYE_HEIGHT := 1.5
+const FP_FOV := 74.0
+const FP_PITCH_MIN := deg_to_rad(-82.0)
+const FP_PITCH_MAX := deg_to_rad(78.0)
+## Render layer of the local worker's own body: the first-person lens skips
+## it (lights still see it, so the worker keeps a shadow).
+const SELF_LAYER := 1 << 9
+
+## The game is played through the worker's eyes; the orbit view stays for
+## tools and as an option.
+static var first_person_default := true
+
+## Headless runs (tests, dedicated hosts) keep the orbit rig: they steer workers by `facing`.
+var first_person := first_person_default and DisplayServer.get_name() != "headless"
 
 var target: Node3D
 ## Orbit angles the worker steers by (the view settles onto them).
@@ -74,6 +89,7 @@ var _dip_vel := 0.0
 var _query := PhysicsShapeQueryParameters3D.new()
 var _excluded: Array[RID] = []
 var _exclude_age := 0.0
+var _bob_phase := 0.0
 
 
 func _ready() -> void:
@@ -87,6 +103,9 @@ func _ready() -> void:
 	probe.radius = PROBE_RADIUS
 	_query.shape = probe
 	_query.collide_with_areas = false
+	if first_person:
+		pitch = deg_to_rad(-8.0)
+		camera.cull_mask &= ~SELF_LAYER
 	_view_yaw = yaw
 	_view_pitch = pitch
 	if DisplayServer.get_name() != "headless":
@@ -107,7 +126,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		var motion := event as InputEventMouseMotion
 		var k := MOUSE_SENSITIVITY * GameSettings.mouse_sensitivity
 		yaw -= motion.relative.x * k
-		pitch = clampf(pitch - motion.relative.y * k, PITCH_MIN, PITCH_MAX)
+		pitch = clampf(pitch - motion.relative.y * k, _pitch_min(), _pitch_max())
 	elif event is InputEventMouseButton and event.pressed:
 		var mb := event as InputEventMouseButton
 		if mb.button_index == MOUSE_BUTTON_WHEEL_UP:
@@ -133,6 +152,9 @@ func _process(delta: float) -> void:
 	var body := target as CharacterBody3D
 	var velocity := body.velocity if body else Vector3.ZERO
 	var planar := Vector3(velocity.x, 0.0, velocity.z)
+	if first_person:
+		_first_person_view(body, velocity, planar, delta)
+		return
 	var anchor := target.get_global_transform_interpolated().origin + Vector3.UP * PIVOT_HEIGHT
 	if not _has_pivot or _pivot.distance_to(anchor) > SNAP_DISTANCE:
 		_has_pivot = true
@@ -174,6 +196,34 @@ func _process(delta: float) -> void:
 		Vector4(anchor.x, anchor.y - 0.3, anchor.z, CUTAWAY_RADIUS))
 
 
+## Through the worker's eyes: the lens sits at eye height and turns with the
+## mouse directly; landings dip it, sprinting widens it, Juice shakes it.
+func _first_person_view(body: CharacterBody3D, velocity: Vector3, planar: Vector3, delta: float) -> void:
+	_update_landing(body, velocity, delta)
+	var sprint_goal := clampf((planar.length() - Player.WALK_SPEED * 1.05) / (Player.SPRINT_SPEED - Player.WALK_SPEED * 1.05), 0.0, 1.0)
+	_sprint = lerpf(_sprint, sprint_goal, 1.0 - exp(-5.0 * delta))
+	var eye := target.get_global_transform_interpolated().origin + Vector3.UP * (EYE_HEIGHT + _dip)
+	# A light head bob while walking on the ground.
+	var bob := 0.0
+	if body and body.is_on_floor() and planar.length() > 0.5:
+		_bob_phase += delta * planar.length() * 2.4
+		bob = sin(_bob_phase) * 0.018
+	global_transform = Transform3D(Basis.from_euler(Vector3(_view_pitch, _view_yaw, 0.0)), eye + Vector3.UP * bob)
+	camera.transform = Transform3D(Basis.from_euler(Juice.shake_angles()), Juice.shake_offset())
+	camera.fov = FP_FOV + SPRINT_FOV * _sprint - 4.0 * Juice.zoom_amount() + Juice.fov_offset()
+	camera.near = 0.08
+	# No dollhouse cutaway from inside the room.
+	RenderingServer.global_shader_parameter_set(&"cutaway_target", Vector4(0, -100, 0, 0))
+
+
+func _pitch_min() -> float:
+	return FP_PITCH_MIN if first_person else PITCH_MIN
+
+
+func _pitch_max() -> float:
+	return FP_PITCH_MAX if first_person else PITCH_MAX
+
+
 ## Gamepad orbit: response curve, max speeds and a short ramp so it never jerks.
 func _orbit_from_pad(delta: float) -> void:
 	if _ui_locked():
@@ -184,7 +234,7 @@ func _orbit_from_pad(delta: float) -> void:
 	var goal := Vector2(curved.x * PAD_YAW_SPEED, curved.y * PAD_PITCH_SPEED)
 	_pad_vel = _pad_vel.move_toward(goal, maxf(PAD_YAW_SPEED, PAD_PITCH_SPEED) / PAD_RAMP * delta)
 	yaw -= _pad_vel.x * delta
-	pitch = clampf(pitch - _pad_vel.y * delta, PITCH_MIN, PITCH_MAX)
+	pitch = clampf(pitch - _pad_vel.y * delta, _pitch_min(), _pitch_max())
 	var pad := _first_pad()
 	if pad >= 0:
 		if Input.is_joy_button_pressed(pad, JOY_BUTTON_LEFT_SHOULDER):

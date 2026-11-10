@@ -191,7 +191,8 @@ func _front() -> void:
 	# sun shaft through the door.
 	var header := EnvMesh.add(self, EnvMesh.box(Vector3(inner_max.x - inner_min.x + WALL * 2.0, 0.7, 0.5), 0.0), brick,
 		Transform3D(Basis(), Vector3(0, height - 0.35, zf)))
-	if header:
+	# (Seen from inside, in first person, it is simply the lintel.)
+	if header and not CameraRig.first_person_default:
 		header.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
 	if EnvMesh.visual():
 		_sign()
@@ -208,7 +209,9 @@ func _roof() -> void:
 	var mi := EnvMesh.add(self, EnvMesh.box(size, 0.0), _wall_mat, Transform3D(Basis(), Vector3(0, height + 0.1, (inner_min.y + inner_max.y) * 0.5 + 0.1)))
 	if mi:
 		mi.name = "RoofShadow"
-		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
+		# First person: a real ceiling overhead. Orbit view: only its shadow.
+		if not CameraRig.first_person_default:
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
 
 
 # --- Dressing --------------------------------------------------------------------
