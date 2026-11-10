@@ -22,6 +22,13 @@ const TEMPLATES := [
 	{id = &"ship_bell", kind = &"bell", tier = 2, alloy = &"brass", title = "Schiffsglocke aus Messing", need = "Glocke aus Messing", reward = 450, weight = 3},
 	{id = &"deep_bell", kind = &"bell", tier = 2, max_freq = 400.0, title = "Tiefe Turmglocke", need = "Glocke in G4 oder tiefer (große Grube)", reward = 700, weight = 2},
 	{id = &"museum_bell", kind = &"bell", tier = 2, cracked = true, title = "Gesprungene Glocke fürs Museum", need = "Eine gesprungene Glocke (!)", reward = 300, weight = 1},
+	# Eisenhalle (tier 3). kind &"series": `count` mold-line castings of `alloy`
+	# (&"" = any) with quality >= `min`; the bonus comes with the last piece.
+	{id = &"kaiser_bell", kind = &"bell", tier = 3, min_radius = 0.75, alloy = &"bronze", purity = 0.45, title = "Die Kaiserglocke für den Dom", need = "Riesenglocke aus der Kaisergrube · Bronze · nicht gesprungen", reward = 8000, weight = 0},
+	{id = &"manhole_series", kind = &"series", tier = 3, count = 8, alloy = &"iron", min = 0.35, title = "Kanaldeckel-Serie für die Stadt", need = "8 Teile vom Formband · Eisen · mind. Gut", reward = 450, weight = 4},
+	{id = &"stove_series", kind = &"series", tier = 3, count = 5, alloy = &"iron", min = 0.6, title = "Ofenplatten für die Bäckerei", need = "5 Teile vom Formband · Eisen · mind. Fein", reward = 400, weight = 3},
+	{id = &"gear_series", kind = &"series", tier = 3, count = 6, alloy = &"", min = 0.6, title = "Zahnräder für die Wassermühle", need = "6 Teile vom Formband · mind. Fein", reward = 500, weight = 3},
+	{id = &"crest_series", kind = &"series", tier = 3, count = 12, alloy = &"", min = 0.35, title = "Wappenschilder für den Schützenverein", need = "12 Teile vom Formband · mind. Gut", reward = 750, weight = 2},
 	{id = &"knocker", kind = &"cast", alloy = &"brass", min = 0.35, title = "Türklopfer aus Messing", need = "Messing · mind. Gut", reward = 90, weight = 5},
 	{id = &"trophy", kind = &"cast", alloy = &"", min = 0.6, title = "Pokal für den Kegelverein", need = "Beliebiges Metall · mind. Fein", reward = 110, weight = 5},
 	{id = &"plaque", kind = &"cast", alloy = &"verdigris", min = 0.35, title = "Grünspan-Plakette fürs Rathaus", need = "Grünspan · mind. Gut", reward = 160, weight = 3},
@@ -35,6 +42,8 @@ var first_order := &"bronze_buddy"
 ## Active orders: template ids, &"" for an empty slot.
 var slots: Array[StringName] = []
 var _refill := [0.0, 0.0, 0.0]
+## Pieces delivered per slot (series orders).
+var _progress := [0, 0, 0]
 var _cards: Array[Label3D] = []
 
 
@@ -87,12 +96,16 @@ static func matches(t: Dictionary, piece: Node) -> bool:
 			return false
 		if t.has("alloy") and bell.alloy != t.alloy:
 			return false
+		if bell.mouth_radius < float(t.get("min_radius", 0.0)):
+			return false
 		if bell.purity() < float(t.get("purity", 0.0)):
 			return false
 		return bell.frequency() <= float(t.get("max_freq", INF))
 	if not piece is CastPiece:
 		return false
 	var cast := piece as CastPiece
+	if t.kind == &"series" and not cast.series:
+		return false
 	return (t.alloy == &"" or cast.alloy == t.alloy) and cast.quality >= float(t.min)
 
 
@@ -100,6 +113,12 @@ func _take(piece: Node) -> int:
 	for i in slots.size():
 		var t := template(slots[i])
 		if matches(t, piece):
+			if t.kind == &"series":
+				_progress[i] += 1
+				if _progress[i] < int(t.count):
+					_broadcast()
+					return 0
+			_progress[i] = 0
 			slots[i] = &""
 			_refill[i] = REFILL_DELAY
 			_broadcast()
@@ -114,7 +133,7 @@ func _roll() -> StringName:
 	# Orders of this hall's tier (tier-1 cast orders stay in the mix later on).
 	var world := get_tree().get_first_node_in_group(&"world") as GameWorld if is_inside_tree() else null
 	var tier := maxi(world.upgrade_tier() if world else 1, 1)
-	var pool := TEMPLATES.filter(func(t: Dictionary) -> bool: return not slots.has(t.id) and int(t.get("tier", 1)) <= tier)
+	var pool := TEMPLATES.filter(func(t: Dictionary) -> bool: return not slots.has(t.id) and _offered(t, tier))
 	var total := 0
 	for t in pool:
 		total += int(t.weight)
@@ -124,6 +143,15 @@ func _roll() -> StringName:
 		if r < 0:
 			return t.id
 	return &"trophy"
+
+
+## Orders a hall of `tier` rolls. The Eisenhalle has no small molds or
+## crates, so it offers its own series (and the bronze buddy) only.
+static func _offered(t: Dictionary, tier: int) -> bool:
+	var t_tier := int(t.get("tier", 1))
+	if tier >= 3:
+		return t_tier >= 3 or t.id == &"bronze_buddy"
+	return t_tier <= tier
 
 
 func _physics_process(delta: float) -> void:
@@ -140,26 +168,32 @@ func _physics_process(delta: float) -> void:
 func _broadcast() -> void:
 	_refresh()
 	if Network.is_online() and multiplayer.is_server():
-		_sync.rpc(PackedStringArray(slots.map(func(s: StringName) -> String: return String(s))))
+		_sync.rpc(PackedStringArray(slots.map(func(s: StringName) -> String: return String(s))), PackedInt32Array(_progress))
 
 
 func _on_peer_ready(id: int, level: String) -> void:
 	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
 	if is_inside_tree() and multiplayer.is_server() and world and level == world.level_path():
-		_sync.rpc_id(id, PackedStringArray(slots.map(func(s: StringName) -> String: return String(s))))
+		_sync.rpc_id(id, PackedStringArray(slots.map(func(s: StringName) -> String: return String(s))), PackedInt32Array(_progress))
 
 
 @rpc("authority", "call_remote", "reliable")
-func _sync(ids: PackedStringArray) -> void:
+func _sync(ids: PackedStringArray, progress: PackedInt32Array) -> void:
 	for i in mini(ids.size(), slots.size()):
 		slots[i] = StringName(ids[i])
+		_progress[i] = progress[i] if i < progress.size() else 0
 	_refresh()
 
 
 func _refresh() -> void:
 	for i in _cards.size():
 		var t := template(slots[i]) if i < slots.size() else {}
-		_cards[i].text = "%s\n%s\n+%d $" % [t.title, t.need, t.reward] if not t.is_empty() else "Neuer Auftrag\nkommt gleich…"
+		if t.is_empty():
+			_cards[i].text = "Neuer Auftrag\nkommt gleich…"
+		elif t.kind == &"series":
+			_cards[i].text = "%s\n%s\n%d/%d · +%d $" % [t.title, t.need, _progress[i], t.count, t.reward]
+		else:
+			_cards[i].text = "%s\n%s\n+%d $" % [t.title, t.need, t.reward]
 	changed.emit()
 
 

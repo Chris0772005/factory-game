@@ -9,6 +9,9 @@ extends Item
 ## alloy): about four garage castings, for about four times the metal.
 const BASE_VALUE := 110
 const COOL_TIME := 12.0
+## Bells this big (the Kaiserglocke) do not fit a sell crate: F at the bell
+## hands it over to the cathedral's low loader instead.
+const GREAT_RADIUS := 0.75
 
 var code := ""
 var alloy := &"bronze"
@@ -59,6 +62,8 @@ static func from_data(data: Dictionary) -> Bell:
 
 func _ready() -> void:
 	add_to_group(&"bells")
+	if is_great():
+		add_to_group(&"interactable")
 	body_entered.connect(_on_body_entered)
 	_pivot = Node3D.new()
 	add_child(_pivot)
@@ -117,6 +122,50 @@ func value() -> int:
 	var alloy_mult: float = Alloys.TABLE.get(alloy, {}).get("value_mult", 1.0)
 	var tone := lerpf(0.4, 1.6, purity())
 	return maxi(10, roundi(BASE_VALUE * size * alloy_mult * tone * FoundryRules.grade(quality).mult))
+
+
+func is_great() -> bool:
+	return mouth_radius >= GREAT_RADIUS
+
+
+func interact_point() -> Vector3:
+	return global_position + Vector3(0, minf(profile.height(mouth_radius) + 0.3, 1.3), 0)
+
+
+func hint(_player_node: Node) -> String:
+	if temperature > 0.15:
+		return "Kaiserglocke in %s · %s – noch heiß, gleich ausliefern" % [note(), verdict()]
+	if cracked:
+		return "[F] Gesprungene Riesenglocke zum Einschmelzen abholen lassen · %d $" % value()
+	return "[F] Glocke in %s an den Dom ausliefern · %s · %d $ + Auftrag" % [note(), verdict(), value()]
+
+
+## The cathedral's low loader collects it. Host only.
+func interact(_player_node: Node) -> void:
+	if not Network.is_sim_authority() or not is_great() or temperature > 0.15 or is_queued_for_deletion() or freeze:
+		return
+	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
+	if world == null:
+		return
+	var bonus := OrderBoard.fulfil(world, self)
+	var total := value() + bonus
+	world.add_money(total)
+	world.popup_all(interact_point() + Vector3(0, 0.8, 0), "+%d $" % total, UITheme.ACCENT)
+	if world.has_method(&"on_great_bell_delivered"):
+		world.on_great_bell_delivered(self, bonus > 0)
+	_farewell()
+
+
+## Three last strokes, then the low loader takes it.
+func _farewell() -> void:
+	remove_from_group(&"interactable")
+	freeze = true
+	for i in 3:
+		ring_all(1.0 - i * 0.15)
+		await get_tree().create_timer(1.3).timeout
+		if not is_instance_valid(self):
+			return
+	queue_free()
 
 
 func held_hint(_player_node: Node) -> String:

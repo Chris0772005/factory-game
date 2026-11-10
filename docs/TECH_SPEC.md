@@ -97,3 +97,39 @@ Füllen, Abkühlen, Zerschlagen), Hammer, Modellbank (öffnet DrawPad), Verkaufs
   erste Karte je Halle über `OrderBoard.first_order`. Upgrades Stufe 2: Gießpfanne (8 l), Kurbel, Stimmbank.
 - Tests: `tests/test_bells.tscn` (Profil, Ton, Grube, Halle, Kran), `tests/test_net_bells.tscn` (Koop);
   Bilder: `scenes/bell_showcase.tscn -- --cam=hall|pour|reveal`.
+
+## Modul I – Eisenhalle (`foundry/iron/`, `levels/iron_hall.gd`, `environment/iron_hall_set.gd`)
+
+- `MeltTargets.deliver`: ein gemeinsamer Weg für jeden Gießstrahl (Tiegel, Pfanne, Abstich). Der Strahl trifft
+  per Raycast; der erste Empfänger an der Stelle nimmt das Metall: Formkasten → Formband (Kasten oder Gießautomat)
+  → Glockengrube → Pfanne → stehender Tiegel. Sonst Funken – und wer darunter steht, wird zum Bronzefreund
+  (Träger der Quelle ausgenommen).
+- `CupolaFurnace` (Kupolofen): Ladungen (`ChargeBox`: Eisenkorb 6 l gratis am Gussbruch, Glockenbronze 8 l für 240 $;
+  auch Schrott und Kisten) in den Gichtkübel, Gebläse mit gehaltenem F (pro Arbeiter +0,16 Hitze/s, Upgrade
+  Heißwind halbiert den Verlust), Bad bis 120 l, Abstich (`TapHole`, F auf/zu) mit 3,2 l/s aus der Rinne.
+- `Player`: hält F an einer Station mit `interact_tick(player, delta)` (Pfannen-Handrad, Gebläse), solange sie die
+  nächste Station bleibt.
+- `HallCrane` (erbt `ChainHoist`, aufgeteilt in `_drive`/`_hook_step`): trägt die `Ladle` fest; F senkt auf Gießhöhe
+  (Boden 0,85 m: über Formband, Gießautomat, Formkasten, Grubenrand) bzw. hebt auf Fahrhöhe (2,35 m). Unten fährt
+  die Brücke halb so schnell; gekippt hebt sie nicht.
+- `Ladle` (50 l, Upgrade 75 l): Handrad hinten (gegenüber der Schnauze, Kurbler stehen hinter Band/Grube);
+  Kippen 0,17/s für einen, +60 % je weiterem Kurbler (Fenster 140 ms), loslassen = Schneckengetriebe richtet auf.
+  Bis 4,5 l/s. Sync 15 Hz.
+- `MoldLine` (Formband): 12 Kästen auf einer Schleife (Vorlauf 6 Plätze: Formmaschine 0, Gießplatz 2, Kühlhaube 3–4,
+  Ausleerrost 5; Rücklauf dahinter). Taktet eine Teilung (1,1 s), wenn der Kasten am Gießplatz nicht auf Metall
+  wartet, der am Rost nicht mehr heiß ist und an der Maschine geformt wurde. Formen: 3 × F oder Formautomat;
+  Gießen: Pfanne/Tiegel direkt oder Gießautomat (30 l Kasten, 0,7 l/s). Ausleeren → `CastPiece.series` rutscht in
+  die eigene Verkaufskiste (passives Einkommen). Muster von der Musterbank (`ModelBench.line_mode`).
+  Netz: Zustände zuverlässig, Füllung/Takt 10 Hz, Nachzügler über `peer_ready`.
+- Aufträge Stufe 3: Serien (`kind = &"series"`, `count` Teile vom Band, Bonus mit dem letzten Teil, Fortschritt
+  auf der Karte und im Sync) und die Kaiserglocke (`first_order`, `min_radius` 0,75, Bronze). Die Eisenhalle würfelt
+  nur Serien und den Bronzefreund. Upgrades Stufe 3: Formautomat, Gießautomat, Heißwind, Große Pfanne;
+  Freischaltung „Eisenhalle kaufen“ (9000 $) in der Glockengießerei.
+- Kaiserglocke: `BellPit` mit Mundradius 0,8 (≈ 100 l, H3) und `pour_gap` 40 s (Pfannenwechsel ohne Kaltlauf).
+  `Bell.is_great()`: passt in keine Kiste – F an der kalten Glocke liefert sie an den Dom (Wert + Auftrag),
+  drei Schläge, dann weg. Mit Auftrag: `on_great_bell_delivered` → `FinaleScreen` bei allen (Abspann, Weiterspielen).
+- Kran-Träger und Laufschienen nutzen den Cutaway (`station_metal.gdshader` hat jetzt `cutaway`), Ziegelfugen im
+  Putz-Shader sind per `fwidth` geglättet (kein Moiré auf großen Wänden).
+- Tests: `tests/test_iron_hall.tscn` (Ofen, Pfanne, Band, Automaten, Serie, Bronzefreund, Kaiserglocke, Finale),
+  `tests/test_net_iron.tscn` (Koop: Abstich, Muster, Formen, zwei am Handrad); Bilder:
+  `scenes/iron_showcase.tscn -- --cam=hall|tap|kaiser|line|finale`.

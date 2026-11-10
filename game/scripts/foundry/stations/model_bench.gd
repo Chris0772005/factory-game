@@ -14,6 +14,14 @@ const BELL_PROMPTS := [
 	"die schiefste Glocke der Welt", "eine Glocke mit Taille", "eine Weihnachtsglocke",
 ]
 
+const LINE_PROMPTS := [
+	"einen Kanaldeckel mit Stadtwappen", "eine Ofenplatte", "ein Wappentier", "euer Firmenlogo",
+	"einen Gullydeckel mit Gesicht", "ein Straßenschild", "ein Zahnrad",
+]
+
+## Pattern bench (Eisenhalle): the drawing becomes the mold line's series pattern.
+@export var line_mode := false
+
 ## Profile bench (Glockengießerei): the pad draws bell silhouettes and the
 ## drawing goes to the nearest free bell pit instead of a mold.
 @export var bell_mode := false
@@ -35,12 +43,14 @@ func interact_point() -> Vector3:
 
 
 func hint(_player: Node) -> String:
+	if line_mode:
+		return "[F] Serienmuster fürs Formband zeichnen"
 	return "[F] Glocke zeichnen (Profil)" if bell_mode else "[F] Modell zeichnen"
 
 
 func interact(player: Node) -> void:
 	var p := player as Player
-	var prompts: Array = BELL_PROMPTS if bell_mode else PROMPTS
+	var prompts: Array = BELL_PROMPTS if bell_mode else (LINE_PROMPTS if line_mode else PROMPTS)
 	var prompt: String = "Zeichne: " + prompts[randi() % prompts.size()]
 	if not Network.is_online() or p.peer_id == multiplayer.get_unique_id():
 		_open_pad(prompt)
@@ -116,6 +126,14 @@ func _nearest_pit(free_only: bool) -> BellPit:
 func submit(code: String) -> bool:
 	if Drawing.from_code(code) == null:
 		return false
+	if line_mode:
+		var world_l := get_tree().get_first_node_in_group(&"world") as GameWorld
+		var line := get_tree().get_first_node_in_group(&"mold_lines") as MoldLine
+		if line == null or not line.set_pattern(code):
+			return false
+		if world_l:
+			world_l.popup_all(line.interact_point() + Vector3(0, 0.8, 0), "Neues Serienmuster!", Color("#fff8ec"))
+		return true
 	if bell_mode:
 		var world_b := get_tree().get_first_node_in_group(&"world") as GameWorld
 		var pit := _nearest_pit(true)

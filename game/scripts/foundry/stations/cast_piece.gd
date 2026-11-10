@@ -11,6 +11,8 @@ var quality := 0.5
 var defects := {}
 var area := 0.0
 var temperature := 0.0
+## Cast on the Eisenhalle's mold line (counts for series orders).
+var series := false
 var _material: ShaderMaterial
 
 
@@ -22,6 +24,7 @@ static func from_data(data: Dictionary) -> CastPiece:
 	piece.quality = data.quality
 	piece.defects = data.get("defects", {})
 	piece.temperature = data.get("temperature", 0.0)
+	piece.series = data.get("series", false)
 	piece.position = data.pos
 	var drawing := Drawing.from_code(piece.drawing_code)
 	var built := CastMeshBuilder.build(drawing, data.get("size", 0.5), data.get("thickness", 0.07)) if drawing else {}

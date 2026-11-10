@@ -36,9 +36,15 @@ func _ready() -> void:
 	_money.add_theme_color_override("font_color", UITheme.ACCENT)
 	_money.add_theme_font_size_override("font_size", 40)
 	head.add_child(_money)
+	# Later halls offer twenty-odd upgrades: the list scrolls, newest first.
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(0, 600)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	col.add_child(scroll)
 	_list = VBoxContainer.new()
 	_list.add_theme_constant_override("separation", 10)
-	col.add_child(_list)
+	_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(_list)
 	var close := Button.new()
 	close.text = "Schließen"
 	close.size_flags_horizontal = Control.SIZE_SHRINK_END
@@ -55,11 +61,25 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
+## This hall's upgrades first, then older ones still to buy, bought ones last.
+func _ordered() -> Array:
+	var tier := world.upgrade_tier()
+	var entries := Upgrades.catalog_for(tier)
+	var rank := func(u: Dictionary) -> int:
+		return (2 if upgrades.has(u.id) else 0) + (0 if int(u.get("tier", 0)) == tier else 1)
+	var out := []
+	for r in 4:
+		for u in entries:
+			if rank.call(u) == r:
+				out.append(u)
+	return out
+
+
 func _refresh() -> void:
 	_money.text = "%s $" % HUD._format(world.money)
 	for c in _list.get_children():
 		c.queue_free()
-	for u in Upgrades.catalog_for(world.upgrade_tier()):
+	for u in _ordered():
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 16)
 		var text := VBoxContainer.new()

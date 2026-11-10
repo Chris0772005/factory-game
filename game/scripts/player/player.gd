@@ -34,6 +34,8 @@ var strength := STRENGTH
 var held_local_point := Vector3.ZERO
 ## Host-side: the use button is held down (pouring, pumping).
 var using := false
+## Host-side: the station F went down at, for stations that take a held F.
+var _station: Node3D = null
 ## Local-only: a UI (like the draw pad) has the input.
 var ui_locked := false
 var input_dir := Vector2.ZERO
@@ -110,6 +112,10 @@ func _physics_process(delta: float) -> void:
 		_hold(delta)
 		if using and Network.is_sim_authority() and held.has_method("use_tick"):
 			held.use_tick(self, delta)
+	elif using and Network.is_sim_authority() and is_instance_valid(_station) and _station.has_method("interact_tick"):
+		# Holding F at a station that wants it held (ladle handwheel).
+		if nearest_interactable() == _station:
+			_station.interact_tick(self, delta)
 	_update_grips()
 	_model.animate(delta, velocity, is_on_floor(), holding, _hand_target())
 	_update_hold_sounds(delta)
@@ -487,10 +493,12 @@ func _perform(action: StringName) -> void:
 				held.use_start(self)
 			elif not held:
 				var target := nearest_interactable()
+				_station = target
 				if target:
 					target.interact(self)
 		&"use_end":
 			using = false
+			_station = null
 			if held and held.has_method("use_end"):
 				held.use_end(self)
 

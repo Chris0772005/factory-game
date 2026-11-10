@@ -20,6 +20,9 @@ const RIM := 0.45
 
 ## Mouth radius (m) of the bells this pit casts.
 @export var mouth_radius := 0.35
+## Longest pause in the pour without a cold shut. The Kaisergrube allows a
+## ladle change (back to the cupola, refill, back).
+@export var pour_gap := POUR_GAP
 
 var state := State.EMPTY
 var code := ""
@@ -173,7 +176,7 @@ func receive_metal(litres: float, temperature: float, mix: Dictionary, rate: flo
 		_fx_all(&"spill")
 		return
 	var now := Time.get_ticks_msec() / 1000.0
-	if state == State.FILLING and now - _last_pour > POUR_GAP and not _gap_flagged:
+	if state == State.FILLING and now - _last_pour > pour_gap and not _gap_flagged:
 		defects["cold_shut"] = minf(1.0, defects.get("cold_shut", 0.0) + 0.6)
 		_gap_flagged = true
 	_last_pour = now
@@ -251,6 +254,8 @@ func _present(bell: Bell) -> void:
 		return
 	var good := not bell.cracked and bell.purity() >= 0.6
 	var title := "GLOCKE IN %s!" % bell.note().to_upper() if not bell.cracked else "GESPRUNGEN!"
+	if bell.is_great() and not bell.cracked:
+		title = "DIE KAISERGLOCKE!"
 	world.banner_near(global_position, title, Color("#ffd75e") if good else Color("#ff6b5a"),
 		"%s · %s · %d $" % [bell.verdict(), Alloys.display_name(bell.alloy), bell.value()], good)
 

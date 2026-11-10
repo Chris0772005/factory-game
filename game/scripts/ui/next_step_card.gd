@@ -62,8 +62,11 @@ func _process(delta: float) -> void:
 static func next_step(w: GameWorld) -> String:
 	var tree := w.get_tree()
 	for node in w.entities.get_children():
-		if node is CastPiece or node is BronzeStatue:
+		if (node is CastPiece and not (node as CastPiece).series) or node is BronzeStatue:
 			return "Wirf die Gussteile in die Verkaufskiste."
+	var iron_step := _iron_step(tree)
+	if not iron_step.is_empty():
+		return iron_step
 	var bell_step := _bell_step(tree)
 	if not bell_step.is_empty():
 		return bell_step
@@ -86,6 +89,48 @@ static func next_step(w: GameWorld) -> String:
 			return "Trag den glühenden Tiegel zur Form und gieß (F halten)."
 		return "Wirf Schrott in den Ofen und tritt den Blasebalg."
 	return "Zeichne an der Werkbank ein Modell."
+
+
+## Eisenhalle: Kaiserglocke first, then the iron flow cupola -> ladle -> line
+## ("" when there is no cupola).
+static func _iron_step(tree: SceneTree) -> String:
+	var cupola := tree.get_first_node_in_group(&"cupolas") as CupolaFurnace
+	if cupola == null:
+		return ""
+	for b: Bell in tree.get_nodes_in_group(&"bells"):
+		if b.is_great() and not b.freeze:
+			return "Liefert die Glocke an den Dom aus (F an der Glocke)." if b.temperature <= 0.15 else "Die Riesenglocke kühlt ab …"
+	for p: BellPit in tree.get_nodes_in_group(&"bell_pits"):
+		match p.state:
+			BellPit.State.READY:
+				return "Schlag den Lehmmantel auf – die Kaiserglocke wartet!"
+			BellPit.State.FILLING:
+				return "Weitergießen! Pfanne leer? Zum Kupolofen, nachfüllen – ihr habt %d s." % roundi(p.pour_gap)
+			BellPit.State.COOLING:
+				return "Die Kaiserglocke kühlt ab – kein Wasser!"
+			BellPit.State.PROFILED:
+				return "Dreh die Schablone in der Kaisergrube (F, im Takt)."
+	var ladle := tree.get_first_node_in_group(&"ladles") as Ladle
+	var line := tree.get_first_node_in_group(&"mold_lines") as MoldLine
+	if ladle and ladle.amount >= 1.0:
+		if cupola.tap_open:
+			return "Stopfen! Abstich schließen, bevor die Pfanne überläuft (F am Abstich)."
+		for p: BellPit in tree.get_nodes_in_group(&"bell_pits"):
+			if p.state == BellPit.State.TURNED and ladle.alloy() == &"bronze":
+				return "Bronze in der Pfanne: über die Kaisergrube fahren und kurbeln (F halten, zu zweit schneller)."
+		if line and line.has_tundish() and line.tundish < MoldLine.TUNDISH_CAPACITY * 0.5:
+			return "Pfanne über den Gießautomaten fahren und kurbeln – dann gießt das Band allein."
+		if line and line.pattern == "":
+			return "Zeichnet an der Musterbank ein Serienmuster fürs Formband."
+		return "Pfanne übers Formband fahren, absenken (F) und am Handrad kurbeln (F halten)."
+	if cupola.bath >= 5.0:
+		return "Pfanne unter den Abstich fahren (Steuerbirne tragen), absenken, Abstich öffnen."
+	if not cupola.charge.is_empty() or cupola._remote_charges > 0:
+		return "Gebläse kurbeln (F halten) – mehr Hände, mehr Wind!"
+	for p: BellPit in tree.get_nodes_in_group(&"bell_pits"):
+		if p.state == BellPit.State.TURNED:
+			return "Kaisergrube bereit: Glockenbronze kaufen und in den Gichtkübel werfen (100 l!)."
+	return "Eisenkörbe am Gussbruch füllen und in den Gichtkübel am Kupolofen werfen."
 
 
 ## Bell halls: the next step at the busiest casting pit ("" when no pit is in use).

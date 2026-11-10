@@ -56,8 +56,17 @@ void fragment() {
 		vec2 b = uv * vec2(4.0, 11.8);
 		b.x += step(1.0, mod(floor(b.y), 2.0)) * 0.5;
 		vec2 f = fract(b);
-		float line = clamp(step(f.x, 0.07) + step(f.y, 0.14), 0.0, 1.0);
-		float id = env_hash12(floor(b));
+		// Mortar joints centred on the cell edges, antialiased by the pixel
+		// footprint; far away (large walls) they fade to their mean so the
+		// courses do not alias into moire arcs.
+		vec2 w = fwidth(b);
+		vec2 d = min(f, 1.0 - f);
+		float lx = 1.0 - smoothstep(0.035 - w.x * 0.5, 0.035 + w.x * 0.5, d.x);
+		float ly = 1.0 - smoothstep(0.07 - w.y * 0.5, 0.07 + w.y * 0.5, d.y);
+		float line = clamp(lx + ly, 0.0, 1.0);
+		float far = clamp(max(w.x, w.y) * 2.5 - 0.5, 0.0, 1.0);
+		line = mix(line, 0.2, far);
+		float id = mix(env_hash12(floor(b)), 0.5, far);
 		vec3 bc = mix(brick.rgb * (0.82 + id * 0.3), mortar.rgb * 0.9, line);
 		c = mix(c, bc, chip);
 	}

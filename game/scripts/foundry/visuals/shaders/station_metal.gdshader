@@ -7,6 +7,7 @@ shader_type spatial;
 render_mode diffuse_burley, specular_schlick_ggx;
 
 #include "res://shaders/env_common.gdshaderinc"
+#include "res://shaders/env_cutaway.gdshaderinc"
 
 uniform vec4 paint_color : source_color = vec4(0.29, 0.38, 0.42, 1.0);
 uniform vec4 steel_color : source_color = vec4(0.3, 0.3, 0.31, 1.0);
@@ -31,17 +32,25 @@ uniform float noise_scale = 1.0;
 // Polished striking faces: bare, bright steel where |object x| > this (0 = off).
 uniform float polish_x = 0.0;
 
+// Overhead parts (crane girders) dissolve in the camera's line of sight.
+uniform bool cutaway = false;
+
 varying vec3 v_obj;
 varying vec3 v_nobj;
 varying float v_seed;
+varying vec3 v_world;
 
 void vertex() {
 	v_obj = VERTEX;
 	v_nobj = NORMAL;
 	v_seed = COLOR.r;
+	v_world = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 }
 
 void fragment() {
+	if (cutaway) {
+		env_cutaway(v_world, CAMERA_POSITION_WORLD, FRAGCOORD.xy);
+	}
 	vec3 p = v_obj * noise_scale + v_seed * 13.0;
 	float macro = env_fbm(p.xz * 3.1 + p.y * 2.3) - 0.5;
 	float grain = env_noise(p.xy * 61.0 + p.z * 47.0) - 0.5;

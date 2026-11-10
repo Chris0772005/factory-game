@@ -200,14 +200,7 @@ func _pour(litres: float, rate: float, delta: float) -> void:
 		share[k] = mix[k] / maxf(amount, 0.0001) * litres
 		mix[k] -= share[k]
 	amount -= litres
-	var mold := MoldBox.find_at(get_tree(), pour_target)
-	var pit := BellPit.find_at(get_tree(), pour_target) if mold == null else null
-	if mold:
-		mold.receive_metal(litres, temperature, share, rate, delta)
-	elif pit:
-		pit.receive_metal(litres, temperature, share, rate, delta)
-	elif randf() < delta * 1.5:
-		FoundryFX.sparks(get_parent(), pour_target, 6)
+	MeltTargets.deliver(get_tree(), pour_target, litres, temperature, share, rate, delta, self)
 	if amount <= 0.001:
 		amount = 0.0
 		mix.clear()

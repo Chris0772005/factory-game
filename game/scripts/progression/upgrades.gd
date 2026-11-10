@@ -22,6 +22,12 @@ const CATALOG := [
 	{id = &"crucible_huge", name = "Gießpfanne", desc = "Der Tiegel fasst 8 Liter – eine kleine Glocke in einem Zug.", cost = 900, tier = 2},
 	{id = &"strickle_crank", name = "Kurbel an der Schablone", desc = "Jeder Dreh zählt doppelt.", cost = 650, tier = 2},
 	{id = &"bell_tuner", name = "Stimmbank", desc = "Glocken werden nachgestimmt: klingen reiner.", cost = 1200, tier = 2},
+	{id = &"iron_hall", name = "Eisenhalle kaufen", desc = "Kupolofen, Hallenkran, Formband – und die Kaiserglocke.", cost = 9000, tier = 2, unlock = true},
+	# Eisenhalle (tier 3).
+	{id = &"auto_molder", name = "Formautomat", desc = "Das Formband formt selbst – niemand muss pressen.", cost = 2500, tier = 3},
+	{id = &"auto_pourer", name = "Gießautomat", desc = "Gießkasten am Formband: einmal aus der Pfanne füllen, er gießt jeden Kasten selbst.", cost = 3500, tier = 3},
+	{id = &"hot_blast", name = "Heißwind", desc = "Der Kupolofen hält die Hitze doppelt so lange.", cost = 1600, tier = 3},
+	{id = &"big_ladle", name = "Große Pfanne", desc = "Die Gießpfanne fasst 75 statt 50 Liter.", cost = 3000, tier = 3},
 ]
 
 var owned := {}

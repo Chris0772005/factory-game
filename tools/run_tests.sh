@@ -14,8 +14,8 @@ timeout -s KILL 120 "$GODOT" --headless --path . res://tests/test_sandbox.tscn 2
 echo "== Factory simulation =="
 timeout -s KILL 150 "$GODOT" --headless --path . res://tests/test_factory.tscn 2>&1 | grep -E "ok |FAIL|TESTS|stress|SCRIPT ERROR" || fail=1
 
-echo "== Drawing, FX, foundry round and garage =="
-for t in test_drawing test_fx test_foundry test_garage test_bells; do
+echo "== Drawing, FX, foundry round, garage, bells, Eisenhalle =="
+for t in test_drawing test_fx test_foundry test_garage test_bells test_iron_hall; do
   timeout -s KILL 300 "$GODOT" --headless --path . res://tests/$t.tscn 2>&1 | grep -E "FAIL|TESTS|SCRIPT ERROR" || fail=1
 done
 
@@ -63,4 +63,13 @@ wait $host_pid
 grep -hE "^\[|SCRIPT ERROR" /tmp/fg_host5_$PORT.log /tmp/fg_client5_$PORT.log
 grep -q "FAIL\|SCRIPT ERROR" /tmp/fg_host5_$PORT.log /tmp/fg_client5_$PORT.log && fail=1
 grep -q "NET BELLS PASSED" /tmp/fg_client5_$PORT.log || fail=1
+echo "== Network co-op Eisenhalle (tap, pattern, molding, two on the ladle wheel) =="
+timeout -s KILL 170 "$GODOT" --headless --path . res://tests/test_net_iron.tscn -- --host --port=$PORT --role=host --no-save > /tmp/fg_host6_$PORT.log 2>&1 &
+host_pid=$!
+sleep 3
+timeout -s KILL 160 "$GODOT" --headless --path . res://tests/test_net_iron.tscn -- --join=127.0.0.1 --port=$PORT --role=client --no-save > /tmp/fg_client6_$PORT.log 2>&1
+wait $host_pid
+grep -hE "^\[|SCRIPT ERROR" /tmp/fg_host6_$PORT.log /tmp/fg_client6_$PORT.log
+grep -q "FAIL\|SCRIPT ERROR" /tmp/fg_host6_$PORT.log /tmp/fg_client6_$PORT.log && fail=1
+grep -q "NET IRON PASSED" /tmp/fg_client6_$PORT.log || fail=1
 exit $fail
