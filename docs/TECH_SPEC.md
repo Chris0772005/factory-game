@@ -133,3 +133,16 @@ Füllen, Abkühlen, Zerschlagen), Hammer, Modellbank (öffnet DrawPad), Verkaufs
 - Tests: `tests/test_iron_hall.tscn` (Ofen, Pfanne, Band, Automaten, Serie, Bronzefreund, Kaiserglocke, Finale),
   `tests/test_net_iron.tscn` (Koop: Abstich, Muster, Formen, zwei am Handrad); Bilder:
   `scenes/iron_showcase.tscn -- --cam=hall|tap|kaiser|line|finale`.
+
+## Modul J – Suchaufträge (`progression/search_hunt.gd`, `ui/search_panel.gd`)
+
+- `SearchHunt` hängt in jeder Halle (`FoundryLevel.build_level`). Alle 70–120 s (erster nach 50 s) ist etwas Kleines
+  verloren (je Hallenstufe vier Dinge: Ring, Schlüssel, Münze, Nadel, Mutter …). Versteck: freier Boden 0,8–1,9 m
+  neben einer Station (Raycast + Kugel-Überlappung), nicht bei einem Arbeiter. 75 s Zeit.
+- Wettstreit: Wer zuerst darauf tritt (0,75 m), hat den Fund. Prämie in die gemeinsame Kasse (Stufe 60/140/300/600 $,
+  sinkt bis zur Hälfte), Fund auf die eigene Strichliste (`scores` je Arbeiterfarbe).
+- Hinweise: Aufblitzen alle 2–4 s, leises ortbares Ticken, HUD-Anzeige „eiskalt … glühend heiß!“ für den eigenen
+  Arbeiter (`SearchPanel`, unter dem Geldzähler, mit Spürnasen-Tabelle).
+- Netz: Host entscheidet; Zustand zuverlässig per RPC, Nachzügler über `peer_ready`; das Fundstück ist kein Entity,
+  jeder Peer baut dasselbe kleine Mesh.
+- Tests: `tests/test_search.tscn`, `tests/test_net_search.tscn`.

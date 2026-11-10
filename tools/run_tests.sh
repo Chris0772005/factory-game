@@ -15,7 +15,7 @@ echo "== Factory simulation =="
 timeout -s KILL 150 "$GODOT" --headless --path . res://tests/test_factory.tscn 2>&1 | grep -E "ok |FAIL|TESTS|stress|SCRIPT ERROR" || fail=1
 
 echo "== Drawing, FX, foundry round, garage, bells, Eisenhalle =="
-for t in test_drawing test_fx test_foundry test_garage test_bells test_iron_hall; do
+for t in test_drawing test_fx test_foundry test_garage test_bells test_iron_hall test_search; do
   timeout -s KILL 300 "$GODOT" --headless --path . res://tests/$t.tscn 2>&1 | grep -E "FAIL|TESTS|SCRIPT ERROR" || fail=1
 done
 
@@ -72,4 +72,13 @@ wait $host_pid
 grep -hE "^\[|SCRIPT ERROR" /tmp/fg_host6_$PORT.log /tmp/fg_client6_$PORT.log
 grep -q "FAIL\|SCRIPT ERROR" /tmp/fg_host6_$PORT.log /tmp/fg_client6_$PORT.log && fail=1
 grep -q "NET IRON PASSED" /tmp/fg_client6_$PORT.log || fail=1
+echo "== Network Suchauftrag (host hides, client finds first) =="
+timeout -s KILL 90 "$GODOT" --headless --path . res://tests/test_net_search.tscn -- --host --port=$PORT --role=host --no-save > /tmp/fg_host7_$PORT.log 2>&1 &
+host_pid=$!
+sleep 3
+timeout -s KILL 80 "$GODOT" --headless --path . res://tests/test_net_search.tscn -- --join=127.0.0.1 --port=$PORT --role=client --no-save > /tmp/fg_client7_$PORT.log 2>&1
+wait $host_pid
+grep -hE "^\[|SCRIPT ERROR" /tmp/fg_host7_$PORT.log /tmp/fg_client7_$PORT.log
+grep -q "FAIL\|SCRIPT ERROR" /tmp/fg_host7_$PORT.log /tmp/fg_client7_$PORT.log && fail=1
+grep -q "NET SEARCH PASSED" /tmp/fg_client7_$PORT.log || fail=1
 exit $fail

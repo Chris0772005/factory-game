@@ -59,6 +59,9 @@ func _ready() -> void:
 	var orders := OrdersPanel.new()
 	orders.world = world
 	_root.add_child(orders)
+	var search := SearchPanel.new()
+	search.world = world
+	_root.add_child(search)
 	_banner_layer = _layer_control()
 	_fly_layer = _layer_control()
 	var pause_layer := CanvasLayer.new()

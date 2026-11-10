@@ -97,6 +97,10 @@ func _stage() -> void:
 			_add_worker(cupola.to_global(Vector3(0.9, 0, 1.6)), -2.4, &"cheer")
 			_add_worker(cupola.to_global(CupolaFurnace.BLOWER_POS + Vector3(0.0, 0, 0.9)), PI, &"")
 			_add_worker(line.interact_point() + Vector3(0.1, -0.75, 0.75), PI, &"")
+	if _cam_name == "hall":
+		var hunt: SearchHunt = get_tree().get_first_node_in_group(&"search_hunts")
+		hunt.scores = [2, 1, 0, 3]
+		hunt.start(Vector3(4.0, 0.0, 1.2))
 	me.global_position = Vector3(2.2, 0.05, 3.6)
 	me.facing = PI * 0.8
 	cam.make_current()

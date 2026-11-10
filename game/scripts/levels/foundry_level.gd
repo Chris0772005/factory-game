@@ -28,6 +28,10 @@ func build_level() -> void:
 	add_child(upgrades)
 	upgrades.changed.connect(_apply_upgrades)
 	build_stations()
+	var hunt := SearchHunt.new()
+	hunt.name = "SearchHunt"
+	hunt.world = self
+	add_child(hunt)
 	if Network.is_sim_authority():
 		# Menu backgrounds show the level as on a fresh install and never save.
 		if not attract_mode:
