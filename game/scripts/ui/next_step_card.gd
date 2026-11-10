@@ -31,7 +31,7 @@ func _ready() -> void:
 	col.add_theme_constant_override("separation", 2)
 	add_child(col)
 	_title = Label.new()
-	_title.text = "NÄCHSTER SCHRITT"
+	_title.text = "TIPP"
 	_title.add_theme_font_size_override("font_size", 18)
 	_title.add_theme_color_override("font_color", UITheme.ACCENT)
 	col.add_child(_title)
