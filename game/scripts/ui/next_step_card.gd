@@ -69,7 +69,7 @@ func _update_marker(delta: float, on: bool, me: Player) -> void:
 		_marker.text = "▼"
 		_marker.font = UITheme.font(700)
 		_marker.font_size = 96
-		_marker.pixel_size = 0.0011
+		_marker.pixel_size = 0.0006
 		_marker.fixed_size = true
 		_marker.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 		_marker.no_depth_test = true

@@ -29,6 +29,13 @@ uniform float roughness_steel : hint_range(0.0, 1.0) = 0.42;
 uniform float roughness_paint : hint_range(0.0, 1.0) = 0.62;
 uniform float dents : hint_range(0.0, 1.0) = 0.3;
 uniform float noise_scale = 1.0;
+// Workshop dust settles on faces that look up; grime runs down the sides
+// and gathers near the floor; edges and corners are rubbed bare. Together
+// they take the factory-fresh look off every machine.
+uniform float dust : hint_range(0.0, 1.0) = 0.45;
+uniform vec4 dust_color : source_color = vec4(0.42, 0.37, 0.31, 1.0);
+uniform float grime : hint_range(0.0, 1.0) = 0.4;
+uniform float edge_wear : hint_range(0.0, 1.0) = 0.5;
 // Polished striking faces: bare, bright steel where |object x| > this (0 = off).
 uniform float polish_x = 0.0;
 
@@ -40,11 +47,14 @@ varying vec3 v_nobj;
 varying float v_seed;
 varying vec3 v_world;
 
+varying vec3 v_nworld;
+
 void vertex() {
 	v_obj = VERTEX;
 	v_nobj = NORMAL;
 	v_seed = COLOR.r;
 	v_world = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	v_nworld = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
 }
 
 void fragment() {
@@ -59,8 +69,11 @@ void fragment() {
 	float metal = metallic_steel;
 	float rough = roughness_steel + grain * 0.1;
 
+	// Rounded edges and corners (where the normal turns quickly) are rubbed.
+	float curve = clamp(length(fwidth(normalize(v_nobj))) * 6.0 - 0.04, 0.0, 1.0) * edge_wear;
 	// Paint with chips: noisy mask, a bright primer rim around each chip.
 	float chip_n = env_fbm(p.xy * 9.0 + p.z * 7.0 + 3.0) * 0.7 + env_noise(p.zy * 23.0) * 0.3;
+	chip_n -= curve * (0.25 + grain * 0.5);
 	float keep = smoothstep(1.0 - paint - 0.04, 1.0 - paint + 0.04, chip_n + 0.12);
 	float rim = smoothstep(0.0, 0.05, keep) * (1.0 - smoothstep(0.05, 0.3, keep));
 	vec3 pc = paint_color.rgb * (1.0 + macro * 0.2 + grain * 0.06);
@@ -75,6 +88,11 @@ void fragment() {
 	c = mix(c, rust_color.rgb * (0.8 + grain * 0.6 + macro * 0.4), r);
 	metal = mix(metal, 0.05, r);
 	rough = mix(rough, 0.88, r);
+
+	// Bare steel on worn edges catches the light.
+	float bare = curve * (1.0 - keep) * (1.0 - r);
+	c = mix(c, c * 1.5 + 0.04, bare * 0.6);
+	rough = mix(rough, 0.3, bare * 0.5);
 
 	// Heat colours: straw, bronze, purple, blue, then grey towards the top.
 	if (temper > 0.0) {
@@ -96,6 +114,28 @@ void fragment() {
 		c = mix(c, soot_color.rgb, s);
 		metal = mix(metal, 0.1, s);
 		rough = mix(rough, 0.9, s);
+	}
+
+	// Grime: dark streaks running down the sides, heavier near the floor.
+	if (grime > 0.0) {
+		float side = 1.0 - abs(v_nworld.y);
+		// Object space, so carried things keep their dirt where it is.
+		float streak = env_noise(vec2(dot(p.xz, vec2(37.0, 29.0)), p.y * 2.2));
+		float blotch = env_fbm(p.xz * 2.3 + p.y * 1.7 + 41.0);
+		float g = (smoothstep(0.35, 0.8, streak) * 0.9 * side + smoothstep(0.35, 0.75, blotch) * 0.8) * grime;
+		g = clamp(g, 0.0, 0.7);
+		c = mix(c, c * vec3(0.34, 0.3, 0.26) + vec3(0.012, 0.01, 0.008), g);
+		rough = mix(rough, 0.85, g);
+		metal = mix(metal, metal * 0.4, g);
+	}
+	// Dust on everything that faces up.
+	if (dust > 0.0) {
+		float up = smoothstep(0.55, 0.95, v_nworld.y);
+		float dn = env_fbm(p.xz * 6.0 + 9.0);
+		float d = up * dust * (0.55 + dn * 0.6);
+		c = mix(c, dust_color.rgb * (0.85 + grain * 0.3), clamp(d, 0.0, 0.85));
+		rough = mix(rough, 0.95, d);
+		metal = mix(metal, 0.0, d * 0.8);
 	}
 
 	if (polish_x > 0.0) {

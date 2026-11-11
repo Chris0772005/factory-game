@@ -180,12 +180,12 @@ static func steel_mat() -> ShaderMaterial:
 
 
 static func blue_mat() -> ShaderMaterial:
-	return StationKit.metal("line_paint", {steel_color = Color("#56606a"), paint = 0.97, paint_color = Color("#2b6f93"), rust = 0.08, dents = 0.08,
-		metallic_steel = 0.4, roughness_steel = 0.45, roughness_paint = 0.4})
+	return StationKit.metal("line_paint", {steel_color = Color("#56606a"), paint = 0.9, paint_color = Color("#2d6480"), rust = 0.22, dents = 0.12,
+		metallic_steel = 0.4, roughness_steel = 0.45, roughness_paint = 0.5})
 
 
 static func yellow_mat() -> ShaderMaterial:
-	return StationKit.metal("line_yellow", {steel_color = Color("#6a6d70"), paint = 0.97, paint_color = Color("#e3b324"), rust = 0.08, dents = 0.08, roughness_paint = 0.42})
+	return StationKit.metal("line_yellow", {steel_color = Color("#6a6d70"), paint = 0.88, paint_color = Color("#d3a01e"), rust = 0.2, dents = 0.1, roughness_paint = 0.5})
 
 
 # --- The grab arm --------------------------------------------------------------
@@ -425,6 +425,33 @@ static func conveyor(belt: Node3D, length: float, width: float) -> ShaderMateria
 	rubber.roughness = 0.75
 	StationKit.add(belt, hose(PackedVector3Array([Vector3(length - 0.04, 0.05, half + 0.28), Vector3(length - 0.16, 0.045, half + 0.26), Vector3(length - 0.3, -0.05, half + 0.12),
 		Vector3(length - 0.45, -0.14, half + 0.06), Vector3(length - 0.8, -0.15, half + 0.05)]), 0.014, 8), rubber)
+	# Loading end: sloped skirt boards with rubber wipers keep the scrap on the belt.
+	var skirts := []
+	var wipers := []
+	var skirt_len := minf(0.62, length * 0.35)
+	for s: float in [-1.0, 1.0]:
+		var lean := Basis(Vector3.RIGHT, s * 0.38)
+		skirts.append(EnvMesh.piece(EnvMesh.box(Vector3(skirt_len, 0.17, 0.008), 0.003), Transform3D(lean, Vector3(skirt_len * 0.5 + 0.06, 0.15, s * (half + 0.012)))))
+		wipers.append(EnvMesh.piece(EnvMesh.box(Vector3(skirt_len - 0.03, 0.05, 0.007), 0.002), Transform3D(lean, Vector3(skirt_len * 0.5 + 0.06, 0.066, s * (half - 0.03)))))
+		for k in 3:
+			skirts.append(EnvMesh.piece(EnvMesh.box(Vector3(0.03, 0.06, 0.012), 0.003), Transform3D(lean, Vector3(0.12 + k * (skirt_len - 0.12) * 0.5, 0.095, s * (half - 0.012)))))
+		# Take-up screws at the tail keep the belt tight.
+		turning = [turned(drum(0.008, 0.2, 0.002), Vector3.RIGHT, Vector3(-0.22, -0.03, s * (half + 0.042)), 10),
+			turned(drum(0.016, 0.014, 0.003), Vector3.RIGHT, Vector3(-0.1, -0.03, s * (half + 0.042)), 6)]
+		StationKit.add_merged(belt, turning, steel)
+	StationKit.add_merged(belt, skirts, paint)
+	StationKit.add_merged(belt, wipers, rubber)
+	# Emergency stop on the walkway side, nip guard with warning stripes at the head drum.
+	var red := StationKit.metal("line_red", {steel_color = Color("#5a5d60"), paint = 0.95, paint_color = Color("#b3261c"), rust = 0.05, dents = 0.03, roughness_paint = 0.35, dust = 0.2})
+	StationKit.add(belt, EnvMesh.box(Vector3(0.08, 0.1, 0.05), 0.008, 2), yellow, Transform3D(Basis(), Vector3(0.34, -0.03, -(half + 0.045))))
+	StationKit.add_merged(belt, [turned(PackedVector2Array([Vector2(0, 0), Vector2(0.012, 0), Vector2(0.012, 0.012), Vector2(0.026, 0.014), Vector2(0.028, 0.022), Vector2(0.02, 0.03), Vector2(0, 0.032)]),
+		Vector3.FORWARD, Vector3(0.34, -0.02, -(half + 0.07)), 18)], red)
+	var guard := [EnvMesh.piece(EnvMesh.box(Vector3(0.26, 0.2, 0.006), 0.003), Transform3D(Basis(), Vector3(length + 0.01, -0.03, -(half + 0.07))))]
+	StationKit.add_merged(belt, guard, yellow)
+	var bars := []
+	for k in 4:
+		bars.append(EnvMesh.piece(EnvMesh.box(Vector3(0.03, 0.27, 0.002)), Transform3D(Basis(Vector3.BACK, 0.7), Vector3(length - 0.085 + k * 0.065, -0.03, -(half + 0.0745)))))
+	StationKit.add_merged(belt, bars, black)
 	return mat
 
 

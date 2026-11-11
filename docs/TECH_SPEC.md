@@ -220,3 +220,16 @@ Füllen, Abkühlen, Zerschlagen), Hammer, Modellbank (öffnet DrawPad), Verkaufs
 - `environment/car_art.gd` (`CarArt.station_wagon`): Kombi in der Garage aus Lofts; das Bausatz-Auto bleibt unsichtbar nur für den Kollisionskörper.
 - `environment/prop_art.gd` (`PropArt`): glatte Ersatzformen für runde Bausatz-Requisiten (Stahlfässer, Holzfässer, Farbdosen, Eimer). `PropKit.place` tauscht sie über den Modellnamen aus; Größe und Kollision kommen weiter aus dem Bausatzmodell.
 - Studiobilder: `scenes/machine_showcase.tscn -- --cam=car|carback|props|blower|trolley|scrap|hands`.
+
+## Modul R – Spielgefühl nach dem ersten Test
+
+- **Sprung** (`player/player.gd`): eigene Schwerkraft beim Steigen (×2,0), Fallen (×2,7) und nach Loslassen der Taste (×3,6); `COYOTE_TIME` 0,1 s, `JUMP_BUFFER` 0,12 s. Etwa 0,75 m hoch, eine halbe Sekunde lang.
+- **Eigener Körper** (`player/first_person_legs.gd`): Bauch, Schürze, Hosenbeine und Stiefel unter der Kamera, laufen mit und ziehen in der Luft an. Nur lokal, ohne Schatten (den wirft das versteckte Modell).
+- **Hände** (`player/first_person_hands.gd`): jeder Finger hat drei Gelenke (`_set_curl`). Posen `REST`, `REACH`, `CARRY`, `PRESS`, `DIG_NEAR`, `DIG_FAR`. Greifen = hinreichen, schließen, heranziehen; F halten = Hand über Hand; Werfen = Stoß nach vorn. Hände schwingen mit den Schritten und hängen bei schnellen Drehungen nach.
+- **Wäsche** (`shaders/env_cloth.gdshader`): `trample[4]` wie beim Gras; `GrassField` setzt die Spielerpositionen.
+- **F halten** (`interact_tick`): Formkasten stampft und schlägt im Takt (`HOLD_BEAT` 0,42 s), der Ofen tritt den Blasebalg alle 0,5 s.
+- **Einstieg**: `ui/intro_letter.gd` zeigt bei neuem Spielstand den Brief mit den vier Schritten. `NextStepCard.next_step` richtet sich in den ersten beiden Briefen nach dem Ziel des Briefs und setzt `NextStepCard.target`; darüber schwebt ein gelber Pfeil (`_update_marker`).
+- **Einstellungen** (`ui/settings_panel.gd`): Bereiche links (Spiel, Ton, Steuerung, Grafik), Zeilen als Karten mit Erklärung, Tastenübersicht.
+- **Oberflächen** (`station_metal.gdshader`): `dust` (Staub auf Flächen, die nach oben zeigen), `grime` (Schmutzstreifen und Flecken), `edge_wear` (abgeriebene Kanten). Gilt für alle Stationsmetalle.
+- **Förderband** (`MachineArt.conveyor`): Einlaufbleche mit Gummilippen, Spannschrauben, Not-Aus, Schutzblech mit Warnstreifen.
+- **Test**: `test_bells` läuft um die Glocke herum statt durch ihren Rand; die Kran-Steuerbirne stößt keine Lasten mehr an.
