@@ -243,3 +243,6 @@ Füllen, Abkühlen, Zerschlagen), Hammer, Modellbank (öffnet DrawPad), Verkaufs
 - `environment/photo_prop.gd` (`PhotoProp`): ersetzt Bausatz-Requisiten (Fässer, Kisten, Kartons, Eimer, Säcke, Büsche, Stühle) durch gescannte Poly-Haven-Modelle in gleicher Größe; `"name:2"` wählt eine Variante aus einem Modell mit mehreren.
 - Foto-Detail auch auf Laub (`leaves`), Dach, allgemeinen Flächen und Bausatz-Requisiten; Blütenköpfe im Gras sind kleiner und werden direkt vor der Kamera ausgeblendet.
 - Prüfhilfe: `-- --pitch=-60` startet mit Blick nach unten (eigene Beine).
+- Vorlage des Nutzers (rot-orange Industrieroboter in einer Halle): Greifarm glänzend rot-orange auf dunklem Sockel mit Bodenplatte und Kabelbündel; `YardLighting` schaltet Spiegelungen (SSR) und Dunst ab mittlerer Qualität ein, die Hallen haben dichteren Dunst (`GarageLighting`); `env_concrete` hat `polish` für den versiegelten Hallenboden.
+- `GarageSet._workshop_gear`: stellt bis zu fünf gescannte Geräte an freie Wandstücke (mindestens 2,1 m von Stationen und anderen Kulissen entfernt), mit Kollision.
+- `StylizedTree`: Stamm mit Rinden-Scan (`bark_material`), Kronen mit gescannten Zweigen (`PhotoProp.clump`); Hintergrundbäume nur auf hoher Qualität.

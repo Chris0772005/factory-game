@@ -22,6 +22,8 @@ uniform vec4 line_paint : source_color = vec4(0.85, 0.66, 0.18, 1.0);
 uniform float bay_line_x = -100.0;
 uniform float bay_line_from_z = -1.0;
 // Slab grid (m) and the door line (world z) beyond which the driveway starts.
+// Sealed, trafficked hall floor: how much smoother than raw concrete (0..1).
+uniform float polish : hint_range(0.0, 1.0) = 0.5;
 uniform float slab = 3.0;
 uniform float door_z = 4.4;
 // Stains: xy = world xz, z = radius, w = kind (0 oil, 1 soot, 2 sand, 3 rust).
@@ -72,7 +74,8 @@ void fragment() {
 		float wear = smoothstep(0.35, 0.75, env_fbm(xz * 0.3 + 17.0));
 		col *= 1.0 - wear * 0.1;
 		h = (fine - 0.5) * 0.3 + stone * 0.4 - j * 1.5 - crack * 0.6;
-		rough = 0.82 - smoothstep(0.4, 0.9, blot) * 0.1 - wear * 0.12 - line * 0.2;
+		rough = 0.82 - smoothstep(0.4, 0.9, blot) * 0.1 - wear * 0.12 - line * 0.2 - polish * (0.3 + wear * 0.2);
+		col *= 1.0 - polish * 0.22;
 	} else {
 		// Driveway pavers (20 x 10 cm bond), sandy joints with moss.
 		vec2 b = xz * vec2(3.0, 6.0);

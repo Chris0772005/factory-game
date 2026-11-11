@@ -199,8 +199,8 @@ static func arm(rig: Dictionary, upper: float, fore: float, height: float) -> vo
 	var shoulder: Node3D = rig.shoulder
 	var elbow: Node3D = rig.elbow
 	var wrist: Node3D = rig.wrist
-	var paint := StationKit.metal("arm_cast", {steel_color = Color("#6a6d70"), paint = 0.985, paint_color = Color("#e8721c"), rust = 0.05, dents = 0.05,
-		metallic_steel = 0.35, roughness_steel = 0.4, roughness_paint = 0.34})
+	var paint := StationKit.metal("arm_cast", {steel_color = Color("#6a6d70"), paint = 0.985, paint_color = Color("#d4401c"), rust = 0.04, dents = 0.04,
+		metallic_steel = 0.35, roughness_steel = 0.4, roughness_paint = 0.24, dust = 0.2, grime = 0.22})
 	var black := black_mat()
 	var graphite := graphite_mat()
 	var steel := steel_mat()
@@ -216,7 +216,14 @@ static func arm(rig: Dictionary, upper: float, fore: float, height: float) -> vo
 	for k in 4:
 		var a := TAU * (k + 0.5) / 4.0
 		foot.append(EnvMesh.piece(EnvMesh.box(Vector3(0.04, 0.1, 0.13), 0.014, 2), Transform3D(Basis(Vector3.UP, a), Vector3(sin(a), 0, cos(a)) * 0.3 + Vector3(0, 0.085, 0))))
-	StationKit.add_merged(base, foot, paint)
+	StationKit.add_merged(base, foot, graphite)
+	# Floor plate the robot is bolted to, with a painted safety edge.
+	StationKit.add(base, EnvMesh.box(Vector3(1.05, 0.03, 1.05), 0.008, 2), graphite, Transform3D(Basis(), Vector3(0, 0.015, 0)))
+	var plate_hw := []
+	for k in 4:
+		var pa := TAU * (k + 0.5) / 4.0
+		plate_hw.append_array(bolt_circle(Vector3.UP, Vector3(sin(pa), 0, cos(pa)) * 0.66 + Vector3(0, 0.03, 0), 0.0, 1, 0.02))
+	StationKit.add_merged(base, plate_hw, steel)
 	var seam := [turned(drum(0.268, 0.024, 0.004), Vector3.UP, Vector3(0, ring_y - 0.012, 0), 40)]
 	seam.append(EnvMesh.piece(EnvMesh.box(Vector3(0.24, 0.17, 0.1), 0.02, 2), Transform3D(Basis(), Vector3(0, 0.3, -0.27))))
 	StationKit.add_merged(base, seam, graphite)
@@ -270,6 +277,9 @@ static func arm(rig: Dictionary, upper: float, fore: float, height: float) -> vo
 	StationKit.add_merged(shoulder, bolt_circle(Vector3.LEFT, Vector3(e_x - 0.094, 0, upper), 0.098, 8, 0.01), steel)
 	StationKit.add(shoulder, hose(PackedVector3Array([Vector3(0.1, 0.16, 0.1), Vector3(0.085, 0.2, 0.22), Vector3(0.04, 0.165, 0.42), Vector3(e_x + 0.07, 0.15, upper - 0.45),
 		Vector3(e_x + 0.06, 0.17, upper - 0.25), Vector3(e_x + 0.045, 0.145, upper - 0.15)]), 0.019), rubber)
+	for off: float in [-0.034, 0.034]:
+		StationKit.add(shoulder, hose(PackedVector3Array([Vector3(0.1 + off, 0.15, 0.1), Vector3(0.085 + off, 0.185, 0.22), Vector3(0.04 + off, 0.15, 0.42),
+			Vector3(e_x + 0.07 + off, 0.135, upper - 0.45), Vector3(e_x + 0.06 + off, 0.155, upper - 0.25), Vector3(e_x + 0.045 + off, 0.13, upper - 0.15)]), 0.014), rubber)
 	var clamps := []
 	for z: float in [0.42, upper - 0.45]:
 		var x := 0.04 if z < 0.5 else e_x + 0.07

@@ -86,3 +86,44 @@ static func _box(name: String, variant := -1) -> AABB:
 	node.free()
 	_bounds[key] = box
 	return box
+
+
+## Places scan `name` at its real size on the floor at `pos` (yaw in degrees),
+## with a box collider around it. Returns the node (null headless).
+static func place(parent: Node3D, name: String, pos: Vector3, yaw := 0.0, solid := true) -> Node3D:
+	var box := _box(name)
+	var basis := Basis(Vector3.UP, deg_to_rad(yaw))
+	var centre := box.get_center()
+	var origin := pos - basis * Vector3(centre.x, box.position.y, centre.z)
+	if solid:
+		WorldBuilder.add_collider(parent, box.size, Transform3D(basis, origin + basis * centre))
+	if not EnvMesh.visual():
+		return null
+	var node: Node3D = _scene(name).instantiate()
+	node.transform = Transform3D(basis, origin)
+	parent.add_child(node)
+	return node
+
+
+## Footprint radius of scan `name` (metres).
+static func radius(name: String) -> float:
+	var box := _box(name)
+	return maxf(box.size.x, box.size.z) * 0.5
+
+
+## One variant of a multi-variant scan, centred on its own box, scaled so its
+## largest side is `size` metres. For foliage built from scanned shrubs.
+static func clump(name: String, variant: int, size: float, shadows := true) -> Node3D:
+	var box := _box(name, variant)
+	var node: Node3D = _scene(name).instantiate()
+	var parts := node.find_children("*", "MeshInstance3D", true, false)
+	for i in parts.size():
+		var mi := parts[i] as MeshInstance3D
+		mi.visible = i == variant
+		if not shadows:
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var k := size / maxf(box.size.x, maxf(box.size.y, box.size.z))
+	var holder := Node3D.new()
+	node.transform = Transform3D(Basis().scaled(Vector3.ONE * k), -box.get_center() * k)
+	holder.add_child(node)
+	return holder

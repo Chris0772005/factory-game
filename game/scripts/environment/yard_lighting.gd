@@ -120,6 +120,12 @@ static func create_environment() -> Environment:
 	env.ssao_light_affect = 0.1
 	env.ssil_enabled = high and not EnvQuality.disabled("ssil")
 	env.ssil_radius = 3.0
+	# Lamps, glowing metal and machines mirror in polished floors and wet ground.
+	env.ssr_enabled = not low and not EnvQuality.disabled("ssr")
+	env.ssr_max_steps = 48
+	env.ssr_fade_in = 0.2
+	env.ssr_fade_out = 2.5
+	env.ssr_depth_tolerance = 0.25
 	env.ssil_intensity = 0.8
 	env.fog_enabled = true
 	env.fog_light_color = FOG_COLOR
@@ -127,7 +133,7 @@ static func create_environment() -> Environment:
 	env.fog_density = 0.007
 	env.fog_sky_affect = 0.0
 	env.fog_aerial_perspective = 0.65
-	env.volumetric_fog_enabled = high and not EnvQuality.disabled("vol")
+	env.volumetric_fog_enabled = not low and not EnvQuality.disabled("vol")
 	env.volumetric_fog_density = 0.006
 	env.volumetric_fog_albedo = Color("#d9c2b5")
 	env.volumetric_fog_anisotropy = 0.3

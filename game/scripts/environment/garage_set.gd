@@ -59,6 +59,7 @@ func _build() -> void:
 	_front()
 	_roof()
 	_dressing()
+	_workshop_gear()
 	_outside()
 	_collect_passthrough()
 	_reflection_probe()
@@ -245,6 +246,47 @@ func _dressing() -> void:
 	prop("kaykit_hexagon/wheelbarrow.gltf", Vector3(-2.7, 0, -4.0), 75.0, {scale = 0.85})
 	_cable()
 	_lamps()
+
+
+## Scanned workshop equipment (PhotoProp) along the free stretches of the
+## side and back walls: wherever no station and no other set piece stands.
+func _workshop_gear() -> void:
+	var gear := ["tool_cart", "old_drill_press", "old_military_compressor", "metal_tool_chest", "hand_truck", "industrial_storage_cart", "power_box_01"]
+	var spots: Array = []
+	var x := inner_min.x + 1.2
+	while x < inner_max.x - 1.0:
+		spots.append([Vector3(x, 0, inner_min.y), Vector3(0, 0, 1), 0.0])
+		x += 1.7
+	var z := inner_min.y + 1.6
+	while z < inner_max.y - 1.4:
+		spots.append([Vector3(inner_max.x, 0, z), Vector3(-1, 0, 0), -90.0])
+		spots.append([Vector3(inner_min.x, 0, z), Vector3(1, 0, 0), 90.0])
+		z += 1.9
+	var blocked: Array[Vector3] = []
+	for st in stations:
+		if st is Node3D:
+			blocked.append((st as Node3D).position)
+	for child in get_children():
+		if child is StaticBody3D:
+			blocked.append((child as StaticBody3D).position)
+	var placed := 0
+	var pick := int(absf(inner_max.x) * 3.0)
+	for spot: Array in spots:
+		if placed >= 5:
+			break
+		var name: String = gear[pick % gear.size()]
+		var at: Vector3 = spot[0] + spot[1] * (PhotoProp.radius(name) + 0.12)
+		var free := true
+		for b in blocked:
+			if Vector2(b.x - at.x, b.z - at.z).length() < 2.1:
+				free = false
+				break
+		if not free:
+			continue
+		PhotoProp.place(self, name, at, spot[2])
+		blocked.append(at)
+		placed += 1
+		pick += 1
 
 
 ## Galvanised steel rack: four uprights, four shelves, cardboard boxes,

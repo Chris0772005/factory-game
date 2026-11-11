@@ -19,6 +19,12 @@ static func build(parent: Node3D) -> void:
 	env.ambient_light_sky_contribution = 0.6
 	env.ambient_light_color = Color("#5a5578")
 	env.fog_density = 0.004
+	# Workshop haze: the lamps and the door light draw visible cones in the air.
+	env.volumetric_fog_density = 0.022
+	env.volumetric_fog_albedo = Color("#c9c4bc")
+	env.volumetric_fog_anisotropy = 0.55
+	env.volumetric_fog_length = 28.0
+	env.volumetric_fog_ambient_inject = 0.25
 	env.ssao_intensity = 1.8
 	env.ssao_radius = 0.8
 	we.environment = env

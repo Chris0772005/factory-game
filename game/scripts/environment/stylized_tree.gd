@@ -46,16 +46,48 @@ static func tree(parent: Node3D, pos: Vector3, height: float, seed: int, solid :
 	for i in 4:
 		var yaw := rng.randf() * TAU
 		blobs.append([crown_c + Vector3(cos(yaw), rng.randf_range(-0.3, 0.6), sin(yaw)) * crown_r * 0.7, crown_r * rng.randf_range(0.45, 0.65)])
-	var bark := EnvMesh.wood("bark", {base_color = BARK, grain_color = Color("#3a2c24"), weathering = 0.3, grain_strength = 0.8})
-	EnvMesh.add(root, EnvMesh.merge(wood), bark, Transform3D(), solid)
+	EnvMesh.add(root, EnvMesh.merge(wood), bark_material(), Transform3D(), solid)
 	var leaves := []
+	# Trees in the yard get real leaves: scanned shrubs as branch tips around
+	# a dark core. Far trees keep the plain crown (cheap, and too far to tell).
+	var leafy := solid or EnvQuality.level() == EnvQuality.Level.HIGH
+	var core := 0.86 if leafy else 1.0
 	for bl in blobs:
-		leaves.append(EnvMesh.piece(EnvMesh.sphere(1.0, 14, 8), Transform3D(Basis().scaled(Vector3(1.0, 0.82, 1.0) * float(bl[1])), bl[0]), rng.randf()))
-	var key := "crown_%s" % crown_tint.to_html()
-	var mat := EnvMesh.foliage(key, {top_color = Color("#6f9e52"), bottom_color = Color("#24483a"), tint = crown_tint,
-		lumps = 0.22, clump_scale = 1.6, sway = 0.008, sway_base = pos.y + trunk_h * 0.6})
+		leaves.append(EnvMesh.piece(EnvMesh.sphere(1.0, 14, 8), Transform3D(Basis().scaled(Vector3(1.0, 0.82, 1.0) * float(bl[1]) * core), bl[0]), rng.randf()))
+	var key := "crown_%s_%s" % [crown_tint.to_html(), leafy]
+	var mat := EnvMesh.foliage(key, {top_color = Color("#6f9e52") if not leafy else Color("#5a8444"), bottom_color = Color("#24483a") if not leafy else Color("#213f2c"),
+		tint = crown_tint, lumps = 0.22, clump_scale = 1.6, sway = 0.008, sway_base = pos.y + trunk_h * 0.6})
 	EnvMesh.add(root, EnvMesh.merge(leaves), mat, Transform3D(), solid)
+	if leafy:
+		var n := 0
+		for bl in blobs:
+			var r: float = bl[1]
+			for k in (2 if solid else 1):
+				var tip := PhotoProp.clump("shrub_02", [0, 1, 3][(n + k) % 3], r * (2.5 if solid else 2.9), solid)
+				var yaw := rng.randf() * TAU
+				var off := Vector3(cos(yaw), rng.randf_range(-0.15, 0.35), sin(yaw)) * r * (0.25 if k == 0 else 0.55)
+				tip.transform = Transform3D(Basis(Vector3.UP, rng.randf() * TAU) * Basis(Vector3.RIGHT, rng.randf_range(-0.5, 0.5)), (bl[0] as Vector3) + off)
+				root.add_child(tip)
+			n += 1
 	return root
+
+
+## Real bark (Poly Haven scan) projected from three sides.
+static var _bark: StandardMaterial3D
+
+
+static func bark_material() -> StandardMaterial3D:
+	if _bark == null:
+		_bark = StandardMaterial3D.new()
+		_bark.albedo_texture = load("res://assets/textures/pbr/bark_d.jpg")
+		_bark.albedo_color = Color("#b8a898")
+		_bark.normal_enabled = true
+		_bark.normal_texture = load("res://assets/textures/pbr/bark_n.jpg")
+		_bark.roughness = 0.95
+		_bark.uv1_triplanar = true
+		_bark.uv1_scale = Vector3(0.9, 0.5, 0.9)
+		_bark.uv1_world_triplanar = true
+	return _bark
 
 
 ## Round-topped conifer for the background (stacked lumpy cones, no shadows).
