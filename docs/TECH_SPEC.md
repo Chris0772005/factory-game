@@ -171,3 +171,16 @@ Füllen, Abkühlen, Zerschlagen), Hammer, Modellbank (öffnet DrawPad), Verkaufs
 - Upgrade `robot_arm`: Greifarm (Zwei-Gelenk-IK, `ARM_CYCLE` 3,4 s) holt mit `pile.take_one()` selbst und legt aufs Band.
 - Simulation nur beim Host; Teile auf dem Band werden per rpc gespiegelt.
 - Test: `tests/test_auto.tscn`. Bilder: `scenes/dig_showcase.tscn -- --cam=line|arm`.
+
+## Modul L – Vollautomatik (`foundry/auto/auto_foundry.gd`, `auto_art.gd`, `machine_art.gd`)
+
+- `AutoFoundry.build_for(level)` (Gruppe `auto_foundries`) in jeder Halle mit `Furnace` und `MoldBox`. Host simuliert, Stationen syncen sich selbst, die Pfanne per `_ladle_sync`.
+- Fünf Upgrades, jedes nimmt einen Handgriff ab:
+  - `auto_bellows` (Stufe 0): Gebläse hält `furnace.heat` auf 0,92, solange Schrott, Schmelze oder eine Fahrt ansteht. Tiegel muss im Ofen stehen.
+  - `auto_rammer` (Stufe 1): Form merkt sich ihre letzten Modelle, legt sie nach `REPATTERN_TIME` neu ein und stampft nach `RAM_TIME` selbst (Güte 0,82).
+  - `auto_pour`: Pfanne an der Hängebahn (`Trip` IDLE→FILL→GO→POUR→BACK) nimmt den Bedarf der Form aus dem Tiegel und gießt mit `POUR_RATE`. Rest geht zurück in den Tiegel.
+  - `auto_breaker`: fertige Form bricht nach `BREAK_DELAY` selbst auf (`_break_open`).
+  - `auto_ship`: ruhende Gussstücke (Gruppe `castings`) werden nach `SHIP_REST` ballistisch in die Verkaufskiste geworfen, höchstens `SHIP_TRIES` Versuche.
+- Mit `conveyor` + `robot_arm` läuft die Halle ohne Eingriff: Test `tests/test_autofoundry.tscn` (2 Güsse, +150 $ in 47 s).
+- `MachineArt`: `loft` (weiche Gussgehäuse), `hose`, `pipe`, `turned` (Drehteile in Achsrichtung), `motor`, `cap`, `bolt_circle`, fertiger Greifarm (`arm`) und Bandrahmen (`conveyor`). `AutoArt`: Gebläse, Schaltschrank an der Form, Schiene, Laufkatze mit Pfanne.
+- Studiobilder: `scenes/machine_showcase.tscn -- --cam=arm|close|grip|belt|drive`; Halle: `scenes/dig_showcase.tscn -- --cam=auto`.

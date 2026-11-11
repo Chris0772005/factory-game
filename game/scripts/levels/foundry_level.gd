@@ -34,6 +34,7 @@ func build_level() -> void:
 	add_child(guide)
 	build_stations()
 	ScrapLine.build_for(self)
+	AutoFoundry.build_for(self)
 	var hunt := SearchHunt.new()
 	hunt.name = "SearchHunt"
 	hunt.world = self

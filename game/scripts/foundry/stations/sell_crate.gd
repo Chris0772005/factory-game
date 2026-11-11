@@ -53,7 +53,7 @@ func _physics_process(_delta: float) -> void:
 		if piece == null or not piece.has_method("value") or piece.is_held() or piece.is_queued_for_deletion():
 			continue
 		var local := to_local(piece.global_position)
-		if absf(local.x) < SIZE.x * 0.5 and absf(local.z) < SIZE.z * 0.5 and local.y < SIZE.y and local.y > -0.1:
+		if absf(local.x) < SIZE.x * 0.5 and absf(local.z) < SIZE.z * 0.5 and local.y < SIZE.y + 0.12 and local.y > -0.1:
 			var v: int = piece.value()
 			# An open order for exactly this piece pays its bonus on top.
 			v += OrderBoard.fulfil(world, piece)

@@ -11,31 +11,39 @@ signal changed(new_letter: bool)
 
 ## goal: what to do. text: the letter. done: checked against the world.
 const LETTERS := [
-	{goal = "Wühl 3 Teile aus dem Schrottberg (F halten)", reward = 10,
+	{id = &"dig", goal = "Wühl 3 Teile aus dem Schrottberg (F halten)", reward = 10,
 		text = "Mein Junge, die Gießerei gehört jetzt dir. Fang klein an: Im Schrottberg steckt mehr, als man denkt. Hände rein!"},
-	{goal = "Wirf Schrott in den Ofen und tritt den Blasebalg, bis 1 Liter geschmolzen ist", reward = 15,
+	{id = &"melt", goal = "Wirf Schrott in den Ofen und tritt den Blasebalg, bis 1 Liter geschmolzen ist", reward = 15,
 		text = "Schrott allein macht nicht satt. Ab in den Ofen damit und ordentlich Luft geben – heiß muss es sein."},
-	{goal = "Zeichne ein Modell, gieß es und verkauf deinen ersten Guss", reward = 25,
+	{id = &"sold", goal = "Zeichne ein Modell, gieß es und verkauf deinen ersten Guss", reward = 25,
 		text = "Jetzt wird's ernst: zeichnen, Sand stampfen, gießen, Form zerschlagen. Was rauskommt, wandert in die Verkaufskiste."},
-	{goal = "Kauf dir Lederhandschuhe an der Werkstatt-Tafel", reward = 20,
+	{id = &"gloves", goal = "Kauf dir Lederhandschuhe an der Werkstatt-Tafel", reward = 20,
 		text = "Du wühlst mit bloßen Händen? Sei nicht geizig. Handschuhe zuerst – dann geht's schneller und tut weniger weh."},
-	{goal = "Kauf die Schaufel", reward = 30,
+	{id = &"shovel", goal = "Kauf die Schaufel", reward = 30,
 		text = "Hände sind gut, eine Schaufel ist besser. Damit bist du doppelt so schnell durch den Berg."},
-	{goal = "Kauf den Magnet am Seil und den Metalldetektor", reward = 60,
+	{id = &"tools", goal = "Kauf den Magnet am Seil und den Metalldetektor", reward = 60,
 		text = "Die guten Stücke liegen tief. Mit Magnet holst du zwei auf einmal, und der Detektor riecht Gold. Hab ich früher alles gehabt."},
-	{goal = "Bau das Förderband zum Ofen", reward = 100,
+	{id = &"conveyor", goal = "Bau das Förderband zum Ofen", reward = 100,
 		text = "Schleppen ist was für Anfänger. Ein Band vom Schrottberg zum Ofen – drauflegen, fertig."},
-	{goal = "Stell den Greifarm an den Schrottberg", reward = 200,
+	{id = &"robot_arm", goal = "Stell den Greifarm an den Schrottberg", reward = 200,
 		text = "Und jetzt das Beste: ein Greifarm, der für dich wühlt. Dann läuft der Schrott von allein in den Ofen und du kümmerst dich ums Gießen."},
-	{goal = "Schalte die Garage frei", reward = 150,
+	{id = &"auto_bellows", goal = "Kauf den Gebläseautomat", reward = 120,
+		text = "Du trittst immer noch den Blasebalg? Ein Elektrogebläse hält den Ofen heiß, solange was drin ist. Dann hast du die Hände frei."},
+	{id = &"garage", goal = "Schalte die Garage frei", reward = 150,
 		text = "Der Hof wird zu klein für dich. In der Garage ist Platz für mehr Formen – und Aufträge gibt es dort auch."},
-	{goal = "Pachte die Glockengießerei", reward = 400,
+	{id = &"auto_molds", goal = "Kauf Stampfautomat und Rüttelrost", reward = 250,
+		text = "In der Garage wird nicht mehr von Hand gestampft. Der Stampfautomat formt dein letztes Modell immer wieder neu, der Rüttelrost schlägt die Form auf."},
+	{id = &"auto_pour", goal = "Bau die Gieß-Hängebahn", reward = 350,
+		text = "Lass den Tiegel im Ofen stehen. Die Pfanne an der Schiene holt sich die Schmelze selbst und gießt jede Form."},
+	{id = &"auto_ship", goal = "Kauf den Schleuderversand – dann läuft die Garage allein", reward = 500,
+		text = "Fehlt nur noch der Versand. Dann wühlt, schmilzt, gießt und verkauft die Garage von ganz allein – und du zeichnest neue Modelle."},
+	{id = &"bells", goal = "Pachte die Glockengießerei", reward = 400,
 		text = "Glocken! Das war immer mein Traum. Die alte Glockengießerei steht leer. Spar drauf."},
-	{goal = "Kauf die Eisenhalle", reward = 800,
+	{id = &"iron", goal = "Kauf die Eisenhalle", reward = 800,
 		text = "Du hast es weit gebracht. Jetzt die große Halle: Kupolofen, Kran, Formband. Dort wartet der Auftrag deines Lebens."},
-	{goal = "Gieß die Kaiserglocke und liefere sie an den Dom", reward = 0,
+	{id = &"great_bell", goal = "Gieß die Kaiserglocke und liefere sie an den Dom", reward = 0,
 		text = "Die Kaiserglocke für den Dom. Hundert Liter Bronze, zwei Pfannen, eine Mannschaft. Mach mich stolz."},
-	{goal = "Alles geschafft – die Hallen gehören dir", reward = 0,
+	{id = &"end", goal = "Alles geschafft – die Hallen gehören dir", reward = 0,
 		text = "Ich hab's gehört bis hierher: Sie läutet. Besser hätt ich's nicht gekonnt. Dein Onkel Heinz."},
 ]
 
@@ -62,32 +70,29 @@ func note(what: StringName) -> void:
 
 
 func _reached(i: int) -> bool:
-	match i:
-		0:
+	match LETTERS[i].id:
+		&"dig":
 			return stats.digs >= 3
-		1:
+		&"melt":
 			return get_tree().get_nodes_in_group(&"crucibles").any(func(c: Crucible) -> bool: return c.amount >= 1.0) or stats.sold > 0
-		2:
+		&"sold":
 			return stats.sold >= 1
-		3:
-			return world.has_upgrade(&"gloves")
-		4:
-			return world.has_upgrade(&"shovel")
-		5:
+		&"tools":
 			return world.has_upgrade(&"magnet") and world.has_upgrade(&"detector")
-		6:
-			return world.has_upgrade(&"conveyor")
-		7:
-			return world.has_upgrade(&"robot_arm")
-		8:
+		&"auto_molds":
+			return world.has_upgrade(&"auto_rammer") and world.has_upgrade(&"auto_breaker")
+		&"garage":
 			return world.upgrade_tier() >= 1
-		9:
+		&"bells":
 			return world.upgrade_tier() >= 2
-		10:
+		&"iron":
 			return world.upgrade_tier() >= 3
-		11:
+		&"great_bell":
 			return stats.great_bell >= 1
-	return false
+		&"end":
+			return false
+	# Everything else is "own this upgrade".
+	return world.has_upgrade(LETTERS[i].id)
 
 
 func _physics_process(delta: float) -> void:

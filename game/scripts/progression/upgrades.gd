@@ -15,6 +15,7 @@ const CATALOG := [
 	{id = &"detector", name = "Metalldetektor", desc = "Piept bei Wertvollem: seltene Funde gut doppelt so oft.", cost = 420, tier = 0},
 	{id = &"conveyor", name = "Förderband", desc = "Band vom Schrottberg zum Ofen: Schrott drauflegen, er fährt von selbst hinein.", cost = 500, tier = 0},
 	{id = &"robot_arm", name = "Greifarm", desc = "Ein Roboterarm wühlt im Schrottberg und belädt das Förderband – ganz allein.", cost = 1200, tier = 0},
+	{id = &"auto_bellows", name = "Gebläseautomat", desc = "Ein Elektrogebläse hält den Ofen heiß, solange Schrott oder Schmelze da ist – nie mehr treten.", cost = 400, tier = 0},
 	{id = &"scrap_premium", name = "Schrott vom Wertstoffhof", desc = "Mehr Kupfer und Messing im Schrott.", cost = 260, tier = 0},
 	{id = &"garage", name = "Garage freischalten", desc = "Mehr Platz, Mehrfach-Gießbaum, Abschrecken.", cost = 900, tier = 0, unlock = true},
 	# Garage (tier 1).
@@ -22,6 +23,10 @@ const CATALOG := [
 	{id = &"quench_oil", name = "Härteöl", desc = "Abschrecken in Öl statt Wasser: halbes Rissrisiko.", cost = 420, tier = 1},
 	{id = &"blower", name = "Elektrogebläse", desc = "Der Ofen hält die Hitze doppelt so lange.", cost = 480, tier = 1},
 	{id = &"scrapyard_regular", name = "Stammkunde am Wertstoffhof", desc = "Versiegelte Kisten für 20 statt 30 $.", cost = 350, tier = 1},
+	{id = &"auto_rammer", name = "Stampfautomat", desc = "Formkästen formen ihr letztes Modell von selbst neu und stampfen sich fest.", cost = 800, tier = 1},
+	{id = &"auto_breaker", name = "Rüttelrost", desc = "Fertige Formen rütteln sich selbst auf – kein Hammer mehr nötig.", cost = 900, tier = 1},
+	{id = &"auto_pour", name = "Gieß-Hängebahn", desc = "Eine Pfanne an der Schiene holt Schmelze aus dem Tiegel im Ofen und gießt jede Form selbst.", cost = 1500, tier = 1},
+	{id = &"auto_ship", name = "Schleuderversand", desc = "Liegengebliebene Gussstücke fliegen von selbst in die Verkaufskiste.", cost = 1400, tier = 1},
 	{id = &"bell_foundry", name = "Glockengießerei pachten", desc = "Eine echte Halle: Glocken zeichnen, drehen, gießen, läuten.", cost = 4000, tier = 1, unlock = true},
 	# Glockengießerei (tier 2).
 	{id = &"crucible_huge", name = "Gießpfanne", desc = "Der Tiegel fasst 8 Liter – eine kleine Glocke in einem Zug.", cost = 900, tier = 2},
