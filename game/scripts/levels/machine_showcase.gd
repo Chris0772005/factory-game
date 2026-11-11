@@ -91,6 +91,10 @@ func _ready() -> void:
 	pot.add_child(melt)
 	AutoArt.trolley(carriage, hanger, pot, melt, AutoFoundry.LADLE_DROP)
 	CarArt.station_wagon(self, Transform3D(Basis(Vector3.UP, 0.6), Vector3(-6.0, 0, -3.0)), 4.3, 1.72, Color("#2f5e48"))
+	var kit_props := ["kaykit_prototype/Barrel_A.gltf", "kaykit_prototype/Barrel_B.gltf", "kaykit_dungeon/barrel_large.gltf", "kaykit_dungeon/barrel_small.gltf",
+		"kaykit_prototype/Can_A.gltf", "kaykit_prototype/Can_B.gltf", "kaykit_hexagon/bucket_empty.gltf"]
+	for i in kit_props.size():
+		PropKit.place(self, kit_props[i], Vector3(-2.0 + i * 0.95, 0, 9.0), 20.0 * i, {solid = PropKit.Solid.NONE})
 	var hands := FirstPersonHands.new()
 	hands.position = Vector3(5.0, 1.0, 3.0)
 	hands.set_process(false)
@@ -110,6 +114,8 @@ func _ready() -> void:
 			cam.look_at_from_position(Vector3(1.3, 1.25, 7.9), Vector3(-0.35, 0.45, 5.9))
 		"trolley":
 			cam.look_at_from_position(Vector3(3.3, 1.9, 8.0), Vector3(2.2, 1.7, 6.0))
+		"props":
+			cam.look_at_from_position(Vector3(0.9, 1.5, 12.2), Vector3(0.9, 0.4, 9.0))
 		"car":
 			cam.look_at_from_position(Vector3(-1.2, 1.7, 0.6), Vector3(-6.0, 0.7, -3.0))
 		"carback":

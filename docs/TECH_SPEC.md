@@ -214,3 +214,9 @@ Füllen, Abkühlen, Zerschlagen), Hammer, Modellbank (öffnet DrawPad), Verkaufs
 - `progression/offline_income.gd` (`OfflineIncome`): misst bei Vollautomatik die Einnahmen (Fenster 180 s), Spielstand merkt `time` und `rate`; beim Laden `payout(rate, sekunden)` = halbe Rate, höchstens 2 h, ab 2 min, mit Banner „Willkommen zurück“.
 - Musik: `tools/music_gen.py` erzeugt `menu`, `backyard`, `garage`, `bell_foundry`, `iron_hall` (KI-komponiert, siehe CREDITS).
 - `test_net_foundry`: Ursache des seltenen Ausfalls war ein unter Last verrutschter Testspieler (goss neben die Form); der Test hält die Position jetzt fest.
+
+## Modul Q – Runde Kulissen
+
+- `environment/car_art.gd` (`CarArt.station_wagon`): Kombi in der Garage aus Lofts; das Bausatz-Auto bleibt unsichtbar nur für den Kollisionskörper.
+- `environment/prop_art.gd` (`PropArt`): glatte Ersatzformen für runde Bausatz-Requisiten (Stahlfässer, Holzfässer, Farbdosen, Eimer). `PropKit.place` tauscht sie über den Modellnamen aus; Größe und Kollision kommen weiter aus dem Bausatzmodell.
+- Studiobilder: `scenes/machine_showcase.tscn -- --cam=car|carback|props|blower|trolley|scrap|hands`.

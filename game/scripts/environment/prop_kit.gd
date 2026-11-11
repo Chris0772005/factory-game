@@ -52,6 +52,11 @@ static func place(parent: Node3D, model: String, pos: Vector3, yaw := 0.0, opts 
 			WorldBuilder.add_collider(parent, size, Transform3D(b, pos + b * c))
 	if not EnvMesh.visual():
 		return null
+	if PropArt.has(model):
+		# Round props get a smooth stand-in of the same size (see PropArt).
+		var kit := bounds(model)
+		var plain := Basis.from_euler(Vector3(deg_to_rad(tilt.x), deg_to_rad(yaw), deg_to_rad(tilt.z)))
+		return PropArt.build(parent, model, Transform3D(plain, pos), kit.size * s, kit.position.y * s, opts)
 	var node: Node3D = _scene(model).instantiate()
 	node.transform = xform
 	parent.add_child(node)
