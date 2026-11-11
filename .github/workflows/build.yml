@@ -52,16 +52,6 @@ jobs:
           ~/godot/godot --headless --path game --export-release "Windows Desktop" ../build/windows/MoltenMates.exe
           ~/godot/godot --headless --path game --export-release "Linux" ../build/linux/MoltenMates.x86_64
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: MoltenMates-windows
-          path: build/windows
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: MoltenMates-linux
-          path: build/linux
-
       - name: Publish test version (fixed download link)
         env:
           GH_TOKEN: ${{ github.token }}
@@ -71,3 +61,15 @@ jobs:
           gh release view testversion >/dev/null 2>&1 || gh release create testversion \
             --prerelease --title "Testversion" --notes "Aktueller Stand zum Ausprobieren. Zip entpacken, MoltenMates.exe starten."
           gh release upload testversion MoltenMates-Windows.zip MoltenMates-Linux.zip --clobber
+
+      - uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: MoltenMates-windows
+          path: build/windows
+
+      - uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: MoltenMates-linux
+          path: build/linux
