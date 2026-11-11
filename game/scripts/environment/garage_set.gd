@@ -251,6 +251,9 @@ func _dressing() -> void:
 ## Scanned workshop equipment (PhotoProp) along the free stretches of the
 ## side and back walls: wherever no station and no other set piece stands.
 func _workshop_gear() -> void:
+	# The garage itself is full (car, shelving, stations): big halls only.
+	if inner_max.x < 7.0:
+		return
 	var gear := ["tool_cart", "old_drill_press", "old_military_compressor", "metal_tool_chest", "hand_truck", "industrial_storage_cart", "power_box_01"]
 	var spots: Array = []
 	var x := inner_min.x + 1.2
@@ -262,13 +265,15 @@ func _workshop_gear() -> void:
 		spots.append([Vector3(inner_max.x, 0, z), Vector3(-1, 0, 0), -90.0])
 		spots.append([Vector3(inner_min.x, 0, z), Vector3(1, 0, 0), 90.0])
 		z += 1.9
+	# xz of everything in the way; y carries the clearance it needs (m).
 	var blocked: Array[Vector3] = []
 	for st in stations:
 		if st is Node3D:
-			blocked.append((st as Node3D).position)
+			blocked.append(Vector3((st as Node3D).position.x, 1.9, (st as Node3D).position.z))
 	for child in get_children():
-		if child is StaticBody3D:
-			blocked.append((child as StaticBody3D).position)
+		# Wall colliders sit outside the floor rectangle and block nothing.
+		if child is StaticBody3D and absf((child as StaticBody3D).position.x) < inner_max.x - 0.05 and (child as StaticBody3D).position.z > inner_min.y + 0.05:
+			blocked.append(Vector3((child as StaticBody3D).position.x, 1.0, (child as StaticBody3D).position.z))
 	var placed := 0
 	var pick := int(absf(inner_max.x) * 3.0)
 	for spot: Array in spots:
@@ -278,13 +283,21 @@ func _workshop_gear() -> void:
 		var at: Vector3 = spot[0] + spot[1] * (PhotoProp.radius(name) + 0.12)
 		var free := true
 		for b in blocked:
-			if Vector2(b.x - at.x, b.z - at.z).length() < 2.1:
+			if Vector2(b.x - at.x, b.z - at.z).length() < b.y + PhotoProp.radius(name):
 				free = false
 				break
 		if not free:
+			if "--gear-log" in OS.get_cmdline_user_args():
+				var near := blocked[0]
+				for b in blocked:
+					if Vector2(b.x - at.x, b.z - at.z).length() < Vector2(near.x - at.x, near.z - at.z).length():
+						near = b
+				print("SKIP ", at, " near ", near)
 			continue
 		PhotoProp.place(self, name, at, spot[2])
-		blocked.append(at)
+		if "--gear-log" in OS.get_cmdline_user_args():
+			print("GEAR ", name, " ", at)
+		blocked.append(Vector3(at.x, 1.2, at.z))
 		placed += 1
 		pick += 1
 
