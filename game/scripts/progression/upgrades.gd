@@ -36,6 +36,9 @@ const CATALOG := [
 	# Eisenhalle (tier 3).
 	{id = &"auto_molder", name = "Formautomat", desc = "Das Formband formt selbst – niemand muss pressen.", cost = 2500, tier = 3},
 	{id = &"auto_pourer", name = "Gießautomat", desc = "Gießkasten am Formband: einmal aus der Pfanne füllen, er gießt jeden Kasten selbst.", cost = 3500, tier = 3},
+	{id = &"auto_charger", name = "Beschickungsband", desc = "Ein Band wirft Eisenschrott von selbst in den Gichtkübel, solange das Formband Eisen braucht.", cost = 2800, tier = 3},
+	{id = &"auto_blast", name = "Gebläsesteuerung", desc = "Das Gebläse am Kupolofen läuft von selbst, solange geschmolzen wird.", cost = 2200, tier = 3},
+	{id = &"auto_tap", name = "Abstichkanal", desc = "Ein Bodenkanal pumpt Eisen aus dem Ofen direkt in den Gießkasten am Formband (braucht den Gießautomat).", cost = 4500, tier = 3},
 	{id = &"hot_blast", name = "Heißwind", desc = "Der Kupolofen hält die Hitze doppelt so lange.", cost = 1600, tier = 3},
 	{id = &"big_ladle", name = "Große Pfanne", desc = "Die Gießpfanne fasst 75 statt 50 Liter.", cost = 3000, tier = 3},
 ]

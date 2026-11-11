@@ -28,7 +28,7 @@ func _stage() -> void:
 	var ladle := crane.ladle
 	var line: MoldLine = get_tree().get_first_node_in_group(&"mold_lines")
 	var pit: BellPit = get_tree().get_first_node_in_group(&"bell_pits")
-	world.upgrades.load_save(["auto_molder", "auto_pourer"])
+	world.upgrades.load_save(["auto_molder", "auto_pourer"] + (["auto_charger", "auto_blast", "auto_tap"] if _cam_name == "auto" else []))
 	world.money = 14280
 	world.money_changed.emit(world.money)
 	cupola.heat = 0.95
@@ -82,6 +82,11 @@ func _stage() -> void:
 			cam.look_at_from_position(t + Vector3(3.4, 1.2, 3.4), t + Vector3(-0.4, -0.5, -0.4))
 			_add_worker(cupola.to_global(Vector3(0.9, 0, 1.6)), -2.4, &"cheer")
 			_add_worker(cupola.to_global(CupolaFurnace.BLOWER_POS + Vector3(0.0, 0, 0.9)), PI, &"")
+		"auto":
+			cam.fov = 62
+			cam.look_at_from_position(Vector3(-1.2, 3.4, 6.2), Vector3(-4.6, 0.6, -1.6))
+			cupola.tap_open = false
+			line.tundish = 12.0
 		"kaiser":
 			var w := ladle.interact_point()
 			_add_worker(Vector3(w.x + 0.35, 0, w.z - 0.75), 0.0, &"")

@@ -207,3 +207,10 @@ Füllen, Abkühlen, Zerschlagen), Hammer, Modellbank (öffnet DrawPad), Verkaufs
 - Autoload `Music` (`core/music.gd`): spielt `res://assets/music/<szene>.ogg|.mp3` (`menu`, `backyard`, `garage`, `bell_foundry`, `iron_hall`), sonst `theme`; Schleife, Überblendung `FADE`. Lautstärke `GameSettings.music_volume` (Einstellungen → Musik). Ohne Datei bleibt es still. Regeln für Dateien: `game/assets/music/LIESMICH.md`.
 - Autoload `SteamService` (`core/steam_service.gd`): nur aktiv, wenn die GodotSteam-GDExtension installiert ist und Steam läuft; sonst tut jeder Aufruf nichts. App-ID aus Projekt-Einstellung `steam/app_id` (Standard 480 = Valves Test-App). Steam-Name wird Spielername, Erfolge nach `ACHIEVEMENTS` über `earned(world)`. Gegen einen laufenden Steam-Client noch nicht getestet.
 - Offen bis zum eigenen Steamworks-Konto: App-ID, GodotSteam-Erweiterung einbinden, Erfolge in Steamworks anlegen, Koop über Steam-Lobbys statt IP, Upload der Builds.
+
+## Modul P – Eisenhalle automatisch, Abwesenheits-Einnahmen, Musik
+
+- `foundry/auto/auto_iron.gd` (`AutoIron`, Gruppe `auto_irons`, interactable = Schaltschrank am Gebläse): `auto_charger` (alle `CHARGE_EVERY` s 6 l Eisen in den Schacht, solange das Formband braucht), `auto_blast` (Hitze 0,94), `auto_tap` (Bodenkanal pumpt `PUMP_RATE` l/s in den Gießkasten, nur bei >90 % Eisen im Herd). Schrank schaltet alles aus/an. Test `tests/test_autoiron.tscn` (+112 $ in 12 s).
+- `progression/offline_income.gd` (`OfflineIncome`): misst bei Vollautomatik die Einnahmen (Fenster 180 s), Spielstand merkt `time` und `rate`; beim Laden `payout(rate, sekunden)` = halbe Rate, höchstens 2 h, ab 2 min, mit Banner „Willkommen zurück“.
+- Musik: `tools/music_gen.py` erzeugt `menu`, `backyard`, `garage`, `bell_foundry`, `iron_hall` (KI-komponiert, siehe CREDITS).
+- `test_net_foundry`: Ursache des seltenen Ausfalls war ein unter Last verrutschter Testspieler (goss neben die Form); der Test hält die Position jetzt fest.

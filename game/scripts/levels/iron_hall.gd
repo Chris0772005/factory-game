@@ -76,6 +76,7 @@ func build_stations() -> void:
 	add_child(crane)
 	var stations: Array = get_children().filter(func(n: Node) -> bool: return n is Node3D and not n is WorldEnvironment and not n is Light3D)
 	IronHallSet.build_hall(self, stations)
+	AutoIron.build_for(self)
 
 
 func spawn_items() -> void:

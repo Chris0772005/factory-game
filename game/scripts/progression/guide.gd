@@ -41,6 +41,8 @@ const LETTERS := [
 		text = "Glocken! Das war immer mein Traum. Die alte Glockengießerei steht leer. Spar drauf."},
 	{id = &"iron", goal = "Kauf die Eisenhalle", reward = 800,
 		text = "Du hast es weit gebracht. Jetzt die große Halle: Kupolofen, Kran, Formband. Dort wartet der Auftrag deines Lebens."},
+	{id = &"auto_iron", goal = "Kauf Beschickungsband, Gebläsesteuerung und Abstichkanal", reward = 1000,
+		text = "Mit Formautomat und Gießautomat fehlt der Halle nur noch das Futter. Band, Gebläse, Kanal – dann gießt das Formband Tag und Nacht Serie."},
 	{id = &"great_bell", goal = "Gieß die Kaiserglocke und liefere sie an den Dom", reward = 0,
 		text = "Die Kaiserglocke für den Dom. Hundert Liter Bronze, zwei Pfannen, eine Mannschaft. Mach mich stolz."},
 	{id = &"end", goal = "Alles geschafft – die Hallen gehören dir", reward = 0,
@@ -79,6 +81,8 @@ func _reached(i: int) -> bool:
 			return stats.sold >= 1
 		&"tools":
 			return world.has_upgrade(&"magnet") and world.has_upgrade(&"detector")
+		&"auto_iron":
+			return world.has_upgrade(&"auto_charger") and world.has_upgrade(&"auto_blast") and world.has_upgrade(&"auto_tap")
 		&"auto_molds":
 			return world.has_upgrade(&"auto_rammer") and world.has_upgrade(&"auto_breaker")
 		&"garage":
