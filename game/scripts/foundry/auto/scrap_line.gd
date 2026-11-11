@@ -282,7 +282,7 @@ func _pose_arm() -> void:
 	_shoulder.rotation.x = -(base + a)
 	_elbow.rotation.x = PI - b
 	for i in 2:
-		_fingers[i].rotation.x = (0.5 - grip * 0.42) * (1.0 if i == 0 else -1.0)
+		_fingers[i].rotation.x = (grip * 0.4 - 0.45) * (1.0 if i == 0 else -1.0)
 	if _lamp_mat:
 		_lamp_mat.emission_energy_multiplier = 2.5 if _cycle > 0.0 else 0.6
 
@@ -318,68 +318,37 @@ func _build_colliders() -> void:
 func _build_belt_art() -> void:
 	if not StationKit.visual():
 		return
-	var paint := StationKit.metal("line_blue", {steel_color = Color("#56606a"), paint = 0.92, paint_color = Color("#2f6f8f"), rust = 0.25, dents = 0.2,
-		metallic_steel = 0.45, roughness_steel = 0.5})
-	var steel := StationKit.metal("line_steel", {steel_color = Color("#8a9097"), rust = 0.15, metallic_steel = 0.8, roughness_steel = 0.35})
-	var dark := StationKit.metal("line_dark", {steel_color = Color("#2c2d30"), rust = 0.2, metallic_steel = 0.5})
-	var yellow := StationKit.metal("crane_paint", {steel_color = Color("#d9a521"), rust = 0.25, dents = 0.2, metallic_steel = 0.3, roughness_steel = 0.55})
+	var paint := MachineArt.blue_mat()
+	var steel := MachineArt.steel_mat()
+	var dark := MachineArt.graphite_mat()
+	var yellow := MachineArt.yellow_mat()
 	var half := BELT_WIDTH * 0.5
-	# Belt surface with running chevron cleats (UV.x in metres).
-	_belt_mat = ShaderMaterial.new()
-	_belt_mat.shader = load("res://shaders/fx_belt.gdshader")
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var corners := [[Vector3(0, 0.04, -half), Vector2(0, 0)], [Vector3(length, 0.04, -half), Vector2(length, 0)],
-		[Vector3(length, 0.04, half), Vector2(length, 1)], [Vector3(0, 0.04, half), Vector2(0, 1)]]
-	for idx in [0, 1, 2, 0, 2, 3]:
-		st.set_normal(Vector3.UP)
-		st.set_uv(corners[idx][1])
-		st.add_vertex(corners[idx][0])
-	var surface := MeshInstance3D.new()
-	surface.mesh = st.commit()
-	surface.material_override = _belt_mat
-	_belt.add_child(surface)
-	# Side channels, guard rails, end drums, idler rollers.
-	var frame := []
-	var rails := []
-	var rollers := []
-	for s: float in [-1.0, 1.0]:
-		frame.append(EnvMesh.piece(EnvMesh.box(Vector3(length + 0.1, 0.12, 0.035), 0.008), Transform3D(Basis(), Vector3(length * 0.5, -0.03, s * (half + 0.03)))))
-		frame.append(EnvMesh.piece(EnvMesh.box(Vector3(length + 0.1, 0.02, 0.07), 0.004), Transform3D(Basis(), Vector3(length * 0.5, -0.1, s * (half + 0.01)))))
-		rails.append(EnvMesh.piece(EnvMesh.box(Vector3(length - 0.5, 0.025, 0.025), 0.006), Transform3D(Basis(), Vector3(length * 0.5 + 0.2, 0.2, s * (half + 0.05)))))
-		var posts := maxi(2, int(length / 0.7))
-		for k in posts:
-			var px := 0.5 + (length - 0.75) * k / maxf(posts - 1, 1)
-			rails.append(EnvMesh.piece(EnvMesh.box(Vector3(0.022, 0.2, 0.022)), Transform3D(Basis(), Vector3(px, 0.1, s * (half + 0.05)))))
-	for end_x: float in [0.0, length]:
-		rollers.append(EnvMesh.piece(EnvMesh.cylinder(0.07, 0.07, BELT_WIDTH, 16), Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(end_x, -0.03, 0))))
-	var idlers := int(length / 0.24)
-	for k in idlers:
-		rollers.append(EnvMesh.piece(EnvMesh.cylinder(0.028, 0.028, BELT_WIDTH - 0.02, 10), Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(0.12 + k * 0.24, 0.0, 0))))
-	StationKit.add_merged(_belt, frame, paint)
-	StationKit.add_merged(_belt, rails, yellow)
-	StationKit.add_merged(_belt, rollers, steel)
-	# Drive at the top end: gear motor with cooling fins, a guard and a bolt circle.
-	var drive := []
-	var mz := half + 0.16
-	drive.append(EnvMesh.piece(EnvMesh.cylinder(0.085, 0.085, 0.22, 16), Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(length - 0.02, -0.03, mz + 0.08))))
-	for k in 6:
-		drive.append(EnvMesh.piece(EnvMesh.cylinder(0.098, 0.098, 0.008, 16), Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(length - 0.02, -0.03, mz + 0.01 + k * 0.03))))
-	drive.append(EnvMesh.piece(EnvMesh.box(Vector3(0.16, 0.16, 0.09), 0.015), Transform3D(Basis(), Vector3(length - 0.02, -0.03, mz - 0.06))))
-	StationKit.add_merged(_belt, drive, dark)
-	StationKit.add(_belt, EnvMesh.box(Vector3(0.3, 0.2, 0.02), 0.01), yellow, Transform3D(Basis(), Vector3(length - 0.05, 0.02, -half - 0.06)))
+	_belt_mat = MachineArt.conveyor(_belt, length, BELT_WIDTH)
+	# A work light over the line so the machines read in dim halls.
+	var glow := OmniLight3D.new()
+	glow.light_color = Color("#ffe2b8")
+	glow.light_energy = 1.1
+	glow.omni_range = 4.5
+	glow.position = Vector3(length * 0.3, 1.5, 0.9)
+	_belt.add_child(glow)
 	# Legs (vertical in the world): two trestles with cross braces and foot plates.
 	var legs := []
-	for u: float in [0.22, 0.9]:
+	var feet := []
+	var across := _belt.global_basis.z
+	var tops: Array[Vector3] = []
+	for u: float in [0.2, 0.88]:
 		var top := _start + (_belt.global_basis.x * length * u) + Vector3(0, -0.12, 0)
-		var across := _belt.global_basis.z
+		tops.append(top)
 		for s: float in [-1.0, 1.0]:
 			var p := top + across * s * (half + 0.03)
-			legs.append(EnvMesh.piece(EnvMesh.box(Vector3(0.05, p.y, 0.05), 0.006), Transform3D(Basis(), Vector3(p.x, p.y * 0.5, p.z))))
-			legs.append(EnvMesh.piece(EnvMesh.box(Vector3(0.14, 0.015, 0.14)), Transform3D(Basis(), Vector3(p.x, 0.008, p.z))))
-		var mid := top + Vector3(0, -top.y * 0.55, 0)
-		legs.append(EnvMesh.piece(EnvMesh.box(Vector3(0.03, 0.03, BELT_WIDTH + 0.06)), Transform3D(Basis.looking_at(across, Vector3.UP), mid)))
+			legs.append(EnvMesh.piece(EnvMesh.box(Vector3(0.055, p.y - 0.06, 0.055), 0.012, 2), Transform3D(Basis(), Vector3(p.x, (p.y + 0.06) * 0.5, p.z))))
+			feet.append(MachineArt.turned(MachineArt.foot_pad(), Vector3.UP, Vector3(p.x, 0, p.z), 16))
+		legs.append(EnvMesh.piece(EnvMesh.box(Vector3(0.035, 0.035, BELT_WIDTH + 0.06), 0.008), Transform3D(Basis.looking_at(across, Vector3.UP), Vector3(top.x, 0.2, top.z))))
+		StationKit.add(self, MachineArt.pipe(PackedVector3Array([top + across * (half + 0.03) + Vector3(0, -0.06, 0), Vector3(top.x, 0.2, top.z) - across * (half + 0.03)]), 0.011, 8), paint)
+	legs.append(EnvMesh.piece(EnvMesh.box(Vector3(0.035, 0.035, tops[0].distance_to(tops[1])), 0.008), Transform3D(Basis.looking_at(Vector3(tops[1].x - tops[0].x, 0, tops[1].z - tops[0].z), Vector3.UP),
+		Vector3((tops[0].x + tops[1].x) * 0.5, 0.2, (tops[0].z + tops[1].z) * 0.5))))
 	StationKit.add_merged(self, legs, paint)
+	StationKit.add_merged(self, feet, steel)
 	# Hopper: four sloped plates over the belt foot, hazard edge, stencil.
 	var hopper := []
 	var hb := _start + Vector3(0, 0.1, 0)
@@ -388,12 +357,28 @@ func _build_belt_art() -> void:
 		var side := Basis(Vector3.UP, k * PI * 0.5)
 		var plate := Transform3D(basis * side * Basis(Vector3.RIGHT, -0.38), hb + basis * side * Vector3(0, 0.2, -HOPPER.x * 0.5 + 0.06))
 		hopper.append(EnvMesh.piece(EnvMesh.box(Vector3(HOPPER.x - 0.02, 0.46, 0.015), 0.004), plate))
-	StationKit.add_merged(self, hopper, paint)
+	var black_bits := []
 	var edge := []
 	for k in 4:
 		var side := Basis(Vector3.UP, k * PI * 0.5)
-		edge.append(EnvMesh.piece(EnvMesh.box(Vector3(HOPPER.x + 0.14, 0.03, 0.03), 0.006), Transform3D(basis * side, hb + basis * side * Vector3(0, 0.42, -HOPPER.x * 0.5 - 0.02))))
+		var tilt := basis * side * Basis(Vector3.RIGHT, -0.38)
+		for r: float in [-0.22, 0.0, 0.22]:
+			hopper.append(EnvMesh.piece(EnvMesh.box(Vector3(0.025, 0.4, 0.02), 0.006), Transform3D(tilt, hb + basis * side * Vector3(r, 0.2, -HOPPER.x * 0.5 + 0.045))))
+		# Striped rim: seven yellow and black blocks per side.
+		for q in 7:
+			var seg := EnvMesh.piece(EnvMesh.box(Vector3((HOPPER.x + 0.14) / 7.0 + 0.002, 0.034, 0.034), 0.008), Transform3D(basis * side,
+				hb + basis * side * Vector3((q - 3) * (HOPPER.x + 0.14) / 7.0, 0.42, -HOPPER.x * 0.5 - 0.02)))
+			if q % 2 == 0:
+				edge.append(seg)
+			else:
+				black_bits.append(seg)
+		# A strut from the rim corner down to the floor.
+		var corner := hb + basis * side * Vector3(HOPPER.x * 0.5 + 0.03, 0.4, -HOPPER.x * 0.5 - 0.03)
+		StationKit.add(self, MachineArt.pipe(PackedVector3Array([corner, Vector3(corner.x, 0.03, corner.z)]), 0.016, 8), paint)
+		black_bits.append(MachineArt.turned(MachineArt.foot_pad(), Vector3.UP, Vector3(corner.x, 0, corner.z), 14))
+	StationKit.add_merged(self, hopper, paint)
 	StationKit.add_merged(self, edge, yellow)
+	StationKit.add_merged(self, black_bits, dark)
 	StationKit.label(self, "SCHROTT", Transform3D(basis * Basis(Vector3.UP, PI) * Basis(Vector3.RIGHT, 0.38), hb + basis * Vector3(0, 0.2, HOPPER.x * 0.5 - 0.05)), 48, Color("#f0e2c4"), 800, 0.0012)
 	# Control box on a post with a status lamp, a stop button and a cable.
 	var post := _start + _belt.global_basis.z * (half + 0.45) + _dir * 0.55
@@ -449,65 +434,5 @@ func _build_arm_art() -> void:
 	_held_mesh.position = Vector3(0, 0, 0.22)
 	_held_mesh.visible = false
 	wrist.add_child(_held_mesh)
-	if not StationKit.visual():
-		return
-	var orange := StationKit.metal("arm_orange", {steel_color = Color("#6a6d70"), paint = 0.94, paint_color = Color("#e0701f"), rust = 0.15, dents = 0.15,
-		metallic_steel = 0.4, roughness_steel = 0.45})
-	var dark := StationKit.metal("line_dark", {steel_color = Color("#2c2d30"), rust = 0.2, metallic_steel = 0.5})
-	var steel := StationKit.metal("line_steel", {steel_color = Color("#8a9097"), rust = 0.15, metallic_steel = 0.8, roughness_steel = 0.35})
-	# Pedestal: floor plate with bolts, column, slewing ring.
-	var ped := []
-	ped.append(EnvMesh.piece(EnvMesh.cylinder(0.36, 0.38, 0.04, 20), Transform3D(Basis(), Vector3(0, 0.02, 0))))
-	ped.append(EnvMesh.piece(EnvMesh.cylinder(0.2, 0.27, SHOULDER_HEIGHT - 0.2, 16), Transform3D(Basis(), Vector3(0, (SHOULDER_HEIGHT - 0.2) * 0.5 + 0.04, 0))))
-	ped.append(EnvMesh.piece(EnvMesh.cylinder(0.28, 0.28, 0.07, 20), Transform3D(Basis(), Vector3(0, SHOULDER_HEIGHT - 0.16, 0))))
-	StationKit.add_merged(_arm, ped, dark)
-	var bolts := []
-	for k in 8:
-		var a := TAU * k / 8.0
-		bolts.append(EnvMesh.piece(EnvMesh.cylinder(0.022, 0.022, 0.03, 6), Transform3D(Basis(), Vector3(sin(a) * 0.31, 0.05, cos(a) * 0.31))))
-	StationKit.add_merged(_arm, bolts, steel)
-	StationKit.label(_arm, "GREIFER 01", Transform3D(Basis(Vector3.UP, atan2(-_arm_base.x, -_arm_base.z)), Vector3(0, 0.4, 0) + Basis(Vector3.UP, atan2(-_arm_base.x, -_arm_base.z)) * Vector3(0, 0, 0.25)),
-		40, Color("#f0e2c4"), 800, 0.001)
-	# Turret with the shoulder joint housings.
-	var turret := []
-	turret.append(EnvMesh.piece(EnvMesh.cylinder(0.24, 0.26, 0.14, 18), Transform3D(Basis(), Vector3(0, -0.06, 0))))
-	for s: float in [-1.0, 1.0]:
-		turret.append(EnvMesh.piece(EnvMesh.box(Vector3(0.05, 0.26, 0.22), 0.02), Transform3D(Basis(), Vector3(s * 0.15, 0.04, 0))))
-	StationKit.add_merged(_turret, turret, orange)
-	StationKit.add(_turret, EnvMesh.cylinder(0.11, 0.11, 0.36, 16), dark, Transform3D(Basis(Vector3.BACK, PI * 0.5), Vector3.ZERO))
-	# Upper arm: two side plates, a hydraulic ram, a cable run.
-	var upper := []
-	for s: float in [-1.0, 1.0]:
-		upper.append(EnvMesh.piece(EnvMesh.box(Vector3(0.035, 0.17, UPPER + 0.1), 0.012), Transform3D(Basis(), Vector3(s * 0.09, 0, UPPER * 0.5))))
-	upper.append(EnvMesh.piece(EnvMesh.box(Vector3(0.18, 0.05, UPPER * 0.6), 0.012), Transform3D(Basis(), Vector3(0, 0.085, UPPER * 0.5))))
-	StationKit.add_merged(_shoulder, upper, orange)
-	var ram := []
-	ram.append(EnvMesh.piece(EnvMesh.cylinder(0.035, 0.035, UPPER * 0.5, 10), Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(0, -0.11, UPPER * 0.35))))
-	ram.append(EnvMesh.piece(EnvMesh.cylinder(0.018, 0.018, UPPER * 0.45, 8), Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(0, -0.11, UPPER * 0.75))))
-	StationKit.add_merged(_shoulder, ram, steel)
-	StationKit.add(_shoulder, StationKit.tube(PackedVector3Array([Vector3(0.12, 0.05, 0.1), Vector3(0.14, 0.12, UPPER * 0.4), Vector3(0.13, 0.06, UPPER * 0.8), Vector3(0.12, 0.04, UPPER)]), 0.014, 6), dark)
-	# Elbow joint, forearm, wrist.
-	StationKit.add(_elbow, EnvMesh.cylinder(0.085, 0.085, 0.3, 16), dark, Transform3D(Basis(Vector3.BACK, PI * 0.5), Vector3.ZERO))
-	var fore := []
-	fore.append(EnvMesh.piece(EnvMesh.box(Vector3(0.11, 0.12, FORE - 0.1), 0.02), Transform3D(Basis(), Vector3(0, 0, FORE * 0.5))))
-	fore.append(EnvMesh.piece(EnvMesh.box(Vector3(0.14, 0.14, 0.14), 0.03), Transform3D(Basis(), Vector3(0, 0, FORE * 0.22))))
-	StationKit.add_merged(_elbow, fore, orange)
-	StationKit.add(wrist, EnvMesh.cylinder(0.07, 0.07, 0.1, 14), dark, Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3.ZERO))
-	# Gripper: two fingers with claw tips.
-	for i in 2:
-		var claw := []
-		var s := 1.0 if i == 0 else -1.0
-		claw.append(EnvMesh.piece(EnvMesh.box(Vector3(0.09, 0.022, 0.2), 0.006), Transform3D(Basis(), Vector3(0, 0, 0.1))))
-		claw.append(EnvMesh.piece(EnvMesh.box(Vector3(0.09, 0.022, 0.09), 0.006), Transform3D(Basis(Vector3.RIGHT, s * 0.9), Vector3(0, -s * 0.03, 0.23))))
-		StationKit.add_merged(_fingers[i], claw, steel)
-	# Beacon on the turret.
-	var beacon := MeshInstance3D.new()
-	beacon.mesh = EnvMesh.cylinder(0.03, 0.035, 0.05, 12)
-	var amber := StandardMaterial3D.new()
-	amber.albedo_color = Color("#d98a1f")
-	amber.emission_enabled = true
-	amber.emission = Color("#ffb347")
-	amber.emission_energy_multiplier = 1.4
-	beacon.material_override = amber
-	beacon.position = Vector3(0, 0.2, -0.12)
-	_turret.add_child(beacon)
+	if StationKit.visual():
+		MachineArt.arm({base = _arm, turret = _turret, shoulder = _shoulder, elbow = _elbow, wrist = wrist, fingers = _fingers}, UPPER, FORE, SHOULDER_HEIGHT)
