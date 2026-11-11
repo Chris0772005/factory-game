@@ -5,6 +5,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 env:
   GODOT_VERSION: 4.7.2
 
@@ -58,3 +61,13 @@ jobs:
         with:
           name: MoltenMates-linux
           path: build/linux
+
+      - name: Publish test version (fixed download link)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          (cd build/windows && zip -q -r ../../MoltenMates-Windows.zip .)
+          (cd build/linux && zip -q -r ../../MoltenMates-Linux.zip .)
+          gh release view testversion >/dev/null 2>&1 || gh release create testversion \
+            --prerelease --title "Testversion" --notes "Aktueller Stand zum Ausprobieren. Zip entpacken, MoltenMates.exe starten."
+          gh release upload testversion MoltenMates-Windows.zip MoltenMates-Linux.zip --clobber
