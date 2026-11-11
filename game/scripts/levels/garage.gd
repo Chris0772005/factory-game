@@ -51,6 +51,8 @@ func build_stations() -> void:
 	add_child(board)
 	var stations: Array = get_children().filter(func(n: Node) -> bool: return n is Node3D and not n is WorldEnvironment and not n is Light3D)
 	GarageSet.build(self, stations)
+	for at: Vector3 in [Vector3(2.5, 2.9, -2.8), Vector3(4.3, 2.9, 2.0), Vector3(-4.3, 2.9, 1.7)]:
+		SwayLamp.hang(self, at, 0.75)
 
 
 func build_level() -> void:

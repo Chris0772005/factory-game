@@ -13,6 +13,9 @@ extends Node
 ## It also tracks the last used input device (key-prompt glyphs) and applies the saved
 ## GameSettings at boot. Everything is safe headless.
 
+## Something heavy landed at a world position (set dressing reacts).
+signal impacted(world_pos: Vector3, strength: float)
+
 signal device_changed(gamepad: bool)
 signal hitstop_started(seconds: float)
 
@@ -234,6 +237,7 @@ func punch(node: Node, scale := 0.15, duration := 0.4) -> void:
 ## A hit at `world_pos`: distance-scaled shake, plus `stop` seconds of hitstop when the
 ## local worker is the one at the hit (within 2.6 m).
 func impact(world_pos: Vector3, strength: float, stop := 0.0) -> void:
+	impacted.emit(world_pos, strength)
 	shake_at(world_pos, strength)
 	if stop > 0.0 and _distance(world_pos) < HITSTOP_RANGE:
 		hitstop(stop)

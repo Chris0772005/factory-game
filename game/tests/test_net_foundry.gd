@@ -59,6 +59,10 @@ func _host() -> void:
 		return mold.state == MoldBox.State.COOLING, 25.0)
 	me._perform(&"use_end")
 	me.release()
+	if mold.state != MoldBox.State.COOLING:
+		# Diagnosis for the rare failure of this step.
+		print("[host] DIAG mold state %d fills %s, crucible %.2f l held %s tilt %.2f target %s, me %s, mold %s" % [mold.state, str(mold.fills),
+			crucible.amount, str(crucible.is_held()), crucible.tilt, str(crucible.pour_target), str(me.global_position), str(mold.global_position)])
 	_check(mold.state == MoldBox.State.COOLING, "host: pouring fills the client's cavity")
 	_check(await _until(func(): return world.entities.get_children().any(func(n): return n is CastPiece), 30.0),
 		"host: client smashes the mold and the casting appears")

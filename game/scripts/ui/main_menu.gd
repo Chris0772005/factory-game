@@ -179,6 +179,7 @@ func _build_ui() -> void:
 	_coop_card.add_child(join_row)
 	_column.add_child(_coop_card)
 	_button("Einstellungen", &"SecondaryButton", _open_settings)
+	_button("Lizenzen", &"SecondaryButton", _open_licenses)
 	_button("Beenden", &"SecondaryButton", func() -> void: get_tree().quit())
 
 	_status_pill = PanelContainer.new()
@@ -318,6 +319,14 @@ func _close_settings() -> void:
 	tw.tween_callback(func() -> void: _settings_layer.visible = false)
 	if Juice.using_gamepad:
 		_first.grab_focus()
+
+
+func _open_licenses() -> void:
+	var screen := LicenseScreen.new()
+	_root.add_child(screen)
+	screen.closed.connect(func() -> void:
+		screen.queue_free()
+		_first.grab_focus())
 
 
 # --- Starting a game ------------------------------------------------------------

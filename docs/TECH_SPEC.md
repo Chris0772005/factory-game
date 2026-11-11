@@ -184,3 +184,12 @@ Füllen, Abkühlen, Zerschlagen), Hammer, Modellbank (öffnet DrawPad), Verkaufs
 - Mit `conveyor` + `robot_arm` läuft die Halle ohne Eingriff: Test `tests/test_autofoundry.tscn` (2 Güsse, +150 $ in 47 s).
 - `MachineArt`: `loft` (weiche Gussgehäuse), `hose`, `pipe`, `turned` (Drehteile in Achsrichtung), `motor`, `cap`, `bolt_circle`, fertiger Greifarm (`arm`) und Bandrahmen (`conveyor`). `AutoArt`: Gebläse, Schaltschrank an der Form, Schiene, Laufkatze mit Pfanne.
 - Studiobilder: `scenes/machine_showcase.tscn -- --cam=arm|close|grip|belt|drive`; Halle: `scenes/dig_showcase.tscn -- --cam=auto`.
+
+## Modul M – Feinschliff
+
+- `foundry/visuals/scrap_models.gd` (`ScrapModels`): echte Formen für getragenen Schrott (Dose, Schlüssel, Rohr, Kessel, Zahn, Ring); `Item.create` und das Band nutzen sie.
+- `player/first_person_hands.gd`: Handschuhe aus `MachineArt.loft` (Handfläche, vier Finger, Daumen, Stulpe).
+- Metalldetektor: `ScrapPile` würfelt den nächsten Fund vor (`_next`) und piept schneller, je näher ein seltener Fund ist (`Sfx` Ton `detector_beep`, zur Laufzeit erzeugt).
+- `environment/sway_lamp.gd` (`SwayLamp.hang`): Hängelampen in der Garage, schwingen bei Kopfstößen und bei `Juice.impacted`; Licht wandert mit.
+- `ui/license_screen.gd`: Hauptmenü → „Lizenzen“: Danksagung, Godot-Lizenz, Drittbestandteile (`Engine.get_license_text/get_copyright_info/get_license_info`).
+- Bekannt: `test_net_foundry` fällt selten beim Gießen aus (nicht reproduzierbar, Diagnosezeile `DIAG` eingebaut).
