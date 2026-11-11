@@ -123,7 +123,7 @@ void fragment() {
 		// Object space, so carried things keep their dirt where it is.
 		float streak = env_noise(vec2(dot(p.xz, vec2(37.0, 29.0)), p.y * 2.2));
 		float blotch = env_fbm(p.xz * 2.3 + p.y * 1.7 + 41.0);
-		float g = (smoothstep(0.35, 0.8, streak) * 0.9 * side + smoothstep(0.35, 0.75, blotch) * 0.8) * grime;
+		float g = (smoothstep(0.35, 0.8, streak) * 0.9 * side + smoothstep(0.55, 0.9, blotch) * 0.28) * grime;
 		g = clamp(g, 0.0, 0.7);
 		c = mix(c, c * vec3(0.34, 0.3, 0.26) + vec3(0.012, 0.01, 0.008), g);
 		rough = mix(rough, 0.85, g);
@@ -158,7 +158,7 @@ void fragment() {
 	// Real scratches, pitting and rust grain from a scan, travelling with the part.
 	vec3 ph_a = ALBEDO;
 	float ph_r = ROUGHNESS;
-	NORMAL = env_photo_object(ph_metal_d, ph_metal_n, ph_metal_arm, v_obj + v_seed * 3.0, NORMAL, INV_VIEW_MATRIX, VIEW_MATRIX, MODEL_MATRIX, 1.3, 0.55, ph_a, ph_r);
+	NORMAL = env_photo_object(ph_metal_d, ph_metal_n, ph_metal_arm, v_obj + v_seed * 3.0, NORMAL, INV_VIEW_MATRIX, VIEW_MATRIX, MODEL_MATRIX, 1.3, mix(0.55, 0.1, keep), ph_a, ph_r);
 	ALBEDO = ph_a;
 	ROUGHNESS = ph_r;
 }

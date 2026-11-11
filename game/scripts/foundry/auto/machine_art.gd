@@ -180,12 +180,14 @@ static func steel_mat() -> ShaderMaterial:
 
 
 static func blue_mat() -> ShaderMaterial:
-	return StationKit.metal("line_paint", {steel_color = Color("#56606a"), paint = 0.9, paint_color = Color("#2d6480"), rust = 0.22, dents = 0.12,
-		metallic_steel = 0.4, roughness_steel = 0.45, roughness_paint = 0.5})
+	# Even machine enamel: wear shows on edges and in corners, not as blotches.
+	return StationKit.metal("line_paint", {steel_color = Color("#56606a"), paint = 0.985, paint_color = Color("#24566e"), rust = 0.05, dents = 0.06,
+		metallic_steel = 0.4, roughness_steel = 0.45, roughness_paint = 0.3, dust = 0.25, grime = 0.3})
 
 
 static func yellow_mat() -> ShaderMaterial:
-	return StationKit.metal("line_yellow", {steel_color = Color("#6a6d70"), paint = 0.88, paint_color = Color("#d3a01e"), rust = 0.2, dents = 0.1, roughness_paint = 0.5})
+	return StationKit.metal("line_yellow", {steel_color = Color("#6a6d70"), paint = 0.98, paint_color = Color("#d9a514"), rust = 0.05, dents = 0.05, roughness_paint = 0.32,
+		dust = 0.2, grime = 0.25})
 
 
 # --- The grab arm --------------------------------------------------------------
