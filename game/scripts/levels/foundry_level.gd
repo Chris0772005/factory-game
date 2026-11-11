@@ -14,6 +14,7 @@ const UNLOCKS := {&"garage": GARAGE, &"bell_foundry": BELL_FOUNDRY, &"iron_hall"
 const TRAVEL_DELAY := 3.5
 
 var guide: Guide
+var find_book: FindBook
 var _save_pending := false
 
 
@@ -32,6 +33,10 @@ func build_level() -> void:
 	guide.name = "Guide"
 	guide.world = self
 	add_child(guide)
+	find_book = FindBook.new()
+	find_book.name = "FindBook"
+	find_book.world = self
+	add_child(find_book)
 	build_stations()
 	ScrapLine.build_for(self)
 	AutoFoundry.build_for(self)
@@ -46,6 +51,7 @@ func build_level() -> void:
 			money_changed.connect(func(_m): _autosave())
 			upgrades.changed.connect(_autosave)
 			guide.changed.connect(func(_n): _autosave())
+			find_book.changed.connect(_autosave)
 		spawn_items()
 
 

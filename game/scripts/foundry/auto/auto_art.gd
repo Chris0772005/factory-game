@@ -47,7 +47,7 @@ static func blower(parent: Node3D, at: Vector3, furnace_at: Vector3) -> void:
 	var rubber := StandardMaterial3D.new()
 	rubber.albedo_color = Color("#1a1a1d")
 	rubber.roughness = 0.7
-	StationKit.add(node, MachineArt.hose(PackedVector3Array([Vector3(0, 0.47, -0.27), Vector3(0, 0.45, -0.4), Vector3(0, 0.3, -reach * 0.75), Vector3(0, 0.22, -reach)]), 0.062, 14), rubber)
+	StationKit.add(node, MachineArt.hose(PackedVector3Array([Vector3(0, 0.47, -0.27), Vector3(0, 0.46, -0.36), Vector3(0, 0.36, -0.36 - (reach - 0.36) * 0.5), Vector3(0, 0.24, -reach + 0.06), Vector3(0, 0.22, -reach)]), 0.048, 14), rubber)
 	# Intake fan behind a guard ring: spins about the drum axis.
 	var fan := Node3D.new()
 	fan.name = "Fan"
@@ -66,23 +66,47 @@ static func mold_unit(parent: Node3D, at: Vector3, mold_at: Vector3) -> Array:
 	var node := Node3D.new()
 	parent.add_child(node)
 	node.global_transform = Transform3D(Basis.looking_at(Vector3(mold_at.x - at.x, 0, mold_at.z - at.z), Vector3.UP), at)
-	var cab := [EnvMesh.piece(EnvMesh.box(Vector3(0.34, 0.78, 0.26), 0.03, 3), Transform3D(Basis(), Vector3(0, 0.47, 0)))]
-	cab.append(EnvMesh.piece(EnvMesh.box(Vector3(0.36, 0.06, 0.28), 0.02, 2), Transform3D(Basis(), Vector3(0, 0.05, 0))))
+	# Blue cabinet on a dark plinth with a cap; framed doors front and back.
+	var cab := [EnvMesh.piece(EnvMesh.box(Vector3(0.34, 0.74, 0.26), 0.02, 3), Transform3D(Basis(), Vector3(0, 0.47, 0)))]
+	for z: float in [-1.0, 1.0]:
+		for x: float in [-0.155, 0.155]:
+			cab.append(EnvMesh.piece(EnvMesh.box(Vector3(0.02, 0.62, 0.012), 0.004), Transform3D(Basis(), Vector3(x, 0.47, z * 0.132))))
+		for y: float in [0.165, 0.775]:
+			cab.append(EnvMesh.piece(EnvMesh.box(Vector3(0.33, 0.02, 0.012), 0.004), Transform3D(Basis(), Vector3(0, y, z * 0.132))))
 	StationKit.add_merged(node, cab, MachineArt.blue_mat())
-	var dark := [EnvMesh.piece(EnvMesh.box(Vector3(0.3, 0.2, 0.03), 0.012, 2), Transform3D(Basis(Vector3.RIGHT, -0.5), Vector3(0, 0.9, 0.03)))]
-	dark.append(EnvMesh.piece(EnvMesh.box(Vector3(0.26, 0.4, 0.012), 0.006), Transform3D(Basis(), Vector3(0, 0.42, 0.131))))
-	dark.append(MachineArt.turned(MachineArt.motor(0.06, 0.2), Vector3.FORWARD, Vector3(0, 0.3, -0.12), 24))
+	var dark := [EnvMesh.piece(EnvMesh.box(Vector3(0.37, 0.1, 0.29), 0.015, 2), Transform3D(Basis(), Vector3(0, 0.05, 0)))]
+	dark.append(EnvMesh.piece(EnvMesh.box(Vector3(0.37, 0.03, 0.29), 0.012, 2), Transform3D(Basis(), Vector3(0, 0.855, 0))))
+	# Sloped operator desk on top, facing away from the mold.
+	dark.append(EnvMesh.piece(EnvMesh.box(Vector3(0.3, 0.16, 0.03), 0.012, 2), Transform3D(Basis(Vector3.RIGHT, -0.75), Vector3(0, 0.915, 0.02))))
+	# Louvres on both sides, a shaker motor towards the mold.
+	for x: float in [-1.0, 1.0]:
+		for k in 5:
+			dark.append(EnvMesh.piece(EnvMesh.box(Vector3(0.012, 0.012, 0.16), 0.003), Transform3D(Basis(Vector3.BACK, x * 0.5), Vector3(x * 0.172, 0.6 + k * 0.035, 0))))
+	dark.append(MachineArt.turned(MachineArt.motor(0.055, 0.17), Vector3.FORWARD, Vector3(0, 0.26, -0.13), 24))
 	StationKit.add_merged(node, dark, MachineArt.graphite_mat())
-	var hw := [MachineArt.turned(MachineArt.drum(0.012, 0.03, 0.002), Vector3.BACK, Vector3(0.1, 0.42, 0.137), 10)]
-	for x: float in [-0.14, 0.14]:
-		for y: float in [0.12, 0.82]:
-			hw.append_array(MachineArt.bolt_circle(Vector3.BACK, Vector3(x, y, 0.131), 0.0, 1, 0.009))
+	var hw := []
+	for z: float in [-1.0, 1.0]:
+		hw.append(EnvMesh.piece(EnvMesh.box(Vector3(0.016, 0.1, 0.02), 0.005), Transform3D(Basis(), Vector3(0.11, 0.47, z * 0.142))))
+		for y: float in [0.25, 0.69]:
+			hw.append(MachineArt.turned(MachineArt.drum(0.011, 0.03, 0.002), Vector3.UP, Vector3(-0.15, y, z * 0.14), 8))
 	StationKit.add_merged(node, hw, MachineArt.steel_mat())
+	var rubber := StandardMaterial3D.new()
+	rubber.albedo_color = Color("#1a1a1d")
+	rubber.roughness = 0.7
+	var reach := maxf(0.3, Vector2(mold_at.x - at.x, mold_at.z - at.z).length() - MoldBox.BED.x * 0.35)
+	StationKit.add(node, MachineArt.hose(PackedVector3Array([Vector3(0, 0.26, -0.3), Vector3(0, 0.24, -0.36), Vector3(0, 0.3, -reach * 0.8), Vector3(0, 0.3, -reach)]), 0.022, 10), rubber)
 	var green := _lamp(Color("#59e07e"))
 	var amber := _lamp(Color("#ffb347"))
-	_dome(node, green, Vector3(-0.08, 0.99, 0.0))
-	_dome(node, amber, Vector3(0.08, 0.99, 0.0))
-	StationKit.label(node, "STAMPFAUTOMAT", Transform3D(Basis(), Vector3(0, 0.7, 0.1315)), 18, Color("#f0e2c4"), 800, 0.001)
+	_dome(node, green, Vector3(-0.09, 0.87, -0.08), 0.03)
+	_dome(node, amber, Vector3(0.09, 0.87, -0.08), 0.03)
+	# The switch: a red mushroom button on the desk.
+	var red := StandardMaterial3D.new()
+	red.albedo_color = Color("#c8372c")
+	red.roughness = 0.35
+	StationKit.add(node, StationKit.lathe(PackedVector2Array([Vector2(0, 0), Vector2(0.018, 0), Vector2(0.018, 0.012), Vector2(0.034, 0.014), Vector2(0.034, 0.024), Vector2(0.02, 0.034), Vector2(0, 0.036)]), 16, 50.0),
+		red, Transform3D(Basis(Vector3.RIGHT, PI * 0.5 - 0.75), Vector3(0, 0.93, 0.05)), false)
+	StationKit.label(node, "AUTOMATIK", Transform3D(Basis(), Vector3(0, 0.7, 0.1395)), 20, Color("#f0e2c4"), 800, 0.001)
+	StationKit.label(node, "MM", Transform3D(Basis(), Vector3(-0.04, 0.4, 0.1395)), 40, Color("#f0e2c4"), 800, 0.001)
 	return [node, green, amber]
 
 

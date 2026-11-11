@@ -69,10 +69,27 @@ func _ready() -> void:
 	belt.transform = Transform3D(Basis(bx, bz.cross(bx), bz), Vector3(-3.2, 0.72, 1.4))
 	add_child(belt)
 	MachineArt.conveyor(belt, 2.4, ScrapLine.BELT_WIDTH)
-	var kinds := [&"scrap_can", &"scrap_key", &"scrap_pipe", &"scrap_kettle", &"scrap_tooth", &"scrap_ring"]
+	var kinds := [&"scrap_can", &"scrap_key", &"scrap_pipe", &"scrap_kettle", &"scrap_tooth", &"scrap_ring", &"scrap_trophy", &"scrap_candle", &"scrap_coin", &"scrap_bikebell"]
 	for i in kinds.size():
 		var info: Dictionary = FoundryRules.SCRAP[kinds[i]]
-		StationKit.add(self, ScrapModels.mesh(kinds[i]), ScrapModels.material(info.color), Transform3D(Basis(Vector3.UP, 0.4), Vector3(3.0 + i * 0.3, 0.16, 3.0)))
+		StationKit.add(self, ScrapModels.mesh(kinds[i]), ScrapModels.material(info.color), Transform3D(Basis(Vector3.UP, 0.4), Vector3(3.0 + (i % 5) * 0.42, 0.16, 3.0 - (i / 5) * 0.45)))
+	# AutoFoundry machines in a row.
+	AutoArt.blower(self, Vector3(-1.0, 0, 6.0), Vector3(-1.0, 0, 4.9))
+	AutoArt.mold_unit(self, Vector3(0.2, 0, 6.0), Vector3(0.2, 0, 7.0))
+	AutoArt.rail(self, Vector3(1.2, 2.25, 6.0), Vector3(3.6, 0, 6.0), Vector3(1.2, 0, 5.2), true)
+	var carriage := Node3D.new()
+	carriage.position = Vector3(2.2, 2.25, 6.0)
+	add_child(carriage)
+	var hanger := Node3D.new()
+	hanger.position.y = -AutoFoundry.LADLE_DROP
+	carriage.add_child(hanger)
+	var pot := Node3D.new()
+	pot.position.y = 0.13
+	pot.rotation.x = 0.5
+	hanger.add_child(pot)
+	var melt := MeshInstance3D.new()
+	pot.add_child(melt)
+	AutoArt.trolley(carriage, hanger, pot, melt, AutoFoundry.LADLE_DROP)
 	var hands := FirstPersonHands.new()
 	hands.position = Vector3(5.0, 1.0, 3.0)
 	hands.set_process(false)
@@ -88,10 +105,14 @@ func _ready() -> void:
 			cam.look_at_from_position(Vector3(1.5, 1.35, 1.3), Vector3(0.1, 0.95, 0.15))
 		"grip":
 			cam.look_at_from_position(wrist.global_position + Vector3(0.9, 0.35, 0.5), wrist.global_position + Vector3(0, -0.02, -0.1))
+		"blower":
+			cam.look_at_from_position(Vector3(1.3, 1.25, 7.9), Vector3(-0.35, 0.45, 5.9))
+		"trolley":
+			cam.look_at_from_position(Vector3(3.3, 1.9, 8.0), Vector3(2.2, 1.7, 6.0))
 		"hands":
 			cam.look_at_from_position(Vector3(5.0, 1.32, 3.42), Vector3(5.0, 1.0, 2.96))
 		"scrap":
-			cam.look_at_from_position(Vector3(3.75, 0.75, 4.1), Vector3(3.75, 0.14, 3.0))
+			cam.look_at_from_position(Vector3(3.85, 0.95, 4.1), Vector3(3.85, 0.14, 2.8))
 		"belt":
 			cam.look_at_from_position(Vector3(-0.6, 1.5, 3.6), Vector3(-1.9, 0.85, 1.4))
 		"drive":

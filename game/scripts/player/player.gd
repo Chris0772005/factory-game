@@ -42,6 +42,10 @@ var aims := false
 var look_pitch := 0.0
 ## Local-only: a UI (like the draw pad) has the input.
 var ui_locked := false
+## Name shown over the head for the other players (sent by the owning peer).
+var display_name := ""
+var _name_tag: Label3D
+var _name_accum := 3.0
 var input_dir := Vector2.ZERO
 var wants_sprint := false
 var facing := 0.0
@@ -89,6 +93,23 @@ func _ready() -> void:
 	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
 	if world and world.has_upgrade(&"gloves"):
 		strength = STRENGTH * 1.25
+	var slot := GameWorld.PLAYER_COLORS.find(color)
+	display_name = "Gießer " + ["Blau", "Türkis", "Lila", "Rosa"][maxi(slot, 0) % 4]
+	if is_local():
+		if not GameSettings.player_name.is_empty():
+			display_name = GameSettings.player_name
+	elif DisplayServer.get_name() != "headless":
+		_name_tag = Label3D.new()
+		_name_tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		_name_tag.font = UITheme.font(700)
+		_name_tag.font_size = 44
+		_name_tag.pixel_size = 0.004
+		_name_tag.outline_size = 12
+		_name_tag.outline_modulate = Color(0.1, 0.08, 0.12, 0.9)
+		_name_tag.modulate = color.lightened(0.55)
+		_name_tag.position = Vector3(0, 2.12, 0)
+		_name_tag.text = display_name
+		add_child(_name_tag)
 	if is_local():
 		_camera_rig = CameraRig.new()
 		_camera_rig.target = self
@@ -101,6 +122,13 @@ func _ready() -> void:
 			highlight.name = &"TargetHighlight"
 			highlight.player = self
 			add_child(highlight)
+
+
+@rpc("authority", "call_remote", "unreliable")
+func _name_sync(n: String) -> void:
+	display_name = n.strip_edges().substr(0, 16)
+	if _name_tag:
+		_name_tag.text = display_name
 
 
 ## First person: the local worker's meshes move to a layer the own lens
@@ -121,6 +149,11 @@ func _physics_process(delta: float) -> void:
 		_read_input()
 		_move(delta)
 		_broadcast_state(delta)
+		# The name goes out now and then, so late joiners get it too.
+		_name_accum += delta
+		if _name_accum > 4.0 and Network.is_online():
+			_name_accum = 0.0
+			_name_sync.rpc(display_name)
 	else:
 		_follow_network(delta)
 	if held:

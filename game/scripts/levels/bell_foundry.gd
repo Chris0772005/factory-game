@@ -70,6 +70,9 @@ func build_stations() -> void:
 	add_child(hoist)
 	var stations: Array = get_children().filter(func(n: Node) -> bool: return n is Node3D and not n is WorldEnvironment and not n is Light3D)
 	BellHallSet.build_hall(self, stations)
+	# Work lamps over the benches at the back wall (clear of the hoist).
+	for at: Vector3 in [Vector3(1.0, 4.4, -4.2), Vector3(4.95, 4.4, -4.2)]:
+		SwayLamp.hang(self, at, 2.15)
 
 
 func spawn_items() -> void:

@@ -193,3 +193,11 @@ Füllen, Abkühlen, Zerschlagen), Hammer, Modellbank (öffnet DrawPad), Verkaufs
 - `environment/sway_lamp.gd` (`SwayLamp.hang`): Hängelampen in der Garage, schwingen bei Kopfstößen und bei `Juice.impacted`; Licht wandert mit.
 - `ui/license_screen.gd`: Hauptmenü → „Lizenzen“: Danksagung, Godot-Lizenz, Drittbestandteile (`Engine.get_license_text/get_copyright_info/get_license_info`).
 - Bekannt: `test_net_foundry` fällt selten beim Gießen aus (nicht reproduzierbar, Diagnosezeile `DIAG` eingebaut).
+
+## Modul N – Schalter, Fundbuch, Namen
+
+- `foundry/auto/auto_switch.gd` (`AutoSwitch`, interactable am Schaltschrank): schaltet je Form das Nachformen und Stampfen aus/an (`AutoFoundry.enabled[i]`, `set_enabled`, rpc `_enabled_sync`). Ein begonnenes Stück wird trotzdem gegossen, aufgerüttelt und verschickt.
+- `progression/find_book.gd` (`FindBook`, Gruppe `find_books`): sieben Schätze (`ScrapPile.RARE`), erster Fund zahlt `BONUS` × Anzahl, das volle Buch `FULL_BONUS`. Liste im Spielstand (`finds`). Neue Schrottarten: Pokal, Kerzenständer, Goldmünze, Fahrradklingel.
+- `ui/find_panel.gd`: Pille neben dem Geld mit „≈ N $/min“ (Einnahmen der letzten 60 s) und Fundbuch-Stand.
+- Spielernamen: `GameSettings.player_name` (Einstellungen → Spieler), `Player.display_name`, rpc `_name_sync` alle 4 s vom Besitzer, `Label3D` über fremden Spielern.
+- `SwayLamp` auch über den Werkbänken der Glockengießerei (Eisenhalle nicht: der Hallenkran fährt überall).

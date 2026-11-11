@@ -8,9 +8,11 @@ extends Node3D
 ## likely. The heap runs low when dug through and is restocked over time.
 ## Host simulates; peers get progress and stock for the hint and the look.
 
-const WEIGHTS := {&"scrap_can": 62, &"scrap_key": 14, &"scrap_pipe": 13, &"scrap_kettle": 7, &"scrap_tooth": 2, &"scrap_ring": 2}
-const PREMIUM_WEIGHTS := {&"scrap_can": 30, &"scrap_key": 26, &"scrap_pipe": 28, &"scrap_kettle": 10, &"scrap_tooth": 3, &"scrap_ring": 3}
-const RARE := [&"scrap_tooth", &"scrap_ring", &"scrap_kettle"]
+const WEIGHTS := {&"scrap_can": 62, &"scrap_key": 14, &"scrap_pipe": 13, &"scrap_kettle": 7, &"scrap_tooth": 2, &"scrap_ring": 2,
+	&"scrap_trophy": 2, &"scrap_candle": 3, &"scrap_coin": 1, &"scrap_bikebell": 3}
+const PREMIUM_WEIGHTS := {&"scrap_can": 30, &"scrap_key": 26, &"scrap_pipe": 28, &"scrap_kettle": 10, &"scrap_tooth": 3, &"scrap_ring": 3,
+	&"scrap_trophy": 3, &"scrap_candle": 4, &"scrap_coin": 2, &"scrap_bikebell": 4}
+const RARE := [&"scrap_kettle", &"scrap_bikebell", &"scrap_candle", &"scrap_trophy", &"scrap_tooth", &"scrap_ring", &"scrap_coin"]
 ## Seconds of digging per find with bare hands.
 const DIG_TIME := 2.2
 ## One short press digs this much (holding is smoother).
@@ -131,6 +133,9 @@ func _find(p: Player) -> void:
 		if RARE.has(kind):
 			world.popup_all(top + Vector3(0, 0.6, 0), "%s! ✨" % info.name, Color("#ffcf3f"))
 			_fx_all(&"rare")
+			var book := get_tree().get_first_node_in_group(&"find_books") as FindBook
+			if book:
+				book.note(kind, top)
 	_fx_all(&"find")
 
 

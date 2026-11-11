@@ -75,6 +75,9 @@ func _ready() -> void:
 		dot.offset_right = 4
 		dot.offset_bottom = 4
 		_root.add_child(dot)
+	var stats := FindPanel.new()
+	stats.world = world
+	_root.add_child(stats)
 	var mail := MailPanel.new()
 	mail.world = world
 	_root.add_child(mail)

@@ -10,6 +10,8 @@ const PATH := "user://settings.cfg"
 const QUALITY_NAMES: Array[String] = ["Niedrig", "Mittel", "Hoch"]
 
 static var master_volume := 0.8
+## Shown over the worker's head for the other players ("" = name by suit colour).
+static var player_name := ""
 ## Multiplier on CameraRig.MOUSE_SENSITIVITY.
 static var mouse_sensitivity := 1.0
 ## 0..1 scale on camera shake (accessibility; Art Bible 8.3 default 70 %).
@@ -35,6 +37,7 @@ static func load_saved() -> void:
 	master_volume = clampf(cfg.get_value("audio", "master_volume", master_volume), 0.0, 1.0)
 	mouse_sensitivity = clampf(cfg.get_value("controls", "mouse_sensitivity", mouse_sensitivity), 0.2, 3.0)
 	screen_shake = clampf(cfg.get_value("controls", "screen_shake", screen_shake), 0.0, 1.0)
+	player_name = str(cfg.get_value("player", "name", player_name)).substr(0, 16)
 	fullscreen = cfg.get_value("video", "fullscreen", fullscreen)
 	quality = clampi(cfg.get_value("video", "quality", quality), -1, 2)
 	_defaults_for_quality(quality if quality >= 0 else EnvQuality.level())
@@ -52,6 +55,7 @@ static func save() -> void:
 	cfg.set_value("audio", "master_volume", master_volume)
 	cfg.set_value("controls", "mouse_sensitivity", mouse_sensitivity)
 	cfg.set_value("controls", "screen_shake", screen_shake)
+	cfg.set_value("player", "name", player_name)
 	cfg.set_value("video", "fullscreen", fullscreen)
 	cfg.set_value("video", "quality", quality)
 	cfg.set_value("video", "ssao", ssao)

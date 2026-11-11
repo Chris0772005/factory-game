@@ -34,6 +34,9 @@ var ladle_amount := 0.0
 var ladle_mix := {}
 var ladle_temp := 0.0
 
+## Per mold: automation switched on (AutoSwitch on the cabinet).
+var enabled: Array[bool] = []
+
 var _timer := 0.0
 var _memory: Array = []           ## per mold: {patterns, wait, ram, ready, count}
 var _rest := {}                   ## casting instance id -> [rest seconds, tries]
@@ -80,7 +83,35 @@ func _ready() -> void:
 	_hub = furnace.global_position + Vector3(0, RAIL_HEIGHT, 0)
 	for m in molds:
 		_memory.append({patterns = [], wait = 0.0, ram = 0.0, ready = 0.0, count = 0})
+		enabled.append(true)
+	Network.peer_ready.connect(_on_peer_ready)
 	_build()
+
+
+func has_cabinet() -> bool:
+	return has(&"auto_rammer") or has(&"auto_breaker") or has(&"auto_pour")
+
+
+## Host: switches one mold's automation. Off also forgets its pattern.
+func set_enabled(i: int, on: bool) -> void:
+	enabled[i] = on
+	if not on:
+		_memory[i].patterns = []
+	if Network.is_online():
+		_enabled_sync.rpc(i, on)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _enabled_sync(i: int, on: bool) -> void:
+	enabled[i] = on
+
+
+func _on_peer_ready(id: int) -> void:
+	if not Network.is_sim_authority():
+		return
+	for i in enabled.size():
+		if not enabled[i]:
+			_enabled_sync.rpc_id(id, i, false)
 
 
 func has(id: StringName) -> bool:
@@ -127,9 +158,13 @@ func _run_molds(delta: float) -> void:
 	for i in molds.size():
 		var mold := molds[i]
 		var mem: Dictionary = _memory[i]
-		if mold.state >= MoldBox.State.RAMMED and not mold.patterns.is_empty():
+		if enabled[i] and mold.state >= MoldBox.State.RAMMED and not mold.patterns.is_empty():
 			mem.patterns = mold.patterns.duplicate()
-		if ram and mold.state == MoldBox.State.EMPTY and not (mem.patterns as Array).is_empty():
+		# Switched off: no re-forming and no ramming; a started piece is still finished.
+		var forms: bool = ram and enabled[i]
+		if not enabled[i]:
+			mem.patterns = []
+		if forms and mold.state == MoldBox.State.EMPTY and not (mem.patterns as Array).is_empty():
 			mem.wait += delta
 			if mem.wait >= REPATTERN_TIME:
 				mem.wait = 0.0
@@ -137,7 +172,7 @@ func _run_molds(delta: float) -> void:
 					mold.add_pattern(code)
 		else:
 			mem.wait = 0.0
-		if ram and mold.state == MoldBox.State.PATTERNED:
+		if forms and mold.state == MoldBox.State.PATTERNED:
 			# A worker adding one more pattern restarts the press.
 			if mem.count != mold.patterns.size():
 				mem.count = mold.patterns.size()
@@ -293,7 +328,7 @@ func _show_upgrades() -> void:
 		_trolley.visible = pour
 	if _blower:
 		_blower.visible = has(&"auto_bellows")
-	var unit := has(&"auto_rammer") or has(&"auto_breaker")
+	var unit := has_cabinet()
 	for u in _units:
 		u.visible = unit
 	for i in _colliders.size():
@@ -315,9 +350,11 @@ func _animate(delta: float) -> void:
 		_fan.rotate_object_local(Vector3.UP, delta * (4.0 + furnace.heat * 30.0))
 	for i in _lamps.size():
 		var mold := molds[i]
-		(_lamps[i][0] as StandardMaterial3D).emission_energy_multiplier = 2.6 if has(&"auto_rammer") and mold.state == MoldBox.State.PATTERNED else 0.25
-		(_lamps[i][1] as StandardMaterial3D).emission_energy_multiplier = 2.6 if has(&"auto_breaker") and mold.state == MoldBox.State.READY else 0.25
-		if has(&"auto_rammer") and mold.state == MoldBox.State.PATTERNED and _units[i].visible:
+		# Green: running. Amber: working on the mold. Both dark: switched off.
+		var busy := (has(&"auto_rammer") and mold.state == MoldBox.State.PATTERNED) or (has(&"auto_breaker") and mold.state == MoldBox.State.READY)
+		(_lamps[i][0] as StandardMaterial3D).emission_energy_multiplier = 2.4 if enabled[i] else 0.05
+		(_lamps[i][1] as StandardMaterial3D).emission_energy_multiplier = 2.6 if enabled[i] and busy else 0.1
+		if enabled[i] and has(&"auto_rammer") and mold.state == MoldBox.State.PATTERNED and _units[i].visible:
 			_units[i].position.y = absf(sin(Time.get_ticks_msec() * 0.03)) * 0.012
 	if _trolley == null or not _trolley.visible:
 		return
@@ -352,6 +389,11 @@ func _build() -> void:
 	for m in molds:
 		var at := m.to_global(Vector3(MoldBox.BED.x * 0.5 + 0.32, 0, -MoldBox.BED.z * 0.5 + 0.25))
 		unit_at.append(at)
+		var sw := AutoSwitch.new()
+		sw.auto = self
+		sw.index = unit_at.size() - 1
+		sw.position = at
+		add_child(sw)
 		_add_collider(Vector3(0.36, 1.0, 0.3), at + Vector3(0, 0.5, 0))
 	var post_at: Array[Vector3] = []
 	for m in molds:

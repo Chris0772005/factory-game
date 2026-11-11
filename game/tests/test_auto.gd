@@ -29,6 +29,14 @@ func _run() -> void:
 		guide.note(&"dig")
 	await _frames(40)
 	_check(guide.index == 1 and world.money > money, "three digs: goal reached, bonus paid, next letter")
+	var book: FindBook = get_tree().get_first_node_in_group(&"find_books")
+	money = world.money
+	book.note(&"scrap_tooth", pile.global_position)
+	book.note(&"scrap_tooth", pile.global_position)
+	book.note(&"scrap_can", pile.global_position)
+	_check(book.found.size() == 1 and world.money == money + FindBook.BONUS, "find book: a new treasure is entered once and pays (+%d $)" % (world.money - money))
+	for kind: StringName in ScrapPile.RARE:
+		_check(ScrapModels.has(kind) and FoundryRules.SCRAP.has(kind), "treasure %s has a model and a metal" % kind)
 	var gloves: Dictionary = world.upgrades.info(&"gloves")
 	var shovel: Dictionary = world.upgrades.info(&"shovel")
 	_check(gloves.cost < shovel.cost, "gloves are cheaper than the shovel (%d < %d $)" % [gloves.cost, shovel.cost])

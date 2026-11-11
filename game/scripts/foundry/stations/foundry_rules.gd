@@ -17,6 +17,10 @@ const SCRAP := {
 	&"scrap_kettle": {metal = &"copper", amount = 1.2, name = "Kupferkessel", color = Color("#b8652f"), size = Vector3(0.3, 0.26, 0.3)},
 	&"scrap_tooth": {metal = &"gold", amount = 0.05, name = "Goldzahn", color = Color("#ffd75e"), size = Vector3(0.06, 0.07, 0.06)},
 	&"scrap_ring": {metal = &"gold", amount = 0.1, name = "Omas Ring", color = Color("#ffcf3f"), size = Vector3(0.09, 0.03, 0.09)},
+	&"scrap_trophy": {metal = &"zinc_brass", amount = 0.8, name = "Alter Pokal", color = Color("#e2bd4f"), size = Vector3(0.16, 0.26, 0.16)},
+	&"scrap_candle": {metal = &"zinc_brass", amount = 0.6, name = "Kerzenständer", color = Color("#d4ae48"), size = Vector3(0.13, 0.24, 0.13)},
+	&"scrap_coin": {metal = &"gold", amount = 0.04, name = "Goldmünze", color = Color("#ffd24a"), size = Vector3(0.07, 0.02, 0.07)},
+	&"scrap_bikebell": {metal = &"zinc_brass", amount = 0.3, name = "Fahrradklingel", color = Color("#dfe3e8"), size = Vector3(0.1, 0.07, 0.1)},
 }
 
 ## Sealed crates (garage): unknown mixes, revealed only by the casting.

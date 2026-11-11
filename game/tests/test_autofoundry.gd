@@ -72,6 +72,18 @@ func _run() -> void:
 			cycles += 1
 		was_cooling = cooling
 	await _frames(60 * 25)
+	# Switch the first mold off: it stops re-forming, so a new pattern fits.
+	var sw: AutoSwitch = auto.get_children().filter(func(n: Node) -> bool: return n is AutoSwitch)[0]
+	sw.interact(null)
+	while mold.state != MoldBox.State.EMPTY and waited < 60 * 400:
+		await _frames(30)
+		waited += 30
+	await _frames(int(AutoFoundry.REPATTERN_TIME * 60.0) + 120)
+	_check(not auto.enabled[0] and mold.state == MoldBox.State.EMPTY, "switched off: the mold stays empty for a new pattern")
+	sw.interact(null)
+	mold.add_pattern(DrawingSamples.smiley().to_code())
+	await _frames(int(AutoFoundry.RAM_TIME * 60.0) + 60)
+	_check(auto.enabled[0] and mold.state >= MoldBox.State.RAMMED, "switched on again: the new pattern is rammed")
 	_check(cycles >= 2 and world.money >= money + 50, "hands off: %d more casts, +%d $ in %.0f s" % [cycles, world.money - money, waited / 60.0 + 25.0])
 	_finish()
 

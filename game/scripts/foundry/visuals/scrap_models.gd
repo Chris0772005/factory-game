@@ -7,7 +7,7 @@ static var _cache := {}
 
 
 static func has(kind: StringName) -> bool:
-	return kind in [&"scrap_can", &"scrap_key", &"scrap_pipe", &"scrap_kettle", &"scrap_tooth", &"scrap_ring"]
+	return kind in [&"scrap_can", &"scrap_key", &"scrap_pipe", &"scrap_kettle", &"scrap_tooth", &"scrap_ring", &"scrap_trophy", &"scrap_candle", &"scrap_coin", &"scrap_bikebell"]
 
 
 static func mesh(kind: StringName) -> ArrayMesh:
@@ -73,4 +73,23 @@ static func _pieces(kind: StringName) -> Array:
 			out.append(_ring(0.034, 0.0075, Vector3.ZERO, Vector3.RIGHT, Vector3.BACK, 24))
 			out.append(EnvMesh.piece(StationKit.lathe(PackedVector2Array([Vector2(0, -0.006), Vector2(0.01, -0.004), Vector2(0.012, 0.004), Vector2(0.006, 0.011), Vector2(0, 0.012)]), 8, 20.0),
 				Transform3D(Basis(Vector3.BACK, -PI * 0.5), Vector3(0.036, 0, 0))))
+		&"scrap_trophy":
+			# Cup on a stem and foot, two ear handles.
+			out.append(EnvMesh.piece(StationKit.lathe(PackedVector2Array([Vector2(0, -0.13), Vector2(0.06, -0.13), Vector2(0.062, -0.118), Vector2(0.03, -0.105), Vector2(0.014, -0.08),
+				Vector2(0.012, -0.03), Vector2(0.022, -0.02), Vector2(0.05, 0.0), Vector2(0.066, 0.05), Vector2(0.072, 0.125), Vector2(0.076, 0.13), Vector2(0.068, 0.13),
+				Vector2(0.06, 0.06), Vector2(0.04, 0.02), Vector2(0, 0.01)]), 22, 50.0), Transform3D()))
+			for s: float in [-1.0, 1.0]:
+				out.append(EnvMesh.piece(StationKit.tube(MachineArt.smooth(PackedVector3Array([Vector3(s * 0.068, 0.1, 0), Vector3(s * 0.085, 0.085, 0), Vector3(s * 0.08, 0.045, 0), Vector3(s * 0.055, 0.02, 0)]), 0.012),
+					0.006, 8), Transform3D()))
+		&"scrap_candle":
+			out.append(EnvMesh.piece(StationKit.lathe(PackedVector2Array([Vector2(0, -0.12), Vector2(0.06, -0.12), Vector2(0.062, -0.11), Vector2(0.04, -0.095), Vector2(0.016, -0.08),
+				Vector2(0.012, -0.04), Vector2(0.022, -0.025), Vector2(0.012, -0.01), Vector2(0.011, 0.05), Vector2(0.02, 0.065), Vector2(0.045, 0.078), Vector2(0.047, 0.085),
+				Vector2(0.022, 0.085), Vector2(0.02, 0.12), Vector2(0.012, 0.12), Vector2(0.012, 0.09), Vector2(0, 0.09)]), 20, 50.0), Transform3D()))
+		&"scrap_coin":
+			out.append(EnvMesh.piece(StationKit.lathe(PackedVector2Array([Vector2(0, -0.005), Vector2(0.03, -0.005), Vector2(0.034, -0.003), Vector2(0.034, 0.003), Vector2(0.03, 0.005),
+				Vector2(0.027, 0.003), Vector2(0.012, 0.003), Vector2(0.008, 0.006), Vector2(0, 0.006)]), 24, 30.0), Transform3D()))
+		&"scrap_bikebell":
+			out.append(EnvMesh.piece(StationKit.lathe(PackedVector2Array([Vector2(0, -0.035), Vector2(0.03, -0.035), Vector2(0.03, -0.022), Vector2(0.046, -0.018), Vector2(0.048, 0.0),
+				Vector2(0.04, 0.02), Vector2(0.022, 0.032), Vector2(0.008, 0.034), Vector2(0.008, 0.04), Vector2(0, 0.04)]), 22, 50.0), Transform3D()))
+			out.append(EnvMesh.piece(EnvMesh.box(Vector3(0.03, 0.006, 0.014), 0.002), Transform3D(Basis(), Vector3(0.055, -0.014, 0))))
 	return out

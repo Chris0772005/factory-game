@@ -44,14 +44,17 @@ func _host() -> void:
 	var start := remote.global_position
 	var max_dist := 0.0
 	var grabbed := false
+	var named := false
 	for i in 420:
 		await get_tree().physics_frame
 		if not is_instance_valid(remote):
 			break
+		named = named or remote.display_name == "Testgießer"
 		max_dist = maxf(max_dist, remote.global_position.distance_to(start))
 		grabbed = grabbed or remote.held != null
 	_check(max_dist > 1.0, "host sees the client walk (%.2f m)" % max_dist)
 	_check(grabbed, "host simulates the client's grab")
+	_check(named, "host learns the client's name")
 
 
 func _client() -> void:
@@ -63,6 +66,7 @@ func _client() -> void:
 	_check(me != null, "client receives its own worker")
 	if me == null:
 		return
+	me.display_name = "Testgießer"
 	var items := world.entities.get_children().filter(func(n): return n is Item)
 	_check(items.size() >= 13, "client receives replicated items (%d)" % items.size())
 	_check(items.size() > 0 and items[0].freeze, "client copies of items are frozen")

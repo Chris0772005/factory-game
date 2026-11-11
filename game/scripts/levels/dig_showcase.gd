@@ -38,6 +38,11 @@ func _ready() -> void:
 		c.look_at_from_position(Vector3(2.6, 2.0, 3.4), Vector3(-1.6, 0.9, -1.4))
 		c.make_current()
 		me.global_position = Vector3(4.5, 0.1, 3.0)
+		world.find_book.note(&"scrap_tooth", Vector3(0, -50, 0))
+		world.find_book.note(&"scrap_coin", Vector3(0, -50, 0))
+		for i in 3:
+			await get_tree().create_timer(0.15).timeout
+			world.add_money(60)
 		RenderingServer.global_shader_parameter_set(&"cutaway_target", Vector4(0, -100, 0, 0))
 		return
 	if cam_name != "":

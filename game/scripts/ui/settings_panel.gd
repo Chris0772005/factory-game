@@ -22,6 +22,15 @@ func _ready() -> void:
 	title.text = "Einstellungen"
 	title.theme_type_variation = &"H2"
 	add_child(title)
+	_section("Spieler")
+	var name_edit := LineEdit.new()
+	name_edit.text = GameSettings.player_name
+	name_edit.placeholder_text = "Name im Koop"
+	name_edit.max_length = 16
+	name_edit.custom_minimum_size = Vector2(300, 0)
+	name_edit.add_theme_font_size_override("font_size", 26)
+	name_edit.text_changed.connect(func(t: String) -> void: GameSettings.player_name = t.strip_edges())
+	_row("Name", name_edit)
 	_section("Audio & Steuerung")
 	_slider("Gesamtlautstärke", 0.0, 1.0, GameSettings.master_volume, _on_volume)
 	_slider("Maus-Empfindlichkeit", 0.3, 2.5, GameSettings.mouse_sensitivity, _on_sensitivity)
