@@ -15,6 +15,7 @@ const TRAVEL_DELAY := 3.5
 
 var guide: Guide
 var find_book: FindBook
+var offline: OfflineIncome
 var _save_pending := false
 
 
@@ -47,7 +48,13 @@ func build_level() -> void:
 	if Network.is_sim_authority():
 		# Menu backgrounds show the level as on a fresh install and never save.
 		if not attract_mode:
-			SaveGame.load_into(self)
+			var loaded := SaveGame.load_into(self)
+			offline = OfflineIncome.new()
+			offline.name = "OfflineIncome"
+			offline.world = self
+			add_child(offline)
+			if loaded:
+				offline.welcome_back(SaveGame.last_away)
 			money_changed.connect(func(_m): _autosave())
 			upgrades.changed.connect(_autosave)
 			guide.changed.connect(func(_n): _autosave())

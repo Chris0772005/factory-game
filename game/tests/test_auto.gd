@@ -57,6 +57,9 @@ func _run() -> void:
 	_check(pile.stock < stock and line.furnace.charge.size() + line.pieces.size() > charge,
 		"the arm digs and loads by itself (heap %d -> %d, furnace +%d)" % [stock, pile.stock, line.furnace.charge.size() - charge])
 	_check(me.global_position.distance_to(line.hopper_position()) > 0.5, "worker is not stuck in the line")
+	_check(OfflineIncome.payout(200.0, 60.0) == 0 and OfflineIncome.payout(200.0, 600.0) == 1000 and OfflineIncome.payout(200.0, 86400.0) == 12000,
+		"idle income: nothing under 2 min, half rate, capped at 2 h")
+	_check(not OfflineIncome.full_auto(world), "idle income: only once everything is automatic")
 	_check(Music.track_for("res://scenes/main_menu.tscn") == "menu" and Music.track_for("res://scenes/garage.tscn") == "garage", "music: one track name per scene")
 	_check(not SteamService.active, "steam: stays off without the Steam extension")
 	guide.stats.sold = 1

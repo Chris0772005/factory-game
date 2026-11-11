@@ -54,8 +54,12 @@ func _host() -> void:
 	await _frames(5)
 	me.grab(crucible)
 	me._perform(&"use_start")
+	var stand := mold.global_position + Vector3(0, 0.05, 1.35)
 	await _until(func():
 		me.using = true
+		# Under load the worker can get nudged off the spot and pour beside the mold.
+		if me.global_position.distance_to(stand) > 0.25:
+			me.global_position = stand
 		return mold.state == MoldBox.State.COOLING, 25.0)
 	me._perform(&"use_end")
 	me.release()

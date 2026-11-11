@@ -13,6 +13,8 @@ const VERSION := 1
 
 ## Set by scenes that stage the world (showcases, tools) before building a level.
 static var disabled := false
+## {time, rate} of the last save, filled by load_into (OfflineIncome reads it).
+static var last_away := {}
 
 
 ## True when this run may read and write the save file.
@@ -39,6 +41,8 @@ static func save(world: GameWorld, level := "") -> void:
 		level = level if level != "" else world.level_path(),
 		guide = (world.get("guide") as Guide).index if world.get("guide") else 0,
 		finds = (world.get("find_book") as FindBook).to_save() if world.get("find_book") else [],
+		time = Time.get_unix_time_from_system(),
+		rate = _rate(world),
 	}
 	var f := FileAccess.open(PATH, FileAccess.WRITE)
 	if f:
@@ -60,7 +64,17 @@ static func load_into(world: GameWorld) -> bool:
 		(world.get("guide") as Guide).load_index(int(data.get("guide", 0)))
 	if world.get("find_book"):
 		(world.get("find_book") as FindBook).load_save(data.get("finds", []))
+	last_away = {time = float(data.get("time", 0.0)), rate = float(data.get("rate", 0.0))}
 	return true
+
+
+## Income to remember: the live rate, or the last saved one while none is measured yet.
+static func _rate(world: GameWorld) -> float:
+	var idle := world.get("offline") as OfflineIncome
+	if idle == null or not OfflineIncome.full_auto(world):
+		return 0.0
+	var now := idle.rate()
+	return now if now > 0.0 else float(last_away.get("rate", 0.0))
 
 
 ## Level the saved game continues in (the backyard on a fresh install).
