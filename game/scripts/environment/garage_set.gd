@@ -222,7 +222,12 @@ func prop(model: String, pos: Vector3, yaw := 0.0, opts := {}) -> Node3D:
 
 func _dressing() -> void:
 	# The family car, pushed into the left bay (the reason the foundry is small).
-	prop("kaykit_city/car_stationwagon.gltf", CAR_POS, 180.0, {scale = 1.05, tint = Color("#b9c3cc"), desaturate = 0.35})
+	# The kit model only lends its collider; the car itself is CarArt.
+	var kit_car := prop("kaykit_city/car_stationwagon.gltf", CAR_POS, 180.0, {scale = 1.05, tint = Color("#b9c3cc"), desaturate = 0.35})
+	if kit_car:
+		kit_car.visible = false
+	if EnvMesh.visual():
+		CarArt.station_wagon(self, Transform3D(Basis(Vector3.UP, PI), CAR_POS), 4.3, 1.72, Color("#2f5e48"))
 	# Tyres stacked by the car, a jerrycan and oil cans.
 	_tyres(Vector3(-5.45, 0, 3.75), 3)
 	_tyres(Vector3(-5.5, 0, -0.9), 2)

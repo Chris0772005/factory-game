@@ -90,6 +90,7 @@ func _ready() -> void:
 	var melt := MeshInstance3D.new()
 	pot.add_child(melt)
 	AutoArt.trolley(carriage, hanger, pot, melt, AutoFoundry.LADLE_DROP)
+	CarArt.station_wagon(self, Transform3D(Basis(Vector3.UP, 0.6), Vector3(-6.0, 0, -3.0)), 4.3, 1.72, Color("#2f5e48"))
 	var hands := FirstPersonHands.new()
 	hands.position = Vector3(5.0, 1.0, 3.0)
 	hands.set_process(false)
@@ -109,6 +110,10 @@ func _ready() -> void:
 			cam.look_at_from_position(Vector3(1.3, 1.25, 7.9), Vector3(-0.35, 0.45, 5.9))
 		"trolley":
 			cam.look_at_from_position(Vector3(3.3, 1.9, 8.0), Vector3(2.2, 1.7, 6.0))
+		"car":
+			cam.look_at_from_position(Vector3(-1.2, 1.7, 0.6), Vector3(-6.0, 0.7, -3.0))
+		"carback":
+			cam.look_at_from_position(Vector3(-9.6, 1.6, -6.6), Vector3(-6.0, 0.7, -3.0))
 		"hands":
 			cam.look_at_from_position(Vector3(5.0, 1.32, 3.42), Vector3(5.0, 1.0, 2.96))
 		"scrap":
