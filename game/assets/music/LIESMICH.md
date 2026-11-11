@@ -13,4 +13,4 @@ Dateien hier werden vom Spiel automatisch abgespielt (`scripts/core/music.gd`), 
 
 Eine einzige Datei `theme.ogg` reicht für den Anfang. Die Stücke laufen in Schleife und blenden beim Hallenwechsel weich über.
 
-Für jedes Stück in `CREDITS.md` eintragen: Titel, Urheber, Lizenz, Quelle. Nur CC0 oder ähnlich freie Lizenzen, keine KI-erzeugte Musik.
+Die aktuellen fünf Stücke erzeugt `tools/music_gen.py` (von einer KI komponiert, bei Steam als KI-Inhalt anzugeben). Wer sie ersetzt: Datei gleichen Namens hier ablegen und in `CREDITS.md` Titel, Urheber, Lizenz und Quelle eintragen.

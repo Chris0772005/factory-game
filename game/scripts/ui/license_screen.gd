@@ -57,7 +57,7 @@ static func build_text() -> String:
 	out.append("MOLTEN MATES\n")
 	out.append("3D-Modelle: KayKit (Kay Lousberg, www.kaylousberg.com) und Kenney (www.kenney.nl) – CC0 1.0.")
 	out.append("Schriften: Fredoka (The Fredoka Project Authors) und Lilita One (Juan Montoreano) – SIL Open Font License 1.1.")
-	out.append("Geräusche und Glockenklang: eigene Synthese. Maschinen, Hallen und Effekte: im Spiel erzeugt.\n")
+	out.append("Geräusche, Glockenklang und Musik: eigene Synthese (Musik von einer KI komponiert). Maschinen, Hallen und Effekte: im Spiel erzeugt.\n")
 	out.append("Dieses Spiel verwendet die Godot Engine, verfügbar unter der folgenden Lizenz:\n")
 	out.append(Engine.get_license_text())
 	out.append("\nBestandteile von Dritten in der Godot Engine:\n")

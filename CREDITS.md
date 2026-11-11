@@ -31,3 +31,9 @@ courtesy. The Kenney MIT notice
 ## Sound
 
 All sound effects in `game/assets/sfx/` are synthesized by our own `tools/sfx_gen.py`.
+
+## Music
+
+All music in `game/assets/music/` (`menu`, `backyard`, `garage`, `bell_foundry`, `iron_hall`) is written as notes and
+synthesized by our own `tools/music_gen.py`. The pieces were composed by an AI assistant (Claude) at the owner's request:
+no third-party rights, but this counts as AI-generated content and has to be declared in the Steam content survey.
