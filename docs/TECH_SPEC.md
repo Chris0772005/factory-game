@@ -201,3 +201,9 @@ Füllen, Abkühlen, Zerschlagen), Hammer, Modellbank (öffnet DrawPad), Verkaufs
 - `ui/find_panel.gd`: Pille neben dem Geld mit „≈ N $/min“ (Einnahmen der letzten 60 s) und Fundbuch-Stand.
 - Spielernamen: `GameSettings.player_name` (Einstellungen → Spieler), `Player.display_name`, rpc `_name_sync` alle 4 s vom Besitzer, `Label3D` über fremden Spielern.
 - `SwayLamp` auch über den Werkbänken der Glockengießerei (Eisenhalle nicht: der Hallenkran fährt überall).
+
+## Modul O – Musik und Steam (vorbereitet)
+
+- Autoload `Music` (`core/music.gd`): spielt `res://assets/music/<szene>.ogg|.mp3` (`menu`, `backyard`, `garage`, `bell_foundry`, `iron_hall`), sonst `theme`; Schleife, Überblendung `FADE`. Lautstärke `GameSettings.music_volume` (Einstellungen → Musik). Ohne Datei bleibt es still. Regeln für Dateien: `game/assets/music/LIESMICH.md`.
+- Autoload `SteamService` (`core/steam_service.gd`): nur aktiv, wenn die GodotSteam-GDExtension installiert ist und Steam läuft; sonst tut jeder Aufruf nichts. App-ID aus Projekt-Einstellung `steam/app_id` (Standard 480 = Valves Test-App). Steam-Name wird Spielername, Erfolge nach `ACHIEVEMENTS` über `earned(world)`. Gegen einen laufenden Steam-Client noch nicht getestet.
+- Offen bis zum eigenen Steamworks-Konto: App-ID, GodotSteam-Erweiterung einbinden, Erfolge in Steamworks anlegen, Koop über Steam-Lobbys statt IP, Upload der Builds.

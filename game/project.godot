@@ -21,6 +21,8 @@ Network="*res://scripts/net/network.gd"
 Sfx="*res://scripts/core/sfx.gd"
 ShotTool="*res://tools/shot_tool.gd"
 Juice="*res://scripts/core/juice.gd"
+Music="*res://scripts/core/music.gd"
+SteamService="*res://scripts/core/steam_service.gd"
 
 [display]
 

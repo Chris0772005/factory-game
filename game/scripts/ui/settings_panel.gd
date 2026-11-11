@@ -33,6 +33,7 @@ func _ready() -> void:
 	_row("Name", name_edit)
 	_section("Audio & Steuerung")
 	_slider("Gesamtlautstärke", 0.0, 1.0, GameSettings.master_volume, _on_volume)
+	_slider("Musik", 0.0, 1.0, GameSettings.music_volume, func(v: float) -> void: GameSettings.music_volume = v)
 	_slider("Maus-Empfindlichkeit", 0.3, 2.5, GameSettings.mouse_sensitivity, _on_sensitivity)
 	var shake := _slider("Kamerawackeln", 0.0, 1.0, GameSettings.screen_shake, _on_shake)
 	shake.drag_ended.connect(func(_changed: bool) -> void: Juice.shake(0.45, 0.3))

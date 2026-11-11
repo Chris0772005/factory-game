@@ -57,6 +57,11 @@ func _run() -> void:
 	_check(pile.stock < stock and line.furnace.charge.size() + line.pieces.size() > charge,
 		"the arm digs and loads by itself (heap %d -> %d, furnace +%d)" % [stock, pile.stock, line.furnace.charge.size() - charge])
 	_check(me.global_position.distance_to(line.hopper_position()) > 0.5, "worker is not stuck in the line")
+	_check(Music.track_for("res://scenes/main_menu.tscn") == "menu" and Music.track_for("res://scenes/garage.tscn") == "garage", "music: one track name per scene")
+	_check(not SteamService.active, "steam: stays off without the Steam extension")
+	guide.stats.sold = 1
+	var earned := SteamService.earned(world)
+	_check(earned.has(&"first_cast") and not earned.has(&"full_auto"), "steam: achievements follow the game state (%s)" % str(earned))
 	_finish()
 
 
