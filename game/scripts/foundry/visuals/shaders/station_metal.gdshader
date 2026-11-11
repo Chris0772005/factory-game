@@ -7,6 +7,7 @@ shader_type spatial;
 render_mode diffuse_burley, specular_schlick_ggx;
 
 #include "res://shaders/env_common.gdshaderinc"
+#include "res://shaders/env_photo.gdshaderinc"
 #include "res://shaders/env_cutaway.gdshaderinc"
 
 uniform vec4 paint_color : source_color = vec4(0.29, 0.38, 0.42, 1.0);
@@ -154,4 +155,10 @@ void fragment() {
 		float h = smoothstep(0.0, 0.6, dv.x) * dents + grain * 0.3;
 		NORMAL = env_bump(VERTEX, NORMAL, h * 0.0012, 1.0);
 	}
+	// Real scratches, pitting and rust grain from a scan, travelling with the part.
+	vec3 ph_a = ALBEDO;
+	float ph_r = ROUGHNESS;
+	NORMAL = env_photo_object(ph_metal_d, ph_metal_n, ph_metal_arm, v_obj + v_seed * 3.0, NORMAL, INV_VIEW_MATRIX, VIEW_MATRIX, MODEL_MATRIX, 1.3, 0.55, ph_a, ph_r);
+	ALBEDO = ph_a;
+	ROUGHNESS = ph_r;
 }

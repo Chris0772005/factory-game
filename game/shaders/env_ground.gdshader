@@ -9,6 +9,7 @@ shader_type spatial;
 render_mode diffuse_burley, specular_schlick_ggx;
 
 #include "res://shaders/env_common.gdshaderinc"
+#include "res://shaders/env_photo.gdshaderinc"
 
 uniform sampler2D zone_mask : filter_linear, repeat_disable;
 uniform sampler2D detail_mask : filter_linear, repeat_disable;
@@ -141,4 +142,10 @@ void fragment() {
 	ROUGHNESS = mix(rough, 0.05, puddle);
 	SPECULAR = mix(0.25, 0.5, puddle);
 	NORMAL = env_bump(VERTEX, NORMAL, h * 0.012, bump_strength);
+	// Photo detail over the designed surface (env_photo.gdshaderinc).
+	vec3 ph_a = ALBEDO;
+	float ph_r = ROUGHNESS;
+	NORMAL = env_photo_world(ph_dirt_d, ph_dirt_n, ph_dirt_arm, wpos, NORMAL, INV_VIEW_MATRIX, VIEW_MATRIX, 0.4, 0.9, ph_a, ph_r);
+	ALBEDO = ph_a;
+	ROUGHNESS = ph_r;
 }

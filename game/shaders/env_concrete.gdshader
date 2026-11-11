@@ -7,6 +7,7 @@ shader_type spatial;
 render_mode diffuse_burley, specular_schlick_ggx;
 
 #include "res://shaders/env_common.gdshaderinc"
+#include "res://shaders/env_photo.gdshaderinc"
 
 uniform vec4 concrete : source_color = vec4(0.63, 0.59, 0.54, 1.0);
 uniform vec4 concrete_dark : source_color = vec4(0.44, 0.41, 0.38, 1.0);
@@ -122,4 +123,10 @@ void fragment() {
 	ROUGHNESS = mix(rough, 0.25, wet);
 	SPECULAR = mix(0.35, 0.6, wet);
 	NORMAL = env_bump(VERTEX, NORMAL, h * 0.004, 1.0);
+	// Photo detail over the designed surface (env_photo.gdshaderinc).
+	vec3 ph_a = ALBEDO;
+	float ph_r = ROUGHNESS;
+	NORMAL = env_photo_world(ph_concrete_d, ph_concrete_n, ph_concrete_arm, wpos, NORMAL, INV_VIEW_MATRIX, VIEW_MATRIX, 0.45, 1.0, ph_a, ph_r);
+	ALBEDO = ph_a;
+	ROUGHNESS = ph_r;
 }

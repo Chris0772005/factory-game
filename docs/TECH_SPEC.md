@@ -233,3 +233,10 @@ Füllen, Abkühlen, Zerschlagen), Hammer, Modellbank (öffnet DrawPad), Verkaufs
 - **Oberflächen** (`station_metal.gdshader`): `dust` (Staub auf Flächen, die nach oben zeigen), `grime` (Schmutzstreifen und Flecken), `edge_wear` (abgeriebene Kanten). Gilt für alle Stationsmetalle.
 - **Förderband** (`MachineArt.conveyor`): Einlaufbleche mit Gummilippen, Spannschrauben, Not-Aus, Schutzblech mit Warnstreifen.
 - **Test**: `test_bells` läuft um die Glocke herum statt durch ihren Rand; die Kran-Steuerbirne stößt keine Lasten mehr an.
+
+## Modul S – Foto-Oberflächen (realistischer Look)
+
+- `shaders/env_photo.gdshaderinc`: legt CC0-Scans (Poly Haven, `assets/textures/pbr/`, je Farbe, Normal, ARM in 1k) dreiseitig projiziert über die entworfenen Flächen. Die Scan-Farbe moduliert nur um ihren eigenen Mittelwert, die gewählten Farbtöne bleiben also erhalten; Normal und Rauheit bringen Körnung, Poren und Kratzer.
+- `env_photo_world` für feste Kulissen (Boden, Putz, Erde), `env_photo_object` für Bewegliches (Holz, Stationsmetall), damit die Körnung mitwandert.
+- Die Texturen sind globale Shader-Uniforms (`ph_*` in `project.godot`); `photo_detail` (0..1) regelt die Stärke.
+- Die Tusche-Umrisslinien sind aus (`OutlinePass`, `-- --outline` schaltet sie für Vergleiche ein).

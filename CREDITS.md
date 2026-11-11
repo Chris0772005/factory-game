@@ -37,3 +37,7 @@ All sound effects in `game/assets/sfx/` are synthesized by our own `tools/sfx_ge
 All music in `game/assets/music/` (`menu`, `backyard`, `garage`, `bell_foundry`, `iron_hall`) is written as notes and
 synthesized by our own `tools/music_gen.py`. The pieces were composed by an AI assistant (Claude) at the owner's request:
 no third-party rights, but this counts as AI-generated content and has to be declared in the Steam content survey.
+
+## Foto-Oberflächen (CC0)
+
+Fünf Textursätze von [Poly Haven](https://polyhaven.com) (CC0, 1k): `concrete_floor_worn_001`, `painted_plaster_wall`, `weathered_brown_planks`, `rusty_metal_02`, `brown_mud_dry`. Sie liegen in `game/assets/textures/pbr/` und werden über `shaders/env_photo.gdshaderinc` auf Boden, Wände, Holz, Erde und Metall gelegt.

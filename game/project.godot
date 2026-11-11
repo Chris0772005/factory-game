@@ -47,3 +47,67 @@ cutaway_target={
 "type": "vec4",
 "value": Vector4(0, -100, 0, 0)
 }
+ph_concrete_d={
+"type": "sampler2D",
+"value": "res://assets/textures/pbr/concrete_d.jpg"
+}
+ph_concrete_n={
+"type": "sampler2D",
+"value": "res://assets/textures/pbr/concrete_n.jpg"
+}
+ph_concrete_arm={
+"type": "sampler2D",
+"value": "res://assets/textures/pbr/concrete_arm.jpg"
+}
+ph_plaster_d={
+"type": "sampler2D",
+"value": "res://assets/textures/pbr/plaster_d.jpg"
+}
+ph_plaster_n={
+"type": "sampler2D",
+"value": "res://assets/textures/pbr/plaster_n.jpg"
+}
+ph_plaster_arm={
+"type": "sampler2D",
+"value": "res://assets/textures/pbr/plaster_arm.jpg"
+}
+ph_wood_d={
+"type": "sampler2D",
+"value": "res://assets/textures/pbr/wood_d.jpg"
+}
+ph_wood_n={
+"type": "sampler2D",
+"value": "res://assets/textures/pbr/wood_n.jpg"
+}
+ph_wood_arm={
+"type": "sampler2D",
+"value": "res://assets/textures/pbr/wood_arm.jpg"
+}
+ph_metal_d={
+"type": "sampler2D",
+"value": "res://assets/textures/pbr/metal_d.jpg"
+}
+ph_metal_n={
+"type": "sampler2D",
+"value": "res://assets/textures/pbr/metal_n.jpg"
+}
+ph_metal_arm={
+"type": "sampler2D",
+"value": "res://assets/textures/pbr/metal_arm.jpg"
+}
+ph_dirt_d={
+"type": "sampler2D",
+"value": "res://assets/textures/pbr/dirt_d.jpg"
+}
+ph_dirt_n={
+"type": "sampler2D",
+"value": "res://assets/textures/pbr/dirt_n.jpg"
+}
+ph_dirt_arm={
+"type": "sampler2D",
+"value": "res://assets/textures/pbr/dirt_arm.jpg"
+}
+photo_detail={
+"type": "float",
+"value": 1.0
+}

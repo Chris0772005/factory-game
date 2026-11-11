@@ -12,6 +12,6 @@ static func create() -> MeshInstance3D:
 	var mat := ShaderMaterial.new()
 	mat.shader = load("res://shaders/outline_post.gdshader")
 	mi.material_override = mat
-	# Art checks: `-- --no-outline` renders without the ink lines.
-	mi.visible = not "--no-outline" in OS.get_cmdline_user_args()
+	# The realistic look runs without ink lines; `-- --outline` brings them back.
+	mi.visible = "--outline" in OS.get_cmdline_user_args()
 	return mi

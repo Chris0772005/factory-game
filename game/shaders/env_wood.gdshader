@@ -8,6 +8,7 @@ shader_type spatial;
 render_mode diffuse_burley, specular_schlick_ggx;
 
 #include "res://shaders/env_common.gdshaderinc"
+#include "res://shaders/env_photo.gdshaderinc"
 
 uniform vec4 base_color : source_color = vec4(0.549, 0.416, 0.306, 1.0);
 uniform vec4 grain_color : source_color = vec4(0.36, 0.25, 0.18, 1.0);
@@ -66,4 +67,10 @@ void fragment() {
 	ROUGHNESS = clamp(roughness_base + lines * 0.08 - paint * 0.15, 0.0, 1.0);
 	SPECULAR = 0.3;
 	NORMAL = env_bump(VERTEX, NORMAL, (lines + knot) * 0.0012, 1.0);
+	// Photo detail over the designed surface (env_photo.gdshaderinc).
+	vec3 ph_a = ALBEDO;
+	float ph_r = ROUGHNESS;
+	NORMAL = env_photo_object(ph_wood_d, ph_wood_n, ph_wood_arm, v_local, NORMAL, INV_VIEW_MATRIX, VIEW_MATRIX, MODEL_MATRIX, 0.9, 0.8, ph_a, ph_r);
+	ALBEDO = ph_a;
+	ROUGHNESS = ph_r;
 }
