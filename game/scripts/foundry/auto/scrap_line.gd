@@ -30,6 +30,7 @@ var _dir := Vector3.RIGHT
 var _slope := 0.0
 var _belt: Node3D
 var _belt_mat: ShaderMaterial
+var _frame: Node3D
 var _offset := 0.0
 var _colliders: Array[CollisionShape3D] = []
 var _arm_base := Vector3.ZERO
@@ -116,6 +117,8 @@ func _apply_upgrades() -> void:
 	var belt := has_belt()
 	var arm := has_arm()
 	_belt.visible = belt
+	if _frame:
+		_frame.visible = belt
 	if _arm:
 		_arm.visible = arm
 	for i in _colliders.size():
@@ -206,6 +209,9 @@ func _piece_mesh(kind: StringName) -> MeshInstance3D:
 	mat.metallic = 0.6
 	mat.roughness = 0.4
 	mi.material_override = mat
+	if ScrapModels.has(kind):
+		mi.mesh = ScrapModels.mesh(kind)
+		mi.material_override = ScrapModels.material(info.color)
 	return mi
 
 
@@ -253,7 +259,7 @@ func _pose_arm() -> void:
 		return
 	var heap_point := pile.global_position + Vector3(0, 0.38, 0)
 	var drop_point := hopper_position() + Vector3(0, 0.55, 0)
-	var rest := _arm_base + (heap_point - _arm_base).normalized() * 0.9 + Vector3(0, 1.45, 0)
+	var rest := _arm_base + (heap_point - _arm_base).normalized() * 1.25 + Vector3(0, 1.5, 0)
 	var t := 1.0 - _cycle / ARM_CYCLE if _cycle > 0.0 else 0.0
 	var target := rest
 	var grip := 0.0
@@ -324,6 +330,8 @@ func _build_belt_art() -> void:
 	var yellow := MachineArt.yellow_mat()
 	var half := BELT_WIDTH * 0.5
 	_belt_mat = MachineArt.conveyor(_belt, length, BELT_WIDTH)
+	_frame = Node3D.new()
+	add_child(_frame)
 	# A work light over the line so the machines read in dim halls.
 	var glow := OmniLight3D.new()
 	glow.light_color = Color("#ffe2b8")
@@ -344,11 +352,11 @@ func _build_belt_art() -> void:
 			legs.append(EnvMesh.piece(EnvMesh.box(Vector3(0.055, p.y - 0.06, 0.055), 0.012, 2), Transform3D(Basis(), Vector3(p.x, (p.y + 0.06) * 0.5, p.z))))
 			feet.append(MachineArt.turned(MachineArt.foot_pad(), Vector3.UP, Vector3(p.x, 0, p.z), 16))
 		legs.append(EnvMesh.piece(EnvMesh.box(Vector3(0.035, 0.035, BELT_WIDTH + 0.06), 0.008), Transform3D(Basis.looking_at(across, Vector3.UP), Vector3(top.x, 0.2, top.z))))
-		StationKit.add(self, MachineArt.pipe(PackedVector3Array([top + across * (half + 0.03) + Vector3(0, -0.06, 0), Vector3(top.x, 0.2, top.z) - across * (half + 0.03)]), 0.011, 8), paint)
+		StationKit.add(_frame, MachineArt.pipe(PackedVector3Array([top + across * (half + 0.03) + Vector3(0, -0.06, 0), Vector3(top.x, 0.2, top.z) - across * (half + 0.03)]), 0.011, 8), paint)
 	legs.append(EnvMesh.piece(EnvMesh.box(Vector3(0.035, 0.035, tops[0].distance_to(tops[1])), 0.008), Transform3D(Basis.looking_at(Vector3(tops[1].x - tops[0].x, 0, tops[1].z - tops[0].z), Vector3.UP),
 		Vector3((tops[0].x + tops[1].x) * 0.5, 0.2, (tops[0].z + tops[1].z) * 0.5))))
-	StationKit.add_merged(self, legs, paint)
-	StationKit.add_merged(self, feet, steel)
+	StationKit.add_merged(_frame, legs, paint)
+	StationKit.add_merged(_frame, feet, steel)
 	# Hopper: four sloped plates over the belt foot, hazard edge, stencil.
 	var hopper := []
 	var hb := _start + Vector3(0, 0.1, 0)
@@ -374,19 +382,19 @@ func _build_belt_art() -> void:
 				black_bits.append(seg)
 		# A strut from the rim corner down to the floor.
 		var corner := hb + basis * side * Vector3(HOPPER.x * 0.5 + 0.03, 0.4, -HOPPER.x * 0.5 - 0.03)
-		StationKit.add(self, MachineArt.pipe(PackedVector3Array([corner, Vector3(corner.x, 0.03, corner.z)]), 0.016, 8), paint)
+		StationKit.add(_frame, MachineArt.pipe(PackedVector3Array([corner, Vector3(corner.x, 0.03, corner.z)]), 0.016, 8), paint)
 		black_bits.append(MachineArt.turned(MachineArt.foot_pad(), Vector3.UP, Vector3(corner.x, 0, corner.z), 14))
-	StationKit.add_merged(self, hopper, paint)
-	StationKit.add_merged(self, edge, yellow)
-	StationKit.add_merged(self, black_bits, dark)
-	StationKit.label(self, "SCHROTT", Transform3D(basis * Basis(Vector3.UP, PI) * Basis(Vector3.RIGHT, 0.38), hb + basis * Vector3(0, 0.2, HOPPER.x * 0.5 - 0.05)), 48, Color("#f0e2c4"), 800, 0.0012)
+	StationKit.add_merged(_frame, hopper, paint)
+	StationKit.add_merged(_frame, edge, yellow)
+	StationKit.add_merged(_frame, black_bits, dark)
+	StationKit.label(_frame, "SCHROTT", Transform3D(basis * Basis(Vector3.UP, PI) * Basis(Vector3.RIGHT, 0.38), hb + basis * Vector3(0, 0.2, HOPPER.x * 0.5 - 0.05)), 48, Color("#f0e2c4"), 800, 0.0012)
 	# Control box on a post with a status lamp, a stop button and a cable.
 	var post := _start + _belt.global_basis.z * (half + 0.45) + _dir * 0.55
 	post.y = 0.0
 	var box := []
 	box.append(EnvMesh.piece(EnvMesh.box(Vector3(0.04, 1.05, 0.04)), Transform3D(Basis(), post + Vector3(0, 0.525, 0))))
 	box.append(EnvMesh.piece(EnvMesh.box(Vector3(0.2, 0.28, 0.1), 0.012), Transform3D(basis, post + Vector3(0, 1.1, 0))))
-	StationKit.add_merged(self, box, dark)
+	StationKit.add_merged(_frame, box, dark)
 	_lamp_mat = StandardMaterial3D.new()
 	_lamp_mat.albedo_color = Color("#3f8f55")
 	_lamp_mat.emission_enabled = true
@@ -396,7 +404,7 @@ func _build_belt_art() -> void:
 	lamp.mesh = EnvMesh.cylinder(0.022, 0.022, 0.02, 12)
 	lamp.material_override = _lamp_mat
 	lamp.transform = Transform3D(basis * Basis(Vector3.RIGHT, PI * 0.5), post + Vector3(0, 1.18, 0) + basis * Vector3(0.04, 0, -0.055))
-	add_child(lamp)
+	_frame.add_child(lamp)
 	var red := StandardMaterial3D.new()
 	red.albedo_color = Color("#c0392b")
 	red.roughness = 0.4
@@ -404,10 +412,10 @@ func _build_belt_art() -> void:
 	stop.mesh = EnvMesh.cylinder(0.03, 0.03, 0.03, 14)
 	stop.material_override = red
 	stop.transform = Transform3D(basis * Basis(Vector3.RIGHT, PI * 0.5), post + Vector3(0, 1.06, 0) + basis * Vector3(-0.03, 0, -0.06))
-	add_child(stop)
+	_frame.add_child(stop)
 	var cable := PackedVector3Array([post + Vector3(0, 0.96, 0), post + Vector3(0, 0.3, 0) + _dir * 0.1, post + Vector3(0, 0.03, 0) + _dir * 0.4,
 		_start + Vector3(0, -START_HEIGHT + 0.03, 0) + _dir * 0.6])
-	StationKit.add(self, StationKit.tube(cable, 0.012, 6), dark)
+	StationKit.add(_frame, StationKit.tube(cable, 0.012, 6), dark)
 
 
 func _build_arm_art() -> void:

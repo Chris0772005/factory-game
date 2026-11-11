@@ -28,6 +28,10 @@ var _art: ScrapArt
 var _dig_fx := 0.0
 
 
+var _next := &""
+var _beep := 0.0
+
+
 func _ready() -> void:
 	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	add_to_group(&"interactable")
@@ -86,6 +90,17 @@ func _dig(player: Node, seconds: float) -> void:
 	if _dig_fx <= 0.0:
 		_dig_fx = 0.35
 		_fx_all(&"rummage")
+	# The detector knows what the next grab brings: it beeps faster and
+	# faster while a rare find is coming up.
+	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
+	if world and world.has_upgrade(&"detector"):
+		if _next == &"":
+			_next = _roll()
+		if RARE.has(_next):
+			_beep -= seconds
+			if _beep <= 0.0:
+				_beep = lerpf(0.55, 0.11, clampf(progress, 0.0, 1.0))
+				_fx_all(&"beep")
 	if progress >= 1.0:
 		progress = 0.0
 		_find(player as Player)
@@ -106,7 +121,8 @@ func _find(p: Player) -> void:
 	out.y = 0.0
 	out = out.normalized() if out.length() > 0.1 else Vector3.BACK
 	for i in count:
-		var kind := _roll()
+		var kind := _next if i == 0 and _next != &"" else _roll()
+		_next = &""
 		var info: Dictionary = FoundryRules.SCRAP[kind]
 		var item := world.spawn_item(kind, info.color, info.size, 0.4, top + Vector3(randf_range(-0.15, 0.15), i * 0.2, randf_range(-0.15, 0.15)))
 		if item:
@@ -189,6 +205,8 @@ func _fx(kind: StringName) -> void:
 		&"find":
 			Sfx.play(&"scrap_clatter", top, -2.0)
 			Sfx.play(&"pop", top, -4.0)
+		&"beep":
+			Sfx.play(&"detector_beep", top, -5.0, 0.0)
 		&"rare":
 			Sfx.play(&"coin", top, 0.0)
 			FoundryFX.sparks(get_parent(), top + Vector3(0, 0.3, 0), 14)

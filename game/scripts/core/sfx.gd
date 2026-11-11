@@ -21,6 +21,25 @@ func _ready() -> void:
 		_pool.append(p)
 	_ui = AudioStreamPlayer.new()
 	add_child(_ui)
+	var beep: Array[AudioStream] = [_tone(1850.0, 0.085)]
+	_streams[&"detector_beep"] = beep
+
+
+## A short synthesized sine beep (metal detector).
+func _tone(hz: float, seconds: float) -> AudioStreamWAV:
+	var rate := 22050
+	var count := int(seconds * rate)
+	var data := PackedByteArray()
+	data.resize(count * 2)
+	for i in count:
+		var t := float(i) / rate
+		var env := minf(1.0, minf(t / 0.004, (seconds - t) / 0.02))
+		data.encode_s16(i * 2, int(sin(TAU * hz * t) * env * 0.5 * 32767.0))
+	var wav := AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = rate
+	wav.data = data
+	return wav
 
 
 ## One-shot sound at a world position.

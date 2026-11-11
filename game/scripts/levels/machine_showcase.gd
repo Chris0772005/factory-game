@@ -69,6 +69,16 @@ func _ready() -> void:
 	belt.transform = Transform3D(Basis(bx, bz.cross(bx), bz), Vector3(-3.2, 0.72, 1.4))
 	add_child(belt)
 	MachineArt.conveyor(belt, 2.4, ScrapLine.BELT_WIDTH)
+	var kinds := [&"scrap_can", &"scrap_key", &"scrap_pipe", &"scrap_kettle", &"scrap_tooth", &"scrap_ring"]
+	for i in kinds.size():
+		var info: Dictionary = FoundryRules.SCRAP[kinds[i]]
+		StationKit.add(self, ScrapModels.mesh(kinds[i]), ScrapModels.material(info.color), Transform3D(Basis(Vector3.UP, 0.4), Vector3(3.0 + i * 0.3, 0.16, 3.0)))
+	var hands := FirstPersonHands.new()
+	hands.position = Vector3(5.0, 1.0, 3.0)
+	hands.set_process(false)
+	add_child(hands)
+	for i in hands.get_child_count():
+		(hands.get_child(i) as Node3D).position = Vector3(-0.12 + i * 0.24, 0, 0)
 	var cam := Camera3D.new()
 	cam.fov = 45
 	add_child(cam)
@@ -78,6 +88,10 @@ func _ready() -> void:
 			cam.look_at_from_position(Vector3(1.5, 1.35, 1.3), Vector3(0.1, 0.95, 0.15))
 		"grip":
 			cam.look_at_from_position(wrist.global_position + Vector3(0.9, 0.35, 0.5), wrist.global_position + Vector3(0, -0.02, -0.1))
+		"hands":
+			cam.look_at_from_position(Vector3(5.0, 1.32, 3.42), Vector3(5.0, 1.0, 2.96))
+		"scrap":
+			cam.look_at_from_position(Vector3(3.75, 0.75, 4.1), Vector3(3.75, 0.14, 3.0))
 		"belt":
 			cam.look_at_from_position(Vector3(-0.6, 1.5, 3.6), Vector3(-1.9, 0.85, 1.4))
 		"drive":
