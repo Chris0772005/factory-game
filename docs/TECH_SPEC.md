@@ -240,3 +240,6 @@ Füllen, Abkühlen, Zerschlagen), Hammer, Modellbank (öffnet DrawPad), Verkaufs
 - `env_photo_world` für feste Kulissen (Boden, Putz, Erde), `env_photo_object` für Bewegliches (Holz, Stationsmetall), damit die Körnung mitwandert.
 - Die Texturen sind globale Shader-Uniforms (`ph_*` in `project.godot`); `photo_detail` (0..1) regelt die Stärke.
 - Die Tusche-Umrisslinien sind aus (`OutlinePass`, `-- --outline` schaltet sie für Vergleiche ein).
+- `environment/photo_prop.gd` (`PhotoProp`): ersetzt Bausatz-Requisiten (Fässer, Kisten, Kartons, Eimer, Säcke, Büsche, Stühle) durch gescannte Poly-Haven-Modelle in gleicher Größe; `"name:2"` wählt eine Variante aus einem Modell mit mehreren.
+- Foto-Detail auch auf Laub (`leaves`), Dach, allgemeinen Flächen und Bausatz-Requisiten; Blütenköpfe im Gras sind kleiner und werden direkt vor der Kamera ausgeblendet.
+- Prüfhilfe: `-- --pitch=-60` startet mit Blick nach unten (eigene Beine).

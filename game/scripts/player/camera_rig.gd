@@ -105,6 +105,10 @@ func _ready() -> void:
 	_query.collide_with_areas = false
 	if first_person:
 		pitch = deg_to_rad(-8.0)
+		# Art checks: `-- --pitch=-60` starts looking down (own legs and boots).
+		for arg in OS.get_cmdline_user_args():
+			if arg.begins_with("--pitch="):
+				pitch = deg_to_rad(float(arg.trim_prefix("--pitch=")))
 		camera.cull_mask &= ~SELF_LAYER
 		if target is Player and StationKit.visual():
 			var hands := FirstPersonHands.new()

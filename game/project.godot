@@ -107,6 +107,30 @@ ph_dirt_arm={
 "type": "sampler2D",
 "value": "res://assets/textures/pbr/dirt_arm.jpg"
 }
+ph_bark_d={
+"type": "sampler2D",
+"value": "res://assets/textures/pbr/bark_d.jpg"
+}
+ph_bark_n={
+"type": "sampler2D",
+"value": "res://assets/textures/pbr/bark_n.jpg"
+}
+ph_bark_arm={
+"type": "sampler2D",
+"value": "res://assets/textures/pbr/bark_arm.jpg"
+}
+ph_leaves_d={
+"type": "sampler2D",
+"value": "res://assets/textures/pbr/leaves_d.jpg"
+}
+ph_leaves_n={
+"type": "sampler2D",
+"value": "res://assets/textures/pbr/leaves_n.jpg"
+}
+ph_leaves_arm={
+"type": "sampler2D",
+"value": "res://assets/textures/pbr/leaves_arm.jpg"
+}
 photo_detail={
 "type": "float",
 "value": 1.0

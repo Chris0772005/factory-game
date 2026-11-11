@@ -52,6 +52,11 @@ static func place(parent: Node3D, model: String, pos: Vector3, yaw := 0.0, opts 
 			WorldBuilder.add_collider(parent, size, Transform3D(b, pos + b * c))
 	if not EnvMesh.visual():
 		return null
+	if PhotoProp.has(model):
+		# Scanned props (Poly Haven) replace the kit model at the same size.
+		var kit_box := bounds(model)
+		var upright := Basis.from_euler(Vector3(deg_to_rad(tilt.x), deg_to_rad(yaw), deg_to_rad(tilt.z)))
+		return PhotoProp.build(parent, model, Transform3D(upright, pos), kit_box.size * s, kit_box.position.y * s)
 	if PropArt.has(model):
 		# Round props get a smooth stand-in of the same size (see PropArt).
 		var kit := bounds(model)

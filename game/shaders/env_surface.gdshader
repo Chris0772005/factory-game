@@ -6,6 +6,7 @@ shader_type spatial;
 render_mode diffuse_burley, specular_schlick_ggx;
 
 #include "res://shaders/env_common.gdshaderinc"
+#include "res://shaders/env_photo.gdshaderinc"
 
 uniform vec4 base_color : source_color = vec4(0.6, 0.58, 0.55, 1.0);
 uniform vec4 stain_color : source_color = vec4(0.36, 0.25, 0.18, 1.0);
@@ -52,4 +53,10 @@ void fragment() {
 	if (bump > 0.0) {
 		NORMAL = env_bump(VERTEX, NORMAL, (m + g * 0.4) * bump * 0.01, 1.0);
 	}
+	// Photo detail over the designed surface (env_photo.gdshaderinc).
+	vec3 ph_a = ALBEDO;
+	float ph_r = ROUGHNESS;
+	NORMAL = env_photo_world(ph_plaster_d, ph_plaster_n, ph_plaster_arm, v_world, NORMAL, INV_VIEW_MATRIX, VIEW_MATRIX, 0.8, 0.55, ph_a, ph_r);
+	ALBEDO = ph_a;
+	ROUGHNESS = ph_r;
 }

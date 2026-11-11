@@ -6,6 +6,7 @@ shader_type spatial;
 render_mode diffuse_lambert_wrap, specular_schlick_ggx;
 
 #include "res://shaders/env_common.gdshaderinc"
+#include "res://shaders/env_photo.gdshaderinc"
 
 uniform vec4 top_color : source_color = vec4(0.42, 0.62, 0.36, 1.0);
 uniform vec4 bottom_color : source_color = vec4(0.18, 0.35, 0.27, 1.0);
@@ -44,4 +45,10 @@ void fragment() {
 	SPECULAR = 0.2;
 	BACKLIGHT = vec3(0.2, 0.26, 0.1) * (1.0 - clump * 0.5);
 	NORMAL = env_bump(VERTEX, NORMAL, -clump * 0.03, 1.0);
+	// Photo detail over the designed surface (env_photo.gdshaderinc).
+	vec3 ph_a = ALBEDO;
+	float ph_r = ROUGHNESS;
+	NORMAL = env_photo_world(ph_leaves_d, ph_leaves_n, ph_leaves_arm, v_world, NORMAL, INV_VIEW_MATRIX, VIEW_MATRIX, 0.8, 1.0, ph_a, ph_r);
+	ALBEDO = ph_a;
+	ROUGHNESS = ph_r;
 }

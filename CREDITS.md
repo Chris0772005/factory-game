@@ -41,3 +41,9 @@ no third-party rights, but this counts as AI-generated content and has to be dec
 ## Foto-Oberflächen (CC0)
 
 Fünf Textursätze von [Poly Haven](https://polyhaven.com) (CC0, 1k): `concrete_floor_worn_001`, `painted_plaster_wall`, `weathered_brown_planks`, `rusty_metal_02`, `brown_mud_dry`. Sie liegen in `game/assets/textures/pbr/` und werden über `shaders/env_photo.gdshaderinc` auf Boden, Wände, Holz, Erde und Metall gelegt.
+
+Dazu `bark_brown_02` (Rinde) und `leafy_grass` (Laub).
+
+## Gescannte Requisiten (CC0)
+
+3D-Modelle von [Poly Haven](https://polyhaven.com) (CC0, 1k-Texturen) in `game/assets/models/polyhaven/`: Barrel_01, Barrel_02, barrel_03, wine_barrel_01, wooden_crate_01, wooden_crate_02, cardboard_box_01, wooden_bucket_01, cement_bag, shrub_02, shrub_03, old_tyre, metal_toolbox, painted_wooden_chair_01, propane_tank, wooden_ladder. `PhotoProp` tauscht sie gegen die Bausatz-Requisiten.

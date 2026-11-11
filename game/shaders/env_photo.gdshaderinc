@@ -19,6 +19,12 @@ global uniform sampler2D ph_metal_arm : repeat_enable, filter_linear_mipmap_anis
 global uniform sampler2D ph_dirt_d : source_color, repeat_enable, filter_linear_mipmap_anisotropic;
 global uniform sampler2D ph_dirt_n : repeat_enable, filter_linear_mipmap_anisotropic;
 global uniform sampler2D ph_dirt_arm : repeat_enable, filter_linear_mipmap_anisotropic;
+global uniform sampler2D ph_bark_d : source_color, repeat_enable, filter_linear_mipmap_anisotropic;
+global uniform sampler2D ph_bark_n : repeat_enable, filter_linear_mipmap_anisotropic;
+global uniform sampler2D ph_bark_arm : repeat_enable, filter_linear_mipmap_anisotropic;
+global uniform sampler2D ph_leaves_d : source_color, repeat_enable, filter_linear_mipmap_anisotropic;
+global uniform sampler2D ph_leaves_n : repeat_enable, filter_linear_mipmap_anisotropic;
+global uniform sampler2D ph_leaves_arm : repeat_enable, filter_linear_mipmap_anisotropic;
 // 0 switches the photo detail off (low quality), 1 is full strength.
 global uniform float photo_detail;
 

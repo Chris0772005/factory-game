@@ -195,7 +195,7 @@ static func _tuft_mesh(rng: RandomNumberGenerator, blades: int, height: float, s
 		if mode == 3 and b % 3 == 0:
 			var tip: Vector3 = (pts[segments][0] + pts[segments][1]) * 0.5
 			var col: Color = (FLOWERS[rng.randi() % FLOWERS.size()] as Color).srgb_to_linear()
-			var r := rng.randf_range(0.03, 0.045)
+			var r := rng.randf_range(0.014, 0.022)
 			for petal in 2:
 				var a2 := petal * PI * 0.5 + rng.randf() * 0.3
 				var u := Vector3(cos(a2), 0.0, sin(a2)) * r

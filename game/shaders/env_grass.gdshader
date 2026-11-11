@@ -67,7 +67,11 @@ void fragment() {
 	c *= 0.86 + v_custom.r * 0.28;
 	c = mix(c, straw.rgb * (0.7 + 0.4 * v_tip), v_custom.g * smoothstep(0.2, 1.0, v_tip));
 	if (v_flower.a > 0.5) {
-		c = v_flower.rgb;
+		// A flower head right under the lens reads as a paper scrap: drop it.
+		if (length(VERTEX) < 1.1) {
+			discard;
+		}
+		c = v_flower.rgb * (0.75 + 0.25 * v_tip);
 	}
 	ALBEDO = c;
 	ROUGHNESS = 0.99;

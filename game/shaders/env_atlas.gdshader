@@ -6,6 +6,7 @@ shader_type spatial;
 render_mode diffuse_burley, specular_schlick_ggx;
 
 #include "res://shaders/env_common.gdshaderinc"
+#include "res://shaders/env_photo.gdshaderinc"
 
 uniform sampler2D atlas : source_color, filter_linear_mipmap, repeat_enable;
 uniform vec4 tint : source_color = vec4(1.0, 1.0, 1.0, 1.0);
@@ -37,4 +38,10 @@ void fragment() {
 	ROUGHNESS = clamp(roughness_base + g * 0.12, 0.0, 1.0);
 	METALLIC = metallic_base;
 	SPECULAR = 0.35;
+	// Photo detail over the designed surface (env_photo.gdshaderinc).
+	vec3 ph_a = ALBEDO;
+	float ph_r = ROUGHNESS;
+	NORMAL = env_photo_world(ph_plaster_d, ph_plaster_n, ph_plaster_arm, v_world, NORMAL, INV_VIEW_MATRIX, VIEW_MATRIX, 0.9, 0.5, ph_a, ph_r);
+	ALBEDO = ph_a;
+	ROUGHNESS = ph_r;
 }
