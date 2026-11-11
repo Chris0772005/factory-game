@@ -14,6 +14,7 @@ var crucible: Crucible = null
 ## Waiting to melt: scrap kinds (StringName) or whole mixes (Dictionary, sealed crates).
 var charge: Array = []
 var _melt_progress := 0.0
+var _hold_beat := 0.0
 var _fire: FurnaceFire
 var _bellows: Node3D
 var _bellows_squash := 0.0
@@ -74,10 +75,18 @@ func hint(_player: Node) -> String:
 	var melted := "%.1f l Schmelze" % crucible.amount
 	if not charge.is_empty():
 		melted += " · %d Teile im Ofen" % charge.size()
-	return "[F] Blasebalg treten · Hitze %d %% · %s" % [roundi(heat * 100), melted]
+	return "[F halten] Blasebalg treten · Hitze %d %% · %s" % [roundi(heat * 100), melted]
+
+
+## F held down: keeps treading the bellows.
+func interact_tick(player: Node, delta: float) -> void:
+	_hold_beat += delta
+	if _hold_beat >= 0.5:
+		interact(player)
 
 
 func interact(_player: Node) -> void:
+	_hold_beat = 0.0
 	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
 	var boost := 1.5 if world and world.has_upgrade(&"bellows_foot") else 1.0
 	heat = minf(1.0, heat + HEAT_PER_PUMP * boost)

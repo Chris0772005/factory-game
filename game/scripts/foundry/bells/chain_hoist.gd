@@ -296,6 +296,13 @@ class Pendant:
 
 	func _ready() -> void:
 		add_to_group(&"hoist_pendants")
+		# The pendant must never shove the load it steers the hook to: loose
+		# bodies it touches pass through it from then on.
+		contact_monitor = true
+		max_contacts_reported = 4
+		body_entered.connect(func(body: Node) -> void:
+			if body is RigidBody3D:
+				add_collision_exception_with(body))
 		if not StationKit.visual():
 			return
 		var yellow := StationKit.metal("crane_paint", {steel_color = Color("#d9a521")})

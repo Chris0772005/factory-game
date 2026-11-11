@@ -16,6 +16,8 @@ uniform vec2 hinge = vec2(0.0, 0.0);
 uniform float stitches : hint_range(0.0, 1.0) = 1.0;
 // Pleats between UV.y 0 and 1 (stitch rows sit on the crests).
 uniform float pleats = 4.0;
+// Strength of the long wrinkle streaks (bellows 1, gloves and boots near 0).
+uniform float grain : hint_range(0.0, 1.0) = 1.0;
 
 varying vec3 v_obj;
 varying vec2 v_uv;
@@ -34,11 +36,11 @@ void vertex() {
 void fragment() {
 	vec3 p = v_obj * 40.0;
 	float n = env_fbm(p.xz + p.y * 1.3);
-	float wr = env_noise(vec2(v_uv.x * 60.0, v_uv.y * 9.0)) - 0.5;
+	float wr = (env_noise(vec2(v_uv.x * 60.0, v_uv.y * 9.0)) - 0.5) * grain;
 	vec3 c = leather_color.rgb * (0.82 + n * 0.35 + wr * 0.12);
 	// Crests are worn lighter, folds darker.
 	float crest = 0.5 + 0.5 * cos((v_uv.y * pleats - 0.5) * 6.2832);
-	c *= mix(0.72, 1.12, crest);
+	c *= mix(0.72, 1.12, pleats > 0.0 ? crest : 0.75);
 	float rough = 0.62 + wr * 0.1 - crest * 0.1;
 	if (stitches > 0.0) {
 		float row = abs(fract(v_uv.y * pleats) - 0.5) / pleats;

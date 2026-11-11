@@ -20,6 +20,8 @@ var material: ShaderMaterial
 var tuft_count := 0
 var _meshes: Array[ArrayMesh] = []
 var _trample: Array[Vector4] = [Vector4.ZERO, Vector4.ZERO, Vector4.ZERO, Vector4.ZERO]
+var _reach: Array[Vector4] = [Vector4.ZERO, Vector4.ZERO, Vector4.ZERO, Vector4.ZERO]
+var _cloth: ShaderMaterial
 
 
 static func create(yard_layout: YardLayout) -> GrassField:
@@ -42,6 +44,12 @@ func _process(_delta: float) -> void:
 		_trample[i] = Vector4.ZERO
 		i += 1
 	material.set_shader_parameter(&"trample", _trample)
+	# Laundry swings aside for the same workers, with a longer reach.
+	if _cloth == null:
+		_cloth = EnvMesh.material("cloth", "res://shaders/env_cloth.gdshader")
+	for k in 4:
+		_reach[k] = Vector4(_trample[k].x, _trample[k].y, _trample[k].z, 0.9 if _trample[k].w > 0.0 else 0.0)
+	_cloth.set_shader_parameter(&"trample", _reach)
 
 
 func _build() -> void:

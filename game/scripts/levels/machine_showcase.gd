@@ -95,12 +95,9 @@ func _ready() -> void:
 		"kaykit_prototype/Can_A.gltf", "kaykit_prototype/Can_B.gltf", "kaykit_hexagon/bucket_empty.gltf"]
 	for i in kit_props.size():
 		PropKit.place(self, kit_props[i], Vector3(-2.0 + i * 0.95, 0, 9.0), 20.0 * i, {solid = PropKit.Solid.NONE})
-	var hands := FirstPersonHands.new()
-	hands.position = Vector3(5.0, 1.0, 3.0)
-	hands.set_process(false)
-	add_child(hands)
-	for i in hands.get_child_count():
-		(hands.get_child(i) as Node3D).position = Vector3(-0.12 + i * 0.24, 0, 0)
+	var legs := FirstPersonLegs.new()
+	legs.position = Vector3(8.0, 0, 3.0)
+	add_child(legs)
 	var cam := Camera3D.new()
 	cam.fov = 45
 	add_child(cam)
@@ -120,8 +117,17 @@ func _ready() -> void:
 			cam.look_at_from_position(Vector3(-1.2, 1.7, 0.6), Vector3(-6.0, 0.7, -3.0))
 		"carback":
 			cam.look_at_from_position(Vector3(-9.6, 1.6, -6.6), Vector3(-6.0, 0.7, -3.0))
-		"hands":
-			cam.look_at_from_position(Vector3(5.0, 1.32, 3.42), Vector3(5.0, 1.0, 2.96))
+		"hands", "reach", "carry", "dig", "fist":
+			cam.fov = CameraRig.FP_FOV
+			cam.look_at_from_position(Vector3(5.0, 1.5, 3.0), Vector3(5.0, 1.36, 2.0))
+			var hands := FirstPersonHands.new()
+			cam.add_child(hands)
+			hands.set_process(false)
+			hands.show_pose({"hands": FirstPersonHands.REST, "reach": FirstPersonHands.REACH, "carry": FirstPersonHands.CARRY, "dig": FirstPersonHands.DIG_FAR,
+				"fist": FirstPersonHands.DIG_NEAR}[cam_name])
+		"legs", "legs2":
+			cam.fov = CameraRig.FP_FOV
+			cam.look_at_from_position(Vector3(8.0, 1.5, 3.0), Vector3(8.0, 0.0, 3.55 if cam_name == "legs" else 4.3))
 		"scrap":
 			cam.look_at_from_position(Vector3(3.85, 0.95, 4.1), Vector3(3.85, 0.14, 2.8))
 		"belt":

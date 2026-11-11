@@ -12,6 +12,8 @@ const CAST_THICKNESS := 0.07
 ## Gameplay litres of melt per cubic metre of casting.
 const LITRES_PER_M3 := 260.0
 const RAMS_NEEDED := 6
+## Seconds between blows while F is held.
+const HOLD_BEAT := 0.42
 const COOL_TIME := 4.5
 const HITS_TO_BREAK := 3
 const HITS_TO_BREAK_BARE_HANDS := 6
@@ -29,6 +31,7 @@ var cast_mix := {}
 var metal_temperature := 0.0
 
 var _rams := 0
+var _hold_beat := 0.0
 var _ram_score := 0.0
 var _last_ram_time := 0.0
 var _last_pour_time := -10.0
@@ -105,7 +108,7 @@ func hint(_player: Node) -> String:
 		State.EMPTY:
 			return "Leerer Formkasten – an der Werkbank ein Modell zeichnen"
 		State.PATTERNED:
-			return "[F] Sand stampfen (%d/%d)" % [_rams, RAMS_NEEDED]
+			return "[F halten] Sand stampfen (%d/%d)" % [_rams, RAMS_NEEDED]
 		State.RAMMED:
 			return "Bereit zum Gießen – Tiegel holen!"
 		State.FILLING:
@@ -113,15 +116,30 @@ func hint(_player: Node) -> String:
 		State.COOLING:
 			return "Kühlt ab · %d s" % ceili(maxf(_cool_left, 0.0))
 		State.READY:
-			return "[F] Form zerschlagen (mit Hammer schneller)"
+			return "[F halten] Form zerschlagen (mit Hammer schneller)"
 	return ""
 
 
 func interact(_player: Node) -> void:
+	_hold_beat = 0.0
 	match state:
 		State.PATTERNED:
 			_ram()
 		State.READY:
+			hit(false)
+
+
+## F held down: keeps ramming (or hitting) in a steady beat, so nobody has
+## to hammer the key.
+func interact_tick(_player: Node, delta: float) -> void:
+	if state != State.PATTERNED and state != State.READY:
+		return
+	_hold_beat += delta
+	if _hold_beat >= HOLD_BEAT:
+		_hold_beat = 0.0
+		if state == State.PATTERNED:
+			_ram()
+		else:
 			hit(false)
 
 

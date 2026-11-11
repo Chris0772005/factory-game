@@ -94,6 +94,7 @@ func _ready() -> void:
 	pause_menu.theme = UITheme.get_theme()
 	pause_layer.add_child(pause_menu)
 	if world:
+		IntroLetter.open_if_new.call_deferred(world)
 		_last_money = world.money
 		_shown = world.money
 		_target = world.money

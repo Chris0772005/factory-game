@@ -10,12 +10,29 @@ instance uniform vec4 cloth : source_color = vec4(0.9, 0.88, 0.82, 1.0);
 instance uniform vec4 stripe : source_color = vec4(0.9, 0.88, 0.82, 1.0);
 instance uniform float phase = 0.0;
 uniform float flutter = 0.07;
+// Up to four workers (xyz feet, w reach); the cloth swings away from them.
+uniform vec4 trample[4];
 
 void vertex() {
 	float free = UV.y * UV.y;
 	float w = sin(TIME * 2.2 + UV.x * 3.5 + phase * 6.283) * 0.6 + sin(TIME * 3.7 + UV.x * 7.0 + UV.y * 2.0 + phase * 11.0) * 0.4;
 	VERTEX += NORMAL * w * flutter * free;
 	VERTEX.y += abs(w) * flutter * 0.2 * free;
+	vec3 world = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	vec3 n_world = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
+	for (int i = 0; i < 4; i++) {
+		float r = trample[i].w;
+		if (r > 0.0 && world.y > trample[i].y - 0.2 && world.y < trample[i].y + 2.1) {
+			vec2 away = world.xz - trample[i].xz;
+			float d = length(away);
+			float push = 1.0 - smoothstep(r * 0.25, r, d);
+			// Swing to the side the worker is not on, and ride up over the shoulder.
+			float side = dot(n_world.xz, away) >= 0.0 ? 1.0 : -1.0;
+			float amount = push * (0.15 + 0.85 * free);
+			VERTEX += NORMAL * side * amount * 0.55;
+			VERTEX.y += amount * amount * 0.22;
+		}
+	}
 }
 
 void fragment() {

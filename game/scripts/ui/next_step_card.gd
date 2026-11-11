@@ -14,6 +14,8 @@ var _age := 0.0
 var _idle := 0.0
 var _last_pos := Vector3.ZERO
 var _shown := ""
+var _marker: Label3D
+var _bob := 0.0
 
 
 func _ready() -> void:
@@ -31,7 +33,7 @@ func _ready() -> void:
 	col.add_theme_constant_override("separation", 2)
 	add_child(col)
 	_title = Label.new()
-	_title.text = "TIPP"
+	_title.text = "JETZT"
 	_title.add_theme_font_size_override("font_size", 18)
 	_title.add_theme_color_override("font_color", UITheme.ACCENT)
 	col.add_child(_title)
@@ -56,39 +58,117 @@ func _process(delta: float) -> void:
 		_shown = step
 		_text.text = step
 	modulate.a = move_toward(modulate.a, 1.0 if visible_now else 0.0, delta * 3.0)
+	_update_marker(delta, visible_now, me)
+
+
+## A yellow arrow bobs over the station the tip is about, so nobody has to
+## search the yard for it. Hidden when standing right in front.
+func _update_marker(delta: float, on: bool, me: Player) -> void:
+	if _marker == null:
+		_marker = Label3D.new()
+		_marker.text = "▼"
+		_marker.font = UITheme.font(700)
+		_marker.font_size = 96
+		_marker.pixel_size = 0.0011
+		_marker.fixed_size = true
+		_marker.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		_marker.no_depth_test = true
+		_marker.render_priority = 10
+		_marker.outline_size = 22
+		_marker.outline_modulate = Color(0.12, 0.09, 0.05, 0.85)
+		_marker.modulate = UITheme.ACCENT
+		_marker.top_level = true
+		world.add_child(_marker)
+	var t := target
+	var show := on and t != null and is_instance_valid(t) and t.is_inside_tree() and me != null
+	var alpha := 0.0
+	if show:
+		var at: Vector3 = t.interact_point() if t.has_method("interact_point") else t.global_position
+		_bob += delta * 3.0
+		_marker.global_position = at + Vector3(0, 0.75 + sin(_bob) * 0.08, 0)
+		alpha = clampf((me.global_position.distance_to(at) - 1.6) / 1.2, 0.0, 1.0)
+	_marker.modulate.a = move_toward(_marker.modulate.a, alpha, delta * 4.0)
+	_marker.outline_modulate.a = _marker.modulate.a * 0.85
+	_marker.visible = _marker.modulate.a > 0.01
+
+
+## Where the step returned last by `next_step` happens (null: nowhere special).
+static var target: Node3D
 
 
 ## The next thing to do, derived from what the stations are doing right now.
+## Also sets `target` to the station it happens at, for the yellow marker.
 static func next_step(w: GameWorld) -> String:
+	target = null
 	var tree := w.get_tree()
 	for node in w.entities.get_children():
 		if (node is CastPiece and not (node as CastPiece).series) or node is BronzeStatue:
-			return "Wirf die Gussteile in die Verkaufskiste."
+			target = _of_class(tree, "SellCrate")
+			return "Trag den Guss in die Verkaufskiste – das bringt Geld."
 	var iron_step := _iron_step(tree)
 	if not iron_step.is_empty():
 		return iron_step
 	var bell_step := _bell_step(tree)
 	if not bell_step.is_empty():
 		return bell_step
+	var guide := tree.get_first_node_in_group(&"guides") as Guide
+	var goal: StringName = guide.letter().id if guide else &""
+	var furnace := tree.get_first_node_in_group(&"furnaces") as Furnace
+	var pile := tree.get_first_node_in_group(&"scrap_piles") as ScrapPile
+	var crucible := tree.get_first_node_in_group(&"crucibles") as Crucible
+	var loose := 0
+	for node in w.entities.get_children():
+		if node is Item and FoundryRules.SCRAP.has((node as Item).kind):
+			loose += 1
+	var charged := furnace != null and not furnace.charge.is_empty()
+	# The first two letters walk through digging and melting, one move at a time.
+	if goal == &"dig":
+		target = pile
+		return "Geh zum Schrottberg und halte F. Schrott ist dein Rohstoff."
+	if goal == &"melt":
+		if charged:
+			target = furnace
+			return "Halte F am Blasebalg, bis der Schrott geschmolzen ist."
+		if loose > 0:
+			target = furnace
+			return "Heb den Schrott auf (Linksklick) und wirf ihn oben in den Ofen."
+		target = pile
+		return "Hol Schrott aus dem Schrottberg (F halten)."
 	var molds := tree.get_nodes_in_group(&"molds")
 	for m: MoldBox in molds:
 		if m.state == MoldBox.State.READY:
-			return "Zerschlag die Form – mit dem Hammer geht's schneller."
+			target = m
+			return "Zerschlag die Form (F halten) – mit dem Hammer geht's schneller."
 	for m: MoldBox in molds:
 		if m.state == MoldBox.State.COOLING:
+			target = m
 			if tree.get_first_node_in_group(&"buckets"):
 				return "Warten – oder mit dem Wassereimer abschrecken (Rissgefahr!)."
 			return "Kurz warten: Der Guss kühlt ab."
 	for m: MoldBox in molds:
 		if m.state == MoldBox.State.PATTERNED:
-			return "Stampf den Sand im Formkasten fest (F)."
-	var rammed := molds.any(func(m: MoldBox) -> bool: return m.state in [MoldBox.State.RAMMED, MoldBox.State.FILLING])
-	if rammed:
-		var crucible := tree.get_first_node_in_group(&"crucibles") as Crucible
-		if crucible and crucible.amount >= 1.0:
-			return "Trag den glühenden Tiegel zur Form und gieß (F halten)."
-		return "Wirf Schrott in den Ofen und tritt den Blasebalg."
-	return "Zeichne an der Werkbank ein Modell."
+			target = m
+			return "Stampf den Sand im Formkasten fest (F halten)."
+	for m: MoldBox in molds:
+		if m.state in [MoldBox.State.RAMMED, MoldBox.State.FILLING]:
+			if crucible and crucible.amount >= 1.0:
+				target = m if crucible.is_held() else crucible
+				return "Gieß in die Form (F halten)." if crucible.is_held() else "Nimm den glühenden Tiegel aus dem Ofen (Linksklick)."
+			if charged:
+				target = furnace
+				return "Halte F am Blasebalg, bis genug geschmolzen ist."
+			target = furnace if loose > 0 else pile
+			return "Wirf Schrott in den Ofen." if loose > 0 else "Hol Schrott aus dem Schrottberg (F halten)."
+	target = _of_class(tree, "ModelBench")
+	return "Zeichne an der Werkbank ein Modell – daraus wird die Gussform."
+
+
+static func _of_class(tree: SceneTree, name: String) -> Node3D:
+	for n in tree.get_nodes_in_group(&"interactable"):
+		var script := n.get_script() as Script
+		if script and script.get_global_name() == name:
+			return n as Node3D
+	return null
 
 
 ## Eisenhalle: Kaiserglocke first, then the iron flow cupola -> ladle -> line

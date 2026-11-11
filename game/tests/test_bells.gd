@@ -160,6 +160,13 @@ func _hoist_round(world: GameWorld, bell: Bell) -> void:
 	# Stood next to the big pit, as if just dug out.
 	bell.global_position = Vector3(1.2, 0.05, 1.4)
 	bell.linear_velocity = Vector3.ZERO
+	# Other loose bells from the earlier rounds would stand in the walkway.
+	var parked := 0
+	for other: Bell in get_tree().get_nodes_in_group(&"bells"):
+		if other != bell and not other.freeze:
+			other.global_position = Vector3(-4.0 - parked * 1.2, 0.05, 5.0)
+			other.linear_velocity = Vector3.ZERO
+			parked += 1
 	await _frames(30)
 	_check(absf(bell.rotation.x) < 0.01 and absf(bell.rotation.z) < 0.01, "the bell stays upright")
 	# Take the pendant and walk to the bell.
@@ -171,6 +178,8 @@ func _hoist_round(world: GameWorld, bell: Bell) -> void:
 	me.grab(pendant)
 	await _frames(5)
 	_check(me.held == pendant, "worker carries the pendant")
+	# Around the bell, not through its rim (a teleport-walk would shove it).
+	await _walk(me, Vector3(me.global_position.x, 0.05, bell.global_position.z + ChainHoist.HOOK_AHEAD))
 	await _walk(me, Vector3(bell.global_position.x, 0.05, bell.global_position.z + ChainHoist.HOOK_AHEAD))
 	await _frames(120)
 	var h := hoist.hook_position()

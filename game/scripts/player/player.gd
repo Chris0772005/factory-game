@@ -7,7 +7,15 @@ const WALK_SPEED := 4.2
 const SPRINT_SPEED := 6.6
 const ACCEL := 14.0
 const AIR_ACCEL := 4.0
-const JUMP_VELOCITY := 5.2
+## A short, weighty hop: strong pull on the way up, stronger on the way down,
+## cut short when the key is let go. About 0.75 m high, half a second long.
+const JUMP_VELOCITY := 5.4
+const RISE_GRAVITY := 2.0
+const FALL_GRAVITY := 2.7
+const CUT_GRAVITY := 3.6
+## Grace after walking off an edge, and how early a jump press is remembered.
+const COYOTE_TIME := 0.1
+const JUMP_BUFFER := 0.12
 const GRAB_RANGE := 1.9
 const HOLD_DISTANCE := 1.05
 const HOLD_HEIGHT := 1.05
@@ -73,6 +81,9 @@ var _since_throw := 10.0
 ## Seconds left before an unexplained release plays the drop thud.
 var _drop_pending := -1.0
 var _yard: YardSet
+var _since_floor := 0.0
+var _jump_wish := 1.0
+var _fp_legs: FirstPersonLegs
 
 
 func _ready() -> void:
@@ -117,6 +128,10 @@ func _ready() -> void:
 		_camera_rig.top_level = true
 		if _camera_rig.first_person:
 			_hide_own_body()
+			if StationKit.visual():
+				_fp_legs = FirstPersonLegs.new()
+				_fp_legs.player = self
+				add_child(_fp_legs)
 		if DisplayServer.get_name() != "headless":
 			var highlight := TargetHighlight.new()
 			highlight.name = &"TargetHighlight"
@@ -186,8 +201,12 @@ func _read_input() -> void:
 		return
 	input_dir = Input.get_vector(&"move_left", &"move_right", &"move_forward", &"move_back")
 	wants_sprint = Input.is_action_pressed(&"sprint")
-	if Input.is_action_just_pressed(&"jump") and is_on_floor():
+	if Input.is_action_just_pressed(&"jump"):
+		_jump_wish = 0.0
+	if _jump_wish < JUMP_BUFFER and _since_floor < COYOTE_TIME and velocity.y <= 0.01:
 		velocity.y = JUMP_VELOCITY * _load_factor()
+		_jump_wish = 1.0
+		_since_floor = 1.0
 		_model.squash(0.75)
 	if Input.is_action_just_pressed(&"grab"):
 		_request(&"release" if holding else &"grab")
@@ -200,8 +219,15 @@ func _read_input() -> void:
 
 
 func _move(delta: float) -> void:
-	if not is_on_floor():
-		velocity.y -= _gravity * delta
+	_jump_wish += delta
+	if is_on_floor():
+		_since_floor = 0.0
+	else:
+		_since_floor += delta
+		var pull := FALL_GRAVITY
+		if velocity.y > 0.0:
+			pull = RISE_GRAVITY if Input.is_action_pressed(&"jump") or ui_locked else CUT_GRAVITY
+		velocity.y -= _gravity * pull * delta
 	var yaw := _camera_rig.yaw if _camera_rig else 0.0
 	var dir := Vector3(input_dir.x, 0, input_dir.y).rotated(Vector3.UP, yaw)
 	var speed := (SPRINT_SPEED if wants_sprint and not holding else WALK_SPEED) * _load_factor()
