@@ -196,7 +196,7 @@ func _build() -> void:
 		var world_space := Node3D.new()
 		_belt.add_child(world_space)
 		world_space.global_transform = Transform3D()
-		StationKit.add_merged(world_space, legs, MachineArt.blue_mat())
+		StationKit.add_merged(world_space, legs, MachineArt.galv_mat())
 	# Floor channel: down pipe at the tap, grated channel, riser and spout at the box.
 	_channel = Node3D.new()
 	add_child(_channel)

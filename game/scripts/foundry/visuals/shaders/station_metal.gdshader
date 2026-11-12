@@ -158,7 +158,7 @@ void fragment() {
 	// Real scratches, pitting and rust grain from a scan, travelling with the part.
 	vec3 ph_a = ALBEDO;
 	float ph_r = ROUGHNESS;
-	NORMAL = env_photo_object(ph_metal_d, ph_metal_n, ph_metal_arm, v_obj + v_seed * 3.0, NORMAL, INV_VIEW_MATRIX, VIEW_MATRIX, MODEL_MATRIX, 1.3, mix(0.55, 0.1, keep), ph_a, ph_r);
+	NORMAL = env_photo_object(ph_metal_d, ph_metal_n, ph_metal_arm, v_obj + v_seed * 3.0, NORMAL, INV_VIEW_MATRIX, VIEW_MATRIX, MODEL_MATRIX, 1.3, mix(0.38, 0.1, keep), ph_a, ph_r);
 	ALBEDO = ph_a;
 	ROUGHNESS = ph_r;
 }

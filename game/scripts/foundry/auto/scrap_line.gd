@@ -324,10 +324,10 @@ func _build_colliders() -> void:
 func _build_belt_art() -> void:
 	if not StationKit.visual():
 		return
-	var paint := MachineArt.blue_mat()
+	var paint := MachineArt.galv_mat()
 	var steel := MachineArt.steel_mat()
 	var dark := MachineArt.graphite_mat()
-	var yellow := MachineArt.yellow_mat()
+	var yellow := MachineArt.galv_mat()
 	var half := BELT_WIDTH * 0.5
 	_belt_mat = MachineArt.conveyor(_belt, length, BELT_WIDTH)
 	_frame = Node3D.new()

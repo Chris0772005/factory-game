@@ -181,8 +181,13 @@ static func steel_mat() -> ShaderMaterial:
 
 static func blue_mat() -> ShaderMaterial:
 	# Even machine enamel: wear shows on edges and in corners, not as blotches.
-	return StationKit.metal("line_paint", {steel_color = Color("#56606a"), paint = 0.985, paint_color = Color("#24566e"), rust = 0.05, dents = 0.06,
+	return StationKit.metal("line_paint", {steel_color = Color("#56606a"), paint = 0.985, paint_color = Color("#2f353b"), rust = 0.05, dents = 0.06,
 		metallic_steel = 0.4, roughness_steel = 0.45, roughness_paint = 0.3, dust = 0.25, grime = 0.3})
+
+
+## Galvanised steel for conveyor frames, legs and guard rails.
+static func galv_mat() -> ShaderMaterial:
+	return StationKit.metal("line_galv", {steel_color = Color("#8d9498"), rust = 0.04, dents = 0.05, metallic_steel = 0.8, roughness_steel = 0.46, dust = 0.2, grime = 0.25})
 
 
 static func yellow_mat() -> ShaderMaterial:
@@ -355,11 +360,11 @@ static func arm(rig: Dictionary, upper: float, fore: float, height: float) -> vo
 ## belt normal, Z across (`width`). Returns the belt's scrolling material.
 static func conveyor(belt: Node3D, length: float, width: float) -> ShaderMaterial:
 	var half := width * 0.5
-	var paint := blue_mat()
+	var paint := galv_mat()
 	var steel := steel_mat()
 	var graphite := graphite_mat()
 	var black := black_mat()
-	var yellow := yellow_mat()
+	var yellow := galv_mat()
 	# The belt runs around both drums and back underneath.
 	var drum_r := 0.07
 	var loop: Array[Vector2] = [Vector2(0, 0.04)]
