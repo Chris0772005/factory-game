@@ -287,7 +287,8 @@ static func pop_in(c: CanvasItem, delay := 0.0, from_offset := Vector2.ZERO) -> 
 	if ctrl:
 		ctrl.pivot_offset = ctrl.size * 0.5
 	var tw := c.create_tween().set_parallel()
-	if from_offset != Vector2.ZERO and ctrl:
+	# A container places its children itself: sliding one there fights the layout.
+	if from_offset != Vector2.ZERO and ctrl and not (ctrl.get_parent() is Container):
 		var target := ctrl.position
 		ctrl.position = target + from_offset
 		tw.tween_property(ctrl, "position", target, 0.32).set_delay(delay) \

@@ -42,6 +42,7 @@ func _ready() -> void:
 	_build_ui()
 	Transition.reveal()
 	_intro()
+	_shot_state()
 	if DisplayServer.get_name() != "headless":
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	Juice.device_changed.connect(_on_device_changed)
@@ -138,8 +139,15 @@ func _build_ui() -> void:
 	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_root.theme = UITheme.get_theme()
 	layer.add_child(_root)
-	_root.add_child(_scrim(Vector2(0, 0), Vector2(1180, 1080), Vector2(0, 0.5), Vector2(1, 0.5), 0.78))
-	_root.add_child(_scrim(Vector2(0, 760), Vector2(1920, 320), Vector2(0.5, 1), Vector2(0.5, 0), 0.55))
+	# Anchored, so they cover the edges on every screen shape (the picture expands).
+	var left := _scrim(Vector2(0, 0), Vector2(1180, 1080), Vector2(0, 0.5), Vector2(1, 0.5), 0.78)
+	left.set_anchors_and_offsets_preset(Control.PRESET_LEFT_WIDE)
+	left.offset_right = 1180
+	_root.add_child(left)
+	var bottom := _scrim(Vector2(0, 760), Vector2(1920, 320), Vector2(0.5, 1), Vector2(0.5, 0), 0.55)
+	bottom.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	bottom.offset_top = -320
+	_root.add_child(bottom)
 
 	_logo = MoltenLogo.new()
 	_logo.position = Vector2(COLUMN_X - 26.0, 64.0)
@@ -164,9 +172,11 @@ func _build_ui() -> void:
 	_coop_card = VBoxContainer.new()
 	_coop_card.add_theme_constant_override("separation", 10)
 	_coop_card.visible = false
-	_button("Spiel hosten", &"SecondaryButton", _on_host, _coop_card)
+	# One row (host | join | address): the column must not grow past the screen.
 	var join_row := HBoxContainer.new()
 	join_row.add_theme_constant_override("separation", 12)
+	var host := _button("Hosten", &"SecondaryButton", _on_host, join_row)
+	host.custom_minimum_size.x = 180
 	var join := _button("Beitreten", &"SecondaryButton", _on_join, join_row)
 	join.custom_minimum_size.x = 200
 	_ip = LineEdit.new()
@@ -199,9 +209,12 @@ func _build_ui() -> void:
 	footer.name = "Footer"
 	footer.text = "Koop-Gießerei für 1–4 Spieler  ·  v0.1"
 	footer.theme_type_variation = &"Small"
-	footer.position = Vector2(1920 - 520, 1080 - 54 - 30)
-	footer.size = Vector2(480, 40)
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	footer.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	footer.offset_left = -520
+	footer.offset_right = -40
+	footer.offset_top = -84
+	footer.offset_bottom = -44
 	_root.add_child(footer)
 
 
@@ -216,6 +229,9 @@ func _intro() -> void:
 	await get_tree().process_frame
 	for i in _buttons.size():
 		var b := _buttons[i]
+		# Hidden ones (co-op row) have no layout yet: moving them would misplace them later.
+		if not b.is_visible_in_tree():
+			continue
 		var target := b.position
 		b.modulate.a = 0.0
 		b.position = target + Vector2(-70, 0)
@@ -295,12 +311,14 @@ func _open_settings() -> void:
 		dim.color = Color(UITheme.INK, 0.55)
 		dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 		_settings_layer.add_child(dim)
+		# Centred: the panel is wider than the old right-hand slot and was cut off.
+		var centre := CenterContainer.new()
+		centre.set_anchors_preset(Control.PRESET_FULL_RECT)
+		_settings_layer.add_child(centre)
 		var card := PanelContainer.new()
 		card.name = "Card"
 		card.theme_type_variation = &"CardPanel"
-		card.position = Vector2(1920 - 96 - 820, 120)
-		card.custom_minimum_size = Vector2(820, 0)
-		_settings_layer.add_child(card)
+		centre.add_child(card)
 		_settings = SettingsPanel.new()
 		_settings.back_requested.connect(_close_settings)
 		card.add_child(_settings)
@@ -308,7 +326,7 @@ func _open_settings() -> void:
 	_settings_layer.visible = true
 	_settings_layer.modulate.a = 0.0
 	_settings_layer.create_tween().tween_property(_settings_layer, "modulate:a", 1.0, 0.15)
-	UITheme.pop_in(_settings_layer.get_node(^"Card"), 0.0, Vector2(60, 0))
+	UITheme.pop_in(_settings_layer.find_child("Card", true, false))
 	_settings.focus_first.call_deferred()
 
 
@@ -319,6 +337,15 @@ func _close_settings() -> void:
 	tw.tween_callback(func() -> void: _settings_layer.visible = false)
 	if Juice.using_gamepad:
 		_first.grab_focus()
+
+
+## Showcase renders: --menu=settings / --menu=coop open that part right away.
+func _shot_state() -> void:
+	for arg in OS.get_cmdline_user_args():
+		if arg == "--menu=settings":
+			_open_settings()
+		elif arg == "--menu=coop":
+			_toggle_coop()
 
 
 func _open_licenses() -> void:
@@ -339,7 +366,7 @@ func _start(path: String) -> void:
 func _toggle_coop() -> void:
 	_coop_card.visible = not _coop_card.visible
 	if _coop_card.visible:
-		UITheme.pop_in(_coop_card, 0.0, Vector2(-20, 0))
+		UITheme.pop_in(_coop_card)
 	Sfx.play_ui(&"pop")
 
 

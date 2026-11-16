@@ -133,6 +133,8 @@ func held_hint(_player: Node) -> String:
 	var pit := BellPit.find_at(get_tree(), probe)
 	if pit and pit.state in [BellPit.State.TURNED, BellPit.State.FILLING]:
 		return "[F halten] In die Glockenform gießen · %d %%  (nicht absetzen!)" % roundi(pit.fill / maxf(pit.need, 0.01) * 100.0)
+	if not _receiver_below():
+		return "%.1f l · %d °C · über eine Form halten, dann [F halten]" % [amount, roundi(200 + temperature * 1100)]
 	return "[F halten] Gießen · %.1f l · %d °C" % [amount, roundi(200 + temperature * 1100)]
 
 
@@ -147,6 +149,44 @@ func _mold_under_spout() -> MoldBox:
 
 func use_start(_player: Node) -> void:
 	_pouring = true
+
+
+## Lifting it out of a furnace: straight up over the drum wall, then to the hands.
+func on_grabbed(by: Node) -> void:
+	super.on_grabbed(by)
+	if docked_in is Furnace and Network.is_sim_authority():
+		global_position.y = docked_in.global_position.y + Furnace.HEIGHT + 0.06
+		reset_physics_interpolation()
+
+
+## Something below the spout that takes melt (a mold, pit, ladle, another pot) or a
+## worker standing in the way. Nothing there: the pot does not tip, so a
+## stray F cannot empty the melt onto the floor.
+func _receiver_below() -> bool:
+	var lip := lip_position()
+	var ahead := global_transform.basis.z
+	if _pivot:
+		ahead = _pivot.global_transform.basis.z
+	ahead.y = 0.0
+	ahead = ahead.normalized() if ahead.length() > 0.01 else Vector3.ZERO
+	var space := get_world_3d().direct_space_state
+	var tree := get_tree()
+	# The spout swings forward as the pot tips: look below it and a little ahead.
+	for k: float in [0.0, 0.15, 0.3, 0.45]:
+		var from := lip + ahead * k
+		var query := PhysicsRayQueryParameters3D.create(from, from + Vector3.DOWN * 4.0)
+		query.exclude = [get_rid()]
+		var hit := space.intersect_ray(query)
+		var point: Vector3 = hit.position if hit else from + Vector3.DOWN * 1.0
+		if hit and hit.collider is Player:
+			return true
+		if MoldBox.find_at(tree, point) or BellPit.find_at(tree, point) or Ladle.find_at(tree, point):
+			return true
+		if not MoldLine.describe_at(tree, point).is_empty():
+			return true
+		if MeltTargets._crucible_at(tree, point, self) != null:
+			return true
+	return false
 
 
 func use_end(_player: Node) -> void:
@@ -174,7 +214,8 @@ func _simulate(delta: float) -> void:
 			if p.held == self:
 				pour_yaw = p.facing
 				break
-	tilt = move_toward(tilt, 1.0 if _pouring else 0.0, delta * (1.1 if _pouring else 2.5))
+	var tip := _pouring and (tilt > 0.25 or _receiver_below())
+	tilt = move_toward(tilt, 1.0 if tip else 0.0, delta * (1.1 if tip else 2.5))
 	flow = clampf((tilt - 0.3) / 0.7, 0.0, 1.0) if amount > 0.0 else 0.0
 	if docked_in == null and amount > 0.0:
 		temperature = maxf(0.0, temperature - COOL_RATE * delta)

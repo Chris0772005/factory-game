@@ -14,6 +14,7 @@ func _ready() -> void:
 	# without interpolation it shows each frame's pose instead of lagging a tick.
 	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	add_to_group(&"interactable")
+	add_to_group(&"toss_targets")
 	# Four walls and a floor: thrown castings land inside and are sold.
 	for side in [-1, 1]:
 		StationKit.box_collider(self, Vector3(SIZE.x, SIZE.y, 0.08), Transform3D(Basis(), Vector3(0, SIZE.y * 0.5, side * SIZE.z * 0.5)))
@@ -22,6 +23,19 @@ func _ready() -> void:
 	_art = CrateArt.new()
 	add_child(_art)
 	_art.build(SIZE)
+
+
+## Finished castings dropped or thrown nearby land inside (Player.toss_target).
+func toss_accepts(body: Node3D) -> bool:
+	return body is Item and body.has_method("value")
+
+
+func toss_point() -> Vector3:
+	return global_position + Vector3(0, SIZE.y + 0.35, 0)
+
+
+func toss_hint(_body: Node3D) -> String:
+	return "Verkaufen"
 
 
 func interact_point() -> Vector3:

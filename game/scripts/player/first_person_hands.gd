@@ -124,6 +124,68 @@ func _set_curl(i: int, curl: float) -> void:
 	(joints[13] as Node3D).rotation.x = -curl * 0.7 - 0.1
 
 
+## Where the two hands hold the carried thing, in lens space (left, right);
+## empty when nothing is carried. Things with handles (crucible, hammer) are
+## held there, everything else by its two sides.
+func _carry_points() -> Array[Vector3]:
+	var out: Array[Vector3] = []
+	var item := player.held_item() if player.holding else null
+	if item == null:
+		return out
+	var inv := global_transform.affine_inverse()
+	var a: Vector3
+	var b: Vector3
+	var pts: Array[Vector3] = []
+	if item.has_method("grip_points"):
+		pts = item.grip_points()
+	if pts.size() >= 2:
+		a = inv * pts[0]
+		b = inv * pts[1]
+		if a.x > b.x:
+			var swap := a
+			a = b
+			b = swap
+		if b.x - a.x < 0.1:
+			# Both on one handle (hammer): one hand behind the other.
+			a.x -= 0.03
+			b.x += 0.03
+	else:
+		var centre := inv * _item_centre(item)
+		var r := _item_radius(item)
+		a = centre + Vector3(-r - 0.02, -0.03, 0.05)
+		b = centre + Vector3(r + 0.02, -0.03, 0.05)
+	for p: Vector3 in [a, b]:
+		# Arms only reach so far, and the hands stay in view.
+		p.z = clampf(p.z, -0.86, -0.3)
+		p.y = clampf(p.y, -0.5, 0.12)
+		p.x = clampf(p.x, -0.5, 0.5)
+		out.append(p)
+	return out
+
+
+static func _item_centre(item: Node3D) -> Vector3:
+	for child in item.get_children():
+		if child is CollisionShape3D:
+			return (child as CollisionShape3D).global_position
+	return item.global_position
+
+
+## Half the width the hands have to span.
+static func _item_radius(item: Node3D) -> float:
+	for child in item.get_children():
+		var cs := child as CollisionShape3D
+		if cs == null:
+			continue
+		if cs.shape is BoxShape3D:
+			var size: Vector3 = (cs.shape as BoxShape3D).size
+			return clampf(maxf(size.x, size.z) * 0.5, 0.05, 0.3)
+		if cs.shape is SphereShape3D:
+			return clampf((cs.shape as SphereShape3D).radius, 0.05, 0.3)
+		if cs.shape is CylinderShape3D:
+			return clampf((cs.shape as CylinderShape3D).radius, 0.05, 0.3)
+	return 0.12
+
+
 ## Freezes both hands in `pose` (art checks without a worker).
 func show_pose(pose: Array, spread := 1.0) -> void:
 	for i in 2:
@@ -169,12 +231,17 @@ func _process(delta: float) -> void:
 	_sway = _sway.lerp(Vector2(clampf(turn.x * 0.012, -0.05, 0.05), clampf(turn.y * 0.012, -0.04, 0.04)), 1.0 - exp(-9.0 * delta))
 	var drift := Vector3(_sway.x, -_sway.y - clampf(player.velocity.y * 0.012, -0.05, 0.07), 0.0)
 	var reach := sin(clampf(_grab / 0.55, 0.0, 1.0) * PI * 0.5) if _grab < 0.55 else 1.0 - smoothstep(0.55, 1.0, _grab)
+	var grips := _carry_points()
 	for i in 2:
 		var side := -1.0 if i == 0 else 1.0
 		var pose: Array = CARRY if player.holding else REST
 		var pos: Vector3 = pose[0]
 		var rot: Vector3 = pose[1]
 		var curl: float = pose[2]
+		if not grips.is_empty():
+			# The hands sit on the thing itself, wherever it is in view.
+			pos = grips[i]
+			pos.x *= side
 		# Grab: out to the thing with open fingers, then close and bring it in.
 		if _grab < 1.0:
 			pos = pos.lerp(REACH[0], reach)

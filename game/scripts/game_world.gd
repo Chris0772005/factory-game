@@ -258,6 +258,9 @@ func _banner_local(pos: Vector3, text: String, color: Color, subtitle: String, g
 ## Hint for whatever `player` carries, e.g. "[F] Gießen" for a crucible.
 func held_hint(player: Player) -> String:
 	var node := entities.get_node_or_null(player.held_name)
+	var target := player.toss_target(node as Node3D)
+	if target:
+		return "[LMB] %s" % target.toss_hint(node)
 	if node and node.has_method("held_hint"):
 		return node.held_hint(player)
 	return "[LMB] Ablegen   [RMB] Werfen"

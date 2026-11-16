@@ -29,6 +29,7 @@ func _ready() -> void:
 	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	add_to_group(&"interactable")
 	add_to_group(&"furnaces")
+	add_to_group(&"toss_targets")
 	var body := StaticBody3D.new()
 	add_child(body)
 	# Ring of boxes so a crucible can sit inside the open drum.
@@ -63,6 +64,37 @@ func _ready() -> void:
 	_art = FurnaceArt.new()
 	add_child(_art)
 	_art.build(_bellows)
+
+
+# --- Putting things in (Player.toss_target) -------------------------------------
+
+## Scrap goes in on an arc; an empty-handed crucible is set straight into the drum.
+func toss_accepts(body: Node3D) -> bool:
+	if body is Crucible:
+		return crucible == null or crucible == body
+	var item := body as Item
+	return item != null and (item.has_method(&"melt_mix") or FoundryRules.SCRAP.has(item.kind))
+
+
+func toss_point() -> Vector3:
+	return global_position + Vector3(0, HEIGHT + 0.3, 0)
+
+
+func toss_hint(body: Node3D) -> String:
+	return "In den Ofen stellen" if body is Crucible else "In den Ofen werfen"
+
+
+## The crucible is not thrown: it is lowered into the drum.
+func toss_place(body: Node3D) -> bool:
+	var cr := body as Crucible
+	if cr == null:
+		return false
+	cr.global_transform = Transform3D(Basis(), global_position + Vector3(0, 0.13, 0))
+	cr.linear_velocity = Vector3.ZERO
+	cr.angular_velocity = Vector3.ZERO
+	cr.reset_physics_interpolation()
+	Sfx.play(&"scrap_clatter", global_position + Vector3(0, HEIGHT, 0), -6.0)
+	return true
 
 
 func interact_point() -> Vector3:

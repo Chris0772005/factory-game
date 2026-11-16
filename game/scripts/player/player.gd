@@ -9,11 +9,12 @@ const ACCEL := 14.0
 const AIR_ACCEL := 4.0
 ## A short, weighty hop: strong pull on the way up, stronger on the way down,
 ## cut short when the key is let go. About 0.75 m high, half a second long.
-const JUMP_VELOCITY := 5.4
-const RISE_GRAVITY := 2.0
-const FALL_GRAVITY := 2.7
-const CUT_GRAVITY := 3.6
+const JUMP_VELOCITY := 4.7
+const RISE_GRAVITY := 1.25
+const FALL_GRAVITY := 1.7
+const CUT_GRAVITY := 2.4
 ## Grace after walking off an edge, and how early a jump press is remembered.
+const APEX_GRAVITY := 0.8
 const COYOTE_TIME := 0.1
 const JUMP_BUFFER := 0.12
 const GRAB_RANGE := 1.9
@@ -22,6 +23,10 @@ const HOLD_HEIGHT := 1.05
 ## Default maximum force the player's arms can exert on a held object (N).
 const STRENGTH := 160.0
 const THROW_IMPULSE := 7.0
+## Up to this mass a single carrier holds things firmly in the hands.
+const TIGHT_HOLD_MASS := 15.0
+## Letting go or throwing this close to a furnace or sales bin drops the thing in.
+const TOSS_RANGE := 2.8
 const INTERACT_RANGE := 2.2
 ## Footstep volume per ground (the dirt samples are louder), pitch spread.
 const STEP_DB_DIRT := -22.0
@@ -137,6 +142,23 @@ func _ready() -> void:
 			highlight.name = &"TargetHighlight"
 			highlight.player = self
 			add_child(highlight)
+		for arg in OS.get_cmdline_user_args():
+			if arg.begins_with("--hold="):
+				_debug_hold(arg.trim_prefix("--hold="))
+
+
+## Art checks: `--hold=<kind>` puts the first thing of that kind into the hands.
+func _debug_hold(kind: String) -> void:
+	await get_tree().create_timer(1.0).timeout
+	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
+	if world == null or world.entities == null:
+		return
+	for node in world.entities.get_children():
+		var item := node as Item
+		if item and String(item.kind) == kind:
+			item.global_position = _hand_target()
+			grab(item)
+			return
 
 
 @rpc("authority", "call_remote", "unreliable")
@@ -227,6 +249,9 @@ func _move(delta: float) -> void:
 		var pull := FALL_GRAVITY
 		if velocity.y > 0.0:
 			pull = RISE_GRAVITY if Input.is_action_pressed(&"jump") or ui_locked else CUT_GRAVITY
+		# A short float at the top of the arc reads as a jump, not a hop.
+		if absf(velocity.y) < 0.9:
+			pull = minf(pull, APEX_GRAVITY)
 		velocity.y -= _gravity * pull * delta
 	var yaw := _camera_rig.yaw if _camera_rig else 0.0
 	var dir := Vector3(input_dir.x, 0, input_dir.y).rotated(Vector3.UP, yaw)
@@ -295,8 +320,8 @@ func _hand_target() -> Vector3:
 		# Never closer than arm's length or below the knees, so the load
 		# cannot get under the carrier's own feet.
 		var p := clampf(look_pitch, -0.95, 0.6)
-		var height := clampf(CameraRig.EYE_HEIGHT - 0.32 + sin(p) * 0.95, 0.55, 2.0)
-		var reach := maxf(cos(p) * 0.95, 0.9)
+		var height := clampf(CameraRig.EYE_HEIGHT - 0.36 + sin(p) * 0.8, 0.55, 2.0)
+		var reach := maxf(cos(p) * 0.8, 0.72)
 		return global_position + Vector3(0, height, 0) + global_transform.basis.z * reach
 	return global_position + Vector3(0, carry.y, 0) + global_transform.basis.z * carry.x
 
@@ -338,16 +363,23 @@ func grab_candidate() -> RigidBody3D:
 	var centre := global_position + Vector3(0, 0.9, 0) + global_transform.basis.z * 0.9
 	if aims:
 		centre = eye_position() + look_direction() * 1.15
+		sphere.radius = GRAB_RANGE * 0.7
 	query.transform = Transform3D(Basis(), centre)
 	query.exclude = [get_rid()]
 	var sim := Network.is_sim_authority()
 	var best: RigidBody3D = null
 	var best_dist := INF
-	for hit in space.intersect_shape(query, 16):
+	var eye := eye_position()
+	var look := look_direction()
+	for hit in space.intersect_shape(query, 32):
 		var body := hit.collider as RigidBody3D
 		if body == null or (body.freeze and sim):
 			continue
-		var d := body.global_position.distance_to(centre if aims else _hand_target())
+		var d := body.global_position.distance_to(_hand_target())
+		if aims:
+			# The thing closest to the line of sight wins, not the one nearest a point.
+			var to := _aim_point(body) - eye
+			d = look.angle_to(to) + to.length() * 0.06
 		if d < best_dist:
 			best_dist = d
 			best = body
@@ -370,18 +402,59 @@ func grab(body: RigidBody3D) -> void:
 
 
 func release() -> void:
+	var body := held
 	if held and held.has_method("on_released"):
 		held.on_released(self)
 	held = null
 	_set_holding(false, "")
+	if is_instance_valid(body):
+		_toss_into_target(body)
+
+
+## A furnace, sales bin or the like in front of the worker that takes `body`.
+func toss_target(body: Node3D) -> Node3D:
+	if body == null:
+		return null
+	var best: Node3D = null
+	var best_d := TOSS_RANGE
+	for node in get_tree().get_nodes_in_group(&"toss_targets"):
+		var t := node as Node3D
+		if not t.toss_accepts(body):
+			continue
+		var to: Vector3 = t.toss_point() - global_position
+		to.y = 0.0
+		var d := to.length()
+		if d < best_d and (d < 0.9 or global_transform.basis.z.dot(to.normalized()) > 0.35):
+			best_d = d
+			best = t
+	return best
+
+
+## Sends a just released `body` on an arc into the target in front, if any:
+## nobody should have to aim a lump of scrap through a furnace mouth.
+func _toss_into_target(body: RigidBody3D) -> bool:
+	var target := toss_target(body)
+	if target == null:
+		return false
+	if target.has_method("toss_place") and target.toss_place(body):
+		return true
+	var to: Vector3 = target.toss_point() - body.global_position
+	var t := clampf(Vector2(to.x, to.z).length() / 4.5, 0.32, 0.6)
+	body.linear_velocity = to / t + Vector3.UP * 0.5 * _gravity * t
+	body.angular_velocity = Vector3.ZERO
+	return true
 
 
 func throw() -> void:
 	var body := held
 	if body == null:
 		return
+	var aimed := toss_target(body) != null
 	release()
-	var dir := global_transform.basis.z + Vector3(0, 0.45, 0)
+	if aimed:
+		return
+	var dir := look_direction() + Vector3(0, 0.35, 0) if aims else global_transform.basis.z + Vector3(0, 0.45, 0)
+	body.linear_velocity = velocity
 	body.apply_central_impulse(dir.normalized() * THROW_IMPULSE * minf(body.mass, 3.0))
 
 
@@ -397,6 +470,12 @@ func _hold(delta: float) -> void:
 		release()
 		return
 	var offset := point - held.global_position
+	if held.mass <= TIGHT_HOLD_MASS and _holders(held) <= 1.0:
+		# One worker, one handy thing: it sits in the hands instead of dangling
+		# on a spring. Still a body, so it stops at walls and tables.
+		held.linear_velocity = velocity + (to_target * 18.0).limit_length(9.0)
+		held.angular_velocity *= 1.0 - minf(1.0, 12.0 * delta)
+		return
 	var point_vel := held.linear_velocity + held.angular_velocity.cross(offset)
 	var rel_vel := point_vel - velocity
 	var force := to_target * 420.0 * held.mass - rel_vel * 38.0 * held.mass
@@ -438,14 +517,32 @@ func nearest_interactable() -> Node3D:
 	var probe := global_position + Vector3(0, 0.9, 0) + global_transform.basis.z * 0.6
 	if aims:
 		probe = eye_position() + look_direction() * 1.2
+	var eye := eye_position()
+	var look := look_direction()
 	for node in get_tree().get_nodes_in_group(&"interactable"):
 		var n := node as Node3D
 		var point: Vector3 = n.interact_point() if n.has_method("interact_point") else n.global_position
 		var d := probe.distance_to(point)
+		if aims:
+			# In reach as before, or looked at from a bit further away; among
+			# several, the one nearest the line of sight.
+			var to := point - eye
+			var angle := look.angle_to(to)
+			if d >= INTERACT_RANGE and not (to.length() < INTERACT_RANGE + 0.7 and angle < 0.4):
+				continue
+			d = minf(angle * 1.6 + to.length() * 0.05, INTERACT_RANGE - 0.001)
 		if d < best_d:
 			best_d = d
 			best = n
 	return best
+
+
+## Where to look to mean `body`: its middle (the origin of many things is their base).
+func _aim_point(body: RigidBody3D) -> Vector3:
+	for child in body.get_children():
+		if child is CollisionShape3D:
+			return (child as CollisionShape3D).global_position
+	return body.global_position
 
 
 ## Moves the worker (e.g. respawn). Movement is owned by the controlling
@@ -593,6 +690,8 @@ func _perform(action: StringName) -> void:
 			using = true
 			if held and held.has_method("use_start"):
 				held.use_start(self)
+			elif held and toss_target(held):
+				release()
 			elif not held:
 				var target := nearest_interactable()
 				_station = target
