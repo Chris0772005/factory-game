@@ -9,7 +9,12 @@ extends Node3D
 
 ## Poses: [position (right hand, mirrored for the left), euler rotation, curl].
 ## Rotation x tips the fingers up, y turns them inward, z rolls the palm in.
-const REST := [Vector3(0.25, -0.27, -0.44), Vector3(0.3, 0.3, 0.95), 0.45]
+## At rest the hands hang low, out of the picture: they come up to work.
+const REST := [Vector3(0.27, -0.47, -0.42), Vector3(0.3, 0.3, 0.95), 0.45]
+## Ramming sand / knocking a mold open with the fists: raised, then down.
+const POUND_UP := [Vector3(0.15, -0.1, -0.56), Vector3(0.55, 0.15, 1.35), 1.15]
+const POUND_DOWN := [Vector3(0.14, -0.4, -0.68), Vector3(-0.15, 0.15, 1.35), 1.15]
+const POUND_TIME := 0.42
 const REACH := [Vector3(0.14, -0.2, -0.82), Vector3(0.05, 0.2, 0.55), 0.05]
 const CARRY := [Vector3(0.21, -0.2, -0.58), Vector3(0.25, 0.25, 1.25), 0.85]
 const PRESS := [Vector3(0.2, -0.2, -0.74), Vector3(0.2, 0.1, 0.3), 0.3]
@@ -29,6 +34,7 @@ var _grabbed := false
 var _press := 0.0
 var _throw := 0.0
 var _work := 0.0
+var _pound := 0.0
 var _phase := 0.0
 var _step := 0.0
 var _sway := Vector2.ZERO
@@ -39,9 +45,9 @@ var _was_holding := false
 
 func _ready() -> void:
 	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
-	var leather := StationKit.leather("fp_glove2", {leather_color = Color("#8a5a34"), pleats = 0.0, stitches = 0.0, grain = 0.12})
-	var palm_mat := StationKit.leather("fp_palm2", {leather_color = Color("#b98d5c"), pleats = 0.0, stitches = 0.0, grain = 0.12})
-	var cuff := StationKit.leather("fp_cuff2", {leather_color = Color("#6f4426"), pleats = 2.0, grain = 0.2})
+	var leather := StationKit.leather("fp_glove2", {leather_color = Color("#6f5a47"), pleats = 0.0, stitches = 0.0, grain = 0.12})
+	var palm_mat := StationKit.leather("fp_palm2", {leather_color = Color("#94806a"), pleats = 0.0, stitches = 0.0, grain = 0.12})
+	var cuff := StationKit.leather("fp_cuff2", {leather_color = Color("#4f3f33"), pleats = 2.0, grain = 0.2})
 	var sleeve := StandardMaterial3D.new()
 	sleeve.albedo_color = (player.color if player else Color("#3e7bd6")).darkened(0.2)
 	sleeve.roughness = 0.9
@@ -218,7 +224,10 @@ func _process(delta: float) -> void:
 	_grab = minf(_grab + delta / GRAB_TIME, 1.0)
 	_press = move_toward(_press, 0.0, delta * 4.0)
 	_throw = move_toward(_throw, 0.0, delta * 3.2)
-	var working := using and not player.holding and player.nearest_interactable() != null
+	var station := player.nearest_interactable() if using and not player.holding else null
+	var working := station != null
+	var pounding := station is MoldBox
+	_pound = fposmod(_pound + delta / POUND_TIME, 1.0) if pounding else 0.0
 	_work = move_toward(_work, 1.0 if working else 0.0, delta * 5.0)
 	_phase += delta * 6.4
 	# Steps, turn lag and vertical speed move both hands together.
@@ -257,7 +266,13 @@ func _process(delta: float) -> void:
 			var w := sin(_throw * PI)
 			pos += Vector3(0, 0.05, -0.3) * w
 			curl = lerpf(curl, 0.1, w)
-		if _work > 0.0:
+		if _work > 0.0 and pounding:
+			# Both fists together: heave up, then come down hard on the sand.
+			var up := sin(_pound / 0.6 * PI * 0.5) if _pound < 0.6 else 1.0 - pow((_pound - 0.6) / 0.4, 2.2)
+			pos = pos.lerp((POUND_DOWN[0] as Vector3).lerp(POUND_UP[0], up), _work)
+			rot = rot.lerp((POUND_DOWN[1] as Vector3).lerp(POUND_UP[1], up), _work)
+			curl = lerpf(curl, POUND_UP[2], _work)
+		elif _work > 0.0:
 			# Hand over hand: reach in open, close, pull back, let go.
 			var p := fposmod(_phase / TAU + (0.5 if i == 1 else 0.0), 1.0)
 			var out := smoothstep(0.0, 0.38, p) - smoothstep(0.52, 0.92, p)

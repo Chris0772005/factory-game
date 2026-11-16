@@ -130,10 +130,13 @@ func _fx(kind: StringName) -> void:
 	var at := interact_point_for(local) if local else interact_point()
 	match kind:
 		&"rummage":
-			Sfx.play(&"scrap_clatter", at, -10.0, 0.2)
+			Sfx.play(&"dig_scrape", at, -8.0, 0.2)
+			if randf() < 0.4:
+				Sfx.play(&"plate_clang", at, -14.0, 0.25)
 			FoundryFX.dust(get_parent(), at)
 		&"find":
 			Sfx.play(&"scrap_clatter", at, -2.0)
+			Sfx.play(&"metal_tick", at, -6.0, 0.15)
 		&"beep":
 			Sfx.play(&"detector_beep", at, -5.0, 0.0)
 		&"rare":

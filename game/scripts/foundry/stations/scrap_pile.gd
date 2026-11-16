@@ -245,11 +245,11 @@ func _fx(kind: StringName) -> void:
 	var top := global_position + Vector3(0, 0.5, 0)
 	match kind:
 		&"rummage":
-			Sfx.play(&"scrap_clatter", top, -10.0, 0.2)
+			Sfx.play(&"dig_scrape", top, -9.0, 0.2)
 			FoundryFX.dust(get_parent(), top)
 		&"find":
 			Sfx.play(&"scrap_clatter", top, -2.0)
-			Sfx.play(&"pop", top, -4.0)
+			Sfx.play(&"metal_tick", top, -6.0, 0.15)
 		&"beep":
 			Sfx.play(&"detector_beep", top, -5.0, 0.0)
 		&"rare":

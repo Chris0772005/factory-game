@@ -1,8 +1,12 @@
 extends Node
 ## Sound effects from res://assets/sfx. Names without a number pick a random
 ## variant (`hammer_clank` -> hammer_clank_1..3). Positional sounds are pooled.
+## Recordings in `real/` (Kenney Impact Sounds, CC0) take precedence over the
+## synthesized file of the same name: impacts, clatter and steps sound like
+## the real thing.
 
 const DIR := "res://assets/sfx/"
+const REAL_DIR := "res://assets/sfx/real/"
 const POOL_SIZE := 24
 
 var _streams := {}      # name -> Array[AudioStream]
@@ -84,8 +88,14 @@ func make_loop(parent: Node3D, sound: StringName) -> AudioStreamPlayer3D:
 func _pick(sound: StringName) -> AudioStream:
 	if not _streams.has(sound):
 		var list: Array[AudioStream] = []
+		for i in range(1, 7):
+			var real := REAL_DIR + "%s_%d.ogg" % [sound, i]
+			if ResourceLoader.exists(real):
+				list.append(load(real))
 		var single := DIR + sound + ".wav"
-		if ResourceLoader.exists(single):
+		if not list.is_empty():
+			pass
+		elif ResourceLoader.exists(single):
 			list.append(load(single))
 		else:
 			for i in range(1, 6):

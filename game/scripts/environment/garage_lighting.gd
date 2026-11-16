@@ -39,3 +39,36 @@ static func build(parent: Node3D) -> void:
 	parent.add_child(fill)
 	if DisplayServer.get_name() != "headless":
 		parent.add_child(YardLighting.create_vignette())
+
+
+## Turns a hall built with `build` from dusk to a bright working day: blue
+## sky with white clouds, a high pale sun through the door, more sky light
+## inside. The scrap hall uses it (the first hall should read clean and clear).
+static func daylight(parent: Node3D) -> void:
+	var we := parent.get_node_or_null(^"WorldEnvironment") as WorldEnvironment
+	if we:
+		var env := we.environment
+		env.ambient_light_color = Color("#aab6c8")
+		env.ambient_light_energy = 0.8
+		env.ambient_light_sky_contribution = 0.75
+		env.volumetric_fog_density = 0.012
+		env.volumetric_fog_albedo = Color("#dfe3e6")
+		var sky := env.sky.sky_material as ShaderMaterial if env.sky else null
+		if sky:
+			sky.set_shader_parameter(&"zenith", Color(0.16, 0.38, 0.74))
+			sky.set_shader_parameter(&"upper", Color(0.36, 0.58, 0.88))
+			sky.set_shader_parameter(&"horizon", Color(0.74, 0.84, 0.94))
+			sky.set_shader_parameter(&"afterglow", Color(0.86, 0.9, 0.95))
+			sky.set_shader_parameter(&"venus_belt", Color(0.78, 0.86, 0.95))
+			sky.set_shader_parameter(&"earth_shadow", Color(0.68, 0.78, 0.9))
+			sky.set_shader_parameter(&"below", Color(0.36, 0.37, 0.4))
+			sky.set_shader_parameter(&"star_amount", 0.0)
+			sky.set_shader_parameter(&"moon_size", 0.0)
+			sky.set_shader_parameter(&"cloud_lit", Color(1.0, 1.0, 1.0))
+			sky.set_shader_parameter(&"cloud_shade", Color(0.7, 0.75, 0.84))
+			sky.set_shader_parameter(&"energy", 1.15)
+	var sun := parent.get_node_or_null(^"Sun") as DirectionalLight3D
+	if sun:
+		sun.light_color = Color("#fff1d8")
+		sun.light_energy = 2.3
+		sun.rotation_degrees = Vector3(-46.0, -34.0, 0.0)

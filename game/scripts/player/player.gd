@@ -684,7 +684,10 @@ func _on_footstep(_foot: int) -> void:
 	if _yard and _yard.layout:
 		var zones := _yard.layout.zones_at(Vector2(global_position.x, global_position.z))
 		dirt = maxf(zones.r, zones.a)
-	if dirt > 0.5:
+	if _yard == null:
+		# Halls: boots on concrete.
+		Sfx.play(&"step_concrete", global_position, STEP_DB_DIRT + 6.0, STEP_PITCH)
+	elif dirt > 0.5:
 		Sfx.play(&"step_dirt", global_position, STEP_DB_DIRT, STEP_PITCH)
 	else:
 		Sfx.play(&"step_grass", global_position, STEP_DB_GRASS, STEP_PITCH)

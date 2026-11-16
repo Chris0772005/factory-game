@@ -31,7 +31,7 @@ courtesy. The Kenney MIT notice
 
 ## Sound
 
-All sound effects in `game/assets/sfx/` are synthesized by our own `tools/sfx_gen.py`.
+Sound effects in `game/assets/sfx/real/` (scrap clatter, digging, hammer blows, ramming, pick-up, steps on concrete) are recordings from **Impact Sounds 1.0** by Kenney (www.kenney.nl), Creative Commons Zero (CC0 1.0); the pack's licence text is `game/assets/sfx/real/Kenney-License.txt`. All other sound effects in `game/assets/sfx/` are synthesized by our own `tools/sfx_gen.py`.
 
 ## Music
 

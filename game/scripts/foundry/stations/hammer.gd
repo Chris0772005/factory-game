@@ -35,7 +35,10 @@ func _ready() -> void:
 
 
 ## Carry pose for Player._hand_target: (distance in front, height of the grip).
-func carry_offset(_player: Node) -> Vector2:
+func carry_offset(player: Node) -> Vector2:
+	# In first person it is held a little higher, so the head is in view.
+	if player is Player and (player as Player).aims:
+		return Vector2(0.62, 0.6)
 	return CARRY_OFFSET
 
 

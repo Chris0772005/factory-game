@@ -246,3 +246,18 @@ Füllen, Abkühlen, Zerschlagen), Hammer, Modellbank (öffnet DrawPad), Verkaufs
 - Vorlage des Nutzers (rot-orange Industrieroboter in einer Halle): Greifarm glänzend rot-orange auf dunklem Sockel mit Bodenplatte und Kabelbündel; `YardLighting` schaltet Spiegelungen (SSR) und Dunst ab mittlerer Qualität ein, die Hallen haben dichteren Dunst (`GarageLighting`); `env_concrete` hat `polish` für den versiegelten Hallenboden.
 - `GarageSet._workshop_gear`: stellt bis zu fünf gescannte Geräte an freie Wandstücke (mindestens 2,1 m von Stationen und anderen Kulissen entfernt), mit Kollision.
 - `StylizedTree`: Stamm mit Rinden-Scan (`bark_material`), Kronen mit gescannten Zweigen (`PhotoProp.clump`); Hintergrundbäume nur auf hoher Qualität.
+
+## Modul T – Neuer Spielstart: Schrotthalle (nach dem zweiten Test)
+
+- Start ist `scenes/scrap_hall.tscn` (`levels/scrap_hall.gd`, Kulisse `environment/scrap_hall_set.gd`): große Halle mit offenem Tor, davor Straße mit Zebrastreifen, gegenüber der Schrott-Ankauf. Der Hinterhof bleibt als Menü-Hintergrund und für die Tests.
+- `stations/scrap_mountain.gd` (`ScrapMountain`, erbt `ScrapPile`): Berg mit `GRABS` Griffen, wächst nicht nach, schrumpft sichtbar (`size_now`), von jeder Seite abtragbar (`interact_point_for`). Leer: Prämie und neue Ladung mit weniger Blech (`junk_share`).
+- `stations/scrap_bucket.gd` (`ScrapBucket`): steht er beim Wühlen in der Nähe, fallen die Funde hinein. F am Ankauf verkauft alles, F am Ofen kippt das Metall hinein und behält das Blech.
+- `stations/scrap_shop.gd` (`ScrapShop`, erbt `SellCrate`): kauft Gussstücke, rohe Funde und Blech (`FoundryRules.raw_price`, `JUNK`).
+- Gießerei-Ecke (Ofen, Zeichentisch, zwei Formkästen, Auftragstafel) entsteht erst mit dem Upgrade `foundry_corner`; die übrigen Gießerei-Upgrades werden erst danach angeboten (`Upgrades.offered`).
+- `Guide.letters()`: die Halle hat zwei eigene Briefe (`HALL_LETTERS`); gespeichert wird die Brief-Kennung statt des Index. Spielstand-Version 2 (alte Stände starten neu).
+- Steuerung: Getragenes folgt den Händen direkt (`Player.TIGHT_HOLD_MASS`) und stößt den Träger nicht (`_update_carry_exception`); Ziel ist, was der Blickrichtung am nächsten liegt; `toss_targets` (Ofen, Verkaufskiste, Eimer, Ankauf) nehmen Losgelassenes im Bogen auf, der Tiegel rastet in den Ofen (`toss_place`). Der Tiegel kippt nur über einer Form (`Crucible._receiver_below`).
+- `drawing/drawing_templates.gd` (`DrawingTemplates`): acht Motive als Ein-Klick-Vorlagen am Zeichentisch, `score`/`best` erkennen auch frei gezeichnete Motive; `OrderBoard`-Aufträge der Art `motif` zahlen dafür einen Bonus.
+- Anzeige: Vollbild als Standard, Seitenverhältnis `expand` (keine Balken), Menü-Elemente verankert, Einstellungen zentriert. Schrift: Barlow Condensed.
+- Flammen (`shaders/fx_flame.gdshader`): weich, additiv, zwei Turbulenz-Schichten statt harter Farbbänder.
+- Geräusche: Aufnahmen aus Kenney „Impact Sounds“ (CC0) in `assets/sfx/real/` haben Vorrang vor den erzeugten Klängen; Schritte auf Hallenboden.
+- Prüfhilfen: `-- --hold=<kind>` gibt dem Spieler einen Gegenstand in die Hand, `--yaw=<Grad>` dreht den Startblick, `--menu=settings|coop` öffnet Menüteile.

@@ -37,6 +37,25 @@ func _materials() -> void:
 	_trim_mat = StationKit.metal("scraphall_trim", {steel_color = Color("#3f474c"), rust = 0.4, metallic_steel = 0.4})
 
 
+## Daylight in the window band instead of the dusk glow of the other halls.
+func _window(center: Vector3, size: Vector2) -> void:
+	super(center, size)
+	var glass := EnvMesh.material("garage_glass", "res://shaders/env_window.gdshader")
+	if glass and EnvMesh.visual():
+		var day := glass.duplicate() as ShaderMaterial
+		day.set_shader_parameter(&"glow", Color("#dfeaf6"))
+		day.set_shader_parameter(&"room", Color("#9fb4cc"))
+		day.set_shader_parameter(&"glass_dark", Color("#6f8298"))
+		day.set_shader_parameter(&"glass_sky", Color("#cfe0f2"))
+		# No curtains in a works hall: the panes show pale sky.
+		day.set_shader_parameter(&"curtain", Color("#c3d2e2"))
+		day.set_shader_parameter(&"energy", 0.9)
+		for child in get_children():
+			var mi := child as MeshInstance3D
+			if mi and mi.material_override == glass:
+				mi.material_override = day
+
+
 func _extra_stains() -> PackedVector4Array:
 	var out := PackedVector4Array()
 	for s in stations:

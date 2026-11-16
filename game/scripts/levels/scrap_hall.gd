@@ -5,7 +5,7 @@ extends FoundryLevel
 ## bigger bucket – and then the foundry corner (furnace, molds, drawing
 ## bench), where the metal from the heap becomes castings worth many times
 ## the scrap price. Conveyor and grab arm follow; the garage is the next plot.
-## Set: ScrapHallSet, light: GarageLighting.
+## Set: ScrapHallSet, light: GarageLighting in its daylight grade.
 
 const SPAWN := Vector3(3.2, 0.2, 5.6)
 const FURNACE_POS := Vector3(6.6, 0, -4.8)
@@ -21,6 +21,7 @@ func build_level() -> void:
 
 func build_stations() -> void:
 	GarageLighting.build(self)
+	GarageLighting.daylight(self)
 	var heap := ScrapMountain.new()
 	heap.position = Vector3(-1.2, 0, -2.0)
 	add_child(heap)
