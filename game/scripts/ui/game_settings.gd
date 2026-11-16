@@ -17,7 +17,7 @@ static var player_name := ""
 static var mouse_sensitivity := 1.0
 ## 0..1 scale on camera shake (accessibility; Art Bible 8.3 default 70 %).
 static var screen_shake := 0.7
-static var fullscreen := false
+static var fullscreen := true
 ## EnvQuality.Level, or -1 for the detected default.
 static var quality := -1
 static var ssao := true
@@ -40,7 +40,7 @@ static func load_saved() -> void:
 	mouse_sensitivity = clampf(cfg.get_value("controls", "mouse_sensitivity", mouse_sensitivity), 0.2, 3.0)
 	screen_shake = clampf(cfg.get_value("controls", "screen_shake", screen_shake), 0.0, 1.0)
 	player_name = str(cfg.get_value("player", "name", player_name)).substr(0, 16)
-	fullscreen = cfg.get_value("video", "fullscreen", fullscreen)
+	fullscreen = cfg.get_value("video", "fullscreen_v2", fullscreen)
 	quality = clampi(cfg.get_value("video", "quality", quality), -1, 2)
 	_defaults_for_quality(quality if quality >= 0 else EnvQuality.level())
 	ssao = cfg.get_value("video", "ssao", ssao)
@@ -59,7 +59,7 @@ static func save() -> void:
 	cfg.set_value("controls", "mouse_sensitivity", mouse_sensitivity)
 	cfg.set_value("controls", "screen_shake", screen_shake)
 	cfg.set_value("player", "name", player_name)
-	cfg.set_value("video", "fullscreen", fullscreen)
+	cfg.set_value("video", "fullscreen_v2", fullscreen)
 	cfg.set_value("video", "quality", quality)
 	cfg.set_value("video", "ssao", ssao)
 	cfg.set_value("video", "shadows", shadows)
