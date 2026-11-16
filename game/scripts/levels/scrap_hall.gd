@@ -62,6 +62,11 @@ func _ensure_foundry() -> void:
 		var mold := MoldBox.new()
 		mold.position = Vector3(6.4 + i * 2.8, 0, -0.9)
 		add_child(mold)
+	var orders := OrderBoard.new()
+	orders.first_order = &"motif_house"
+	orders.position = Vector3(13.99, 0, -3.2)
+	orders.rotation.y = -PI * 0.5
+	add_child(orders)
 	if get_node_or_null(^"ScrapLine") == null:
 		ScrapLine.build_for(self)
 	if get_node_or_null(^"AutoFoundry") == null:

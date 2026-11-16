@@ -29,6 +29,16 @@ const TEMPLATES := [
 	{id = &"stove_series", kind = &"series", tier = 3, count = 5, alloy = &"iron", min = 0.6, title = "Ofenplatten für die Bäckerei", need = "5 Teile vom Formband · Eisen · mind. Fein", reward = 400, weight = 3},
 	{id = &"gear_series", kind = &"series", tier = 3, count = 6, alloy = &"", min = 0.6, title = "Zahnräder für die Wassermühle", need = "6 Teile vom Formband · mind. Fein", reward = 500, weight = 3},
 	{id = &"crest_series", kind = &"series", tier = 3, count = 12, alloy = &"", min = 0.35, title = "Wappenschilder für den Schützenverein", need = "12 Teile vom Formband · mind. Gut", reward = 750, weight = 2},
+	# Motif orders: a casting drawn as the asked-for thing (DrawingTemplates;
+	# drawn by hand or taken from the pad's templates). tier 0: also in the scrap hall.
+	{id = &"motif_house", kind = &"motif", tier = 0, motif = &"house", title = "Ein Haus aus Metall für den Makler", need = "Guss in Hausform · am Zeichentisch: Vorlage „Haus“", reward = 60, weight = 5},
+	{id = &"motif_star", kind = &"motif", tier = 0, motif = &"star", title = "Stern für die Weihnachtspyramide", need = "Guss in Sternform", reward = 50, weight = 5},
+	{id = &"motif_heart", kind = &"motif", tier = 0, motif = &"heart", title = "Herz zum Hochzeitstag", need = "Guss in Herzform", reward = 55, weight = 5},
+	{id = &"motif_key", kind = &"motif", tier = 0, motif = &"key", title = "Stadtschlüssel für den Bürgermeister", need = "Guss in Schlüsselform", reward = 70, weight = 4},
+	{id = &"motif_fish", kind = &"motif", tier = 0, motif = &"fish", title = "Fisch fürs Anglerheim", need = "Guss in Fischform", reward = 65, weight = 4},
+	{id = &"motif_crown", kind = &"motif", tier = 0, motif = &"crown", title = "Krone für den Schützenkönig", need = "Guss in Kronenform", reward = 80, weight = 3},
+	{id = &"motif_gear", kind = &"motif", tier = 0, motif = &"gear", title = "Zahnrad fürs Uhrenmuseum", need = "Guss in Zahnradform", reward = 75, weight = 3},
+	{id = &"motif_anchor", kind = &"motif", tier = 0, motif = &"anchor", title = "Anker für die Hafenkneipe", need = "Guss in Ankerform", reward = 85, weight = 3},
 	{id = &"knocker", kind = &"cast", alloy = &"brass", min = 0.35, title = "Türklopfer aus Messing", need = "Messing · mind. Gut", reward = 90, weight = 5},
 	{id = &"trophy", kind = &"cast", alloy = &"", min = 0.6, title = "Pokal für den Kegelverein", need = "Beliebiges Metall · mind. Fein", reward = 110, weight = 5},
 	{id = &"plaque", kind = &"cast", alloy = &"verdigris", min = 0.35, title = "Grünspan-Plakette fürs Rathaus", need = "Grünspan · mind. Gut", reward = 160, weight = 3},
@@ -60,6 +70,17 @@ func _ready() -> void:
 	Network.peer_ready.connect(_on_peer_ready)
 	_build_art()
 	_refresh()
+
+
+## The motif the first open motif order asks for (&"" if none): the drawing
+## bench offers it as the sheet's guide.
+static func wanted_motif(tree: SceneTree) -> Dictionary:
+	for node in tree.get_nodes_in_group(&"order_boards"):
+		for id in (node as OrderBoard).slots:
+			var t := template(id)
+			if t.get("kind", &"") == &"motif":
+				return t
+	return {}
 
 
 static func template(id: StringName) -> Dictionary:
@@ -104,6 +125,8 @@ static func matches(t: Dictionary, piece: Node) -> bool:
 	if not piece is CastPiece:
 		return false
 	var cast := piece as CastPiece
+	if t.kind == &"motif":
+		return not cast.series and DrawingTemplates.score(Drawing.from_code(cast.drawing_code), t.motif) >= DrawingTemplates.MATCH
 	if t.kind == &"series" and not cast.series:
 		return false
 	return (t.alloy == &"" or cast.alloy == t.alloy) and cast.quality >= float(t.min)
@@ -133,6 +156,9 @@ func _roll() -> StringName:
 	# Orders of this hall's tier (tier-1 cast orders stay in the mix later on).
 	var world := get_tree().get_first_node_in_group(&"world") as GameWorld if is_inside_tree() else null
 	var tier := maxi(world.upgrade_tier() if world else 1, 1)
+	if world and world.is_scrap_hall():
+		# The first hall only knows motif orders: no alloys to mix there yet.
+		tier = 0
 	var pool := TEMPLATES.filter(func(t: Dictionary) -> bool: return not slots.has(t.id) and _offered(t, tier))
 	var total := 0
 	for t in pool:

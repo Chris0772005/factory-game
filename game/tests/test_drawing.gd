@@ -9,6 +9,7 @@ func _ready() -> void:
 
 
 func _run() -> void:
+	_test_templates()
 	_test_codes()
 	_test_garbage_codes()
 	_test_budget()
@@ -504,3 +505,32 @@ func _check(ok: bool, label: String) -> void:
 	print(("  ok   " if ok else "  FAIL ") + label)
 	if not ok:
 		_failures += 1
+
+
+## Motif templates: each matches itself and nothing else, and a house drawn
+## smaller, shifted and with a shaky hand still counts as a house.
+func _test_templates() -> void:
+	var clean := true
+	for id: StringName in DrawingTemplates.MOTIFS:
+		var d := DrawingTemplates.drawing(id)
+		if d.is_empty() or DrawingTemplates.best(d) != id or DrawingTemplates.score(d, id) < 0.9:
+			clean = false
+			print("  motif %s: best=%s score=%.2f" % [id, DrawingTemplates.best(d), DrawingTemplates.score(d, id)])
+	_check(clean, "every motif template matches itself and nothing else")
+	var shaky := Drawing.new()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	for stroke in DrawingTemplates.drawing(&"house").strokes:
+		var pts := PackedVector2Array()
+		for p in stroke:
+			pts.append(Vector2(0.1, 0.25) + p * 0.6 + Vector2(rng.randf_range(-0.012, 0.012), rng.randf_range(-0.012, 0.012)))
+		shaky.add_stroke(pts)
+	_check(DrawingTemplates.best(shaky) == &"house", "a small, shaky house is still a house (%.2f)" % DrawingTemplates.score(shaky, &"house"))
+	_check(DrawingTemplates.best(DrawingSamples.smiley()) == &"", "a smiley is none of the motifs")
+	var order := OrderBoard.template(&"motif_house")
+	var piece := CastPiece.new()
+	piece.drawing_code = DrawingTemplates.drawing(&"house").to_code()
+	_check(OrderBoard.matches(order, piece), "a house casting fulfils the house order")
+	piece.drawing_code = DrawingTemplates.drawing(&"star").to_code()
+	_check(not OrderBoard.matches(order, piece), "a star casting does not")
+	piece.free()

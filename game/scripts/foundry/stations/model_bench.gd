@@ -52,18 +52,25 @@ func interact(player: Node) -> void:
 	var p := player as Player
 	var prompts: Array = BELL_PROMPTS if bell_mode else (LINE_PROMPTS if line_mode else PROMPTS)
 	var prompt: String = "Zeichne: " + prompts[randi() % prompts.size()]
+	# An open motif order sets the task: its template lies under the sheet.
+	var motif := &""
+	if not bell_mode and not line_mode:
+		var order := OrderBoard.wanted_motif(get_tree())
+		if not order.is_empty():
+			motif = order.motif
+			prompt = "Auftrag: Zeichne %s  (+%d $)" % [DrawingTemplates.MOTIFS[motif].name, order.reward]
 	if not Network.is_online() or p.peer_id == multiplayer.get_unique_id():
-		_open_pad(prompt)
+		_open_pad(prompt, motif)
 	else:
-		_open_pad_remote.rpc_id(p.peer_id, prompt)
+		_open_pad_remote.rpc_id(p.peer_id, prompt, motif)
 
 
 @rpc("authority", "call_remote", "reliable")
-func _open_pad_remote(prompt: String) -> void:
-	_open_pad(prompt)
+func _open_pad_remote(prompt: String, motif: StringName) -> void:
+	_open_pad(prompt, motif)
 
 
-func _open_pad(prompt: String) -> void:
+func _open_pad(prompt: String, motif := &"") -> void:
 	if _pad_layer:
 		return
 	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
@@ -76,6 +83,8 @@ func _open_pad(prompt: String) -> void:
 	add_child(_pad_layer)
 	var pad := DrawPad.new()
 	pad.bell_mode = bell_mode
+	pad.templates = not bell_mode
+	pad.guide_motif = motif
 	var pit := _nearest_pit(false)
 	if pit:
 		pad.bell_radius = pit.mouth_radius

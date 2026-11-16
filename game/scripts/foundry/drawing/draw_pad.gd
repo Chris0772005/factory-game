@@ -9,7 +9,7 @@ extends Control
 signal finished(drawing: Drawing)
 signal cancelled
 
-@export var time_limit := 30.0
+@export var time_limit := 120.0
 ## Stroke width relative to the canvas (see Drawing.brush).
 @export var brush := 0.06
 ## Material for the live cast preview; a plain bronze look if unset.
@@ -33,6 +33,10 @@ var prompt := ""
 ## Bell mode (Glockengießerei): the stroke is a bell's silhouette around the
 ## centre line; the preview turns it on a lathe and names its note.
 var bell_mode := false
+## Offer the ready-made motifs (DrawingTemplates) as one-click templates.
+var templates := false
+## Motif an order asks for: shown faintly on the sheet as a guide to trace.
+var guide_motif := &""
 ## Mouth radius (m) of the bell pit the drawing goes to (preview and stats).
 var bell_radius := 0.35
 ## Seconds left on the countdown.
@@ -418,12 +422,55 @@ func _build_side() -> Control:
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	side.add_child(spacer)
+	if templates:
+		side.add_child(_build_templates())
 	_undo_button = _button("Rückgängig", undo, false)
 	_clear_button = _button("Löschen", clear, false)
 	_done_button = _button("Fertig", finish, true)
 	for b in [_undo_button, _clear_button, _done_button]:
 		side.add_child(b)
 	return side
+
+
+## One-click motifs: the wanted one first and highlighted.
+func _build_templates() -> Control:
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 8)
+	var title := Label.new()
+	title.text = "Vorlage nehmen (ein Klick)"
+	title.add_theme_font_size_override("font_size", 22)
+	title.add_theme_color_override("font_color", UITheme.ACCENT)
+	title.add_theme_constant_override("outline_size", 0)
+	box.add_child(title)
+	var grid := GridContainer.new()
+	grid.columns = 4
+	grid.add_theme_constant_override("h_separation", 6)
+	grid.add_theme_constant_override("v_separation", 6)
+	box.add_child(grid)
+	var ids: Array = DrawingTemplates.MOTIFS.keys()
+	if guide_motif != &"":
+		ids.erase(guide_motif)
+		ids.push_front(guide_motif)
+	for id: StringName in ids:
+		var b := Button.new()
+		b.text = DrawingTemplates.MOTIFS[id].label
+		b.theme_type_variation = &"BigButton" if id == guide_motif else &"SecondaryButton"
+		b.add_theme_font_size_override("font_size", 20)
+		b.custom_minimum_size = Vector2((SIDE_WIDTH - 18) / 4.0, 44)
+		b.focus_mode = Control.FOCUS_NONE
+		b.pressed.connect(use_template.bind(id))
+		grid.add_child(b)
+	return box
+
+
+## Replaces the sheet with motif `id` (still editable afterwards).
+func use_template(id: StringName) -> void:
+	_end_stroke()
+	drawing.clear()
+	for stroke in DrawingTemplates.drawing(id).strokes:
+		drawing.add_stroke(stroke)
+	_refresh()
+	Sfx.play_ui(&"pop")
 
 
 func _build_preview() -> SubViewport:
@@ -587,6 +634,10 @@ class _Canvas:
 		var width := pad.brush * r.size.x
 		if pad.bell_mode:
 			_draw_axis(r, width)
+		if pad.guide_motif != &"":
+			# The order's motif in pencil: trace it, or take the template.
+			for s in DrawingTemplates.drawing(pad.guide_motif).strokes:
+				_draw_ink(s, width * 0.5, Color(UITheme.INK, 0.16))
 		for s in pad.drawing.strokes:
 			_draw_ink(s, width, UITheme.INK)
 		_draw_ink(pad._stroke, width, UITheme.INK)
