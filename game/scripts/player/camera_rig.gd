@@ -109,6 +109,8 @@ func _ready() -> void:
 		for arg in OS.get_cmdline_user_args():
 			if arg.begins_with("--pitch="):
 				pitch = deg_to_rad(float(arg.trim_prefix("--pitch=")))
+			elif arg.begins_with("--yaw="):
+				yaw += deg_to_rad(float(arg.trim_prefix("--yaw=")))
 		camera.cull_mask &= ~SELF_LAYER
 		if target is Player and StationKit.visual():
 			var hands := FirstPersonHands.new()

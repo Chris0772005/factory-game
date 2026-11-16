@@ -26,6 +26,7 @@ courtesy. The Kenney MIT notice
 | Font | Author | License | Used in |
 |---|---|---|---|
 | Fredoka | The Fredoka Project Authors | SIL Open Font License 1.1 | `game/assets/fonts/Fredoka.ttf` (`OFL.txt` next to it) |
+| Barlow Condensed | The Barlow Project Authors (github.com/jpt/barlow) | SIL Open Font License 1.1 (github.com/google/fonts, `ofl/barlowcondensed`) | `game/assets/fonts/BarlowCondensed-*.ttf` (`BarlowCondensed-OFL.txt` next to them) – all game text |
 | Lilita One | Juan Montoreano | SIL Open Font License 1.1 (github.com/google/fonts, `ofl/lilitaone`) | `game/assets/ui/fonts/LilitaOne-Regular.ttf` (`OFL.txt` next to it) – logo, banners, money counter |
 
 ## Sound

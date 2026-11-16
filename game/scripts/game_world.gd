@@ -266,6 +266,12 @@ func held_hint(player: Player) -> String:
 	return "[LMB] Ablegen   [RMB] Werfen"
 
 
+## True in the scrap hall: its board also sells the hall-only upgrades
+## (bucket, foundry corner) and Onkel Heinz writes the hall's letters.
+func is_scrap_hall() -> bool:
+	return false
+
+
 ## Highest upgrade tier this level sells (levels with progression override).
 func upgrade_tier() -> int:
 	return 0

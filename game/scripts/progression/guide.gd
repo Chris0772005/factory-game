@@ -48,9 +48,17 @@ const LETTERS := [
 	{id = &"end", goal = "Alles geschafft – die Hallen gehören dir", reward = 0,
 		text = "Ich hab's gehört bis hierher: Sie läutet. Besser hätt ich's nicht gekonnt. Dein Onkel Heinz."},
 ]
+## The scrap hall starts earlier: these come right after the first letter there.
+const HALL_LETTERS := [
+	{id = &"scrap_sold", goal = "Trag den Eimer über die Straße zum Schrott-Ankauf und verkauf den Inhalt (F)", reward = 10,
+		text = "Siehst du den Laden gegenüber? Der alte Kowalski kauft alles, was rostet. Eimer vollmachen, rübertragen, kassieren."},
+	{id = &"foundry_corner", goal = "Spar 150 $ und kauf Schmelzofen & Formkästen an der Werkstatt-Tafel", reward = 20,
+		text = "Schrott verkaufen ist Kleingeld. Wer das Metall selber einschmilzt und gießt, verdient das Zehnfache. Spar auf den Ofen!"},
+]
 
 var world: GameWorld
 var index := 0
+var _letters: Array = []
 var stats := {digs = 0, sold = 0, great_bell = 0}
 var _check := 0.0
 
@@ -61,7 +69,18 @@ func _ready() -> void:
 
 
 func letter() -> Dictionary:
-	return LETTERS[clampi(index, 0, LETTERS.size() - 1)]
+	var list := letters()
+	return list[clampi(index, 0, list.size() - 1)]
+
+
+## The letters of this level, in order (`index` counts in this list).
+func letters() -> Array:
+	if _letters.is_empty():
+		_letters = LETTERS.duplicate()
+		if world and world.is_scrap_hall():
+			for k in HALL_LETTERS.size():
+				_letters.insert(1 + k, HALL_LETTERS[k])
+	return _letters
 
 
 ## Host: stations report what happened (&"dig", &"sold", &"great_bell").
@@ -72,13 +91,15 @@ func note(what: StringName) -> void:
 
 
 func _reached(i: int) -> bool:
-	match LETTERS[i].id:
+	match letters()[i].id:
 		&"dig":
 			return stats.digs >= 3
 		&"melt":
 			return get_tree().get_nodes_in_group(&"crucibles").any(func(c: Crucible) -> bool: return c.amount >= 1.0) or stats.sold > 0
 		&"sold":
 			return stats.sold >= 1
+		&"scrap_sold":
+			return int(stats.get("scrap_sold", 0)) >= 1
 		&"tools":
 			return world.has_upgrade(&"magnet") and world.has_upgrade(&"detector")
 		&"auto_iron":
@@ -96,7 +117,7 @@ func _reached(i: int) -> bool:
 		&"end":
 			return false
 	# Everything else is "own this upgrade".
-	return world.has_upgrade(LETTERS[i].id)
+	return world.has_upgrade(letters()[i].id)
 
 
 func _physics_process(delta: float) -> void:
@@ -106,7 +127,7 @@ func _physics_process(delta: float) -> void:
 	if _check < 0.5:
 		return
 	_check = 0.0
-	if index < LETTERS.size() - 1 and _reached(index):
+	if index < letters().size() - 1 and _reached(index):
 		var pay: int = letter().reward
 		index += 1
 		if pay > 0:
@@ -122,8 +143,30 @@ func _announce(pay: int) -> void:
 		world.banner_all("ZIEL ERREICHT!", Color("#7fd3a8"), "+%d $ von Onkel Heinz · neue Post" % pay)
 
 
+## What the save file keeps: the letter's id (the lists differ per level).
+func to_save() -> String:
+	return String(letter().id)
+
+
+## `v`: a letter id (or an index from an old save). A hall letter loaded in
+## another level continues with the first shared one after it.
+func load_save(v: Variant) -> void:
+	if typeof(v) == TYPE_STRING:
+		var id := StringName(v)
+		if not (world and world.is_scrap_hall()) and HALL_LETTERS.any(func(l: Dictionary) -> bool: return l.id == id):
+			id = &"melt"
+		var list := letters()
+		for i in list.size():
+			if list[i].id == id:
+				load_index(i)
+				return
+		load_index(0)
+	else:
+		load_index(int(v))
+
+
 func load_index(i: int) -> void:
-	index = clampi(i, 0, LETTERS.size() - 1)
+	index = clampi(i, 0, letters().size() - 1)
 	changed.emit(false)
 
 

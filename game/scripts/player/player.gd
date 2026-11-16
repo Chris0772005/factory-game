@@ -89,6 +89,7 @@ var _yard: YardSet
 var _since_floor := 0.0
 var _jump_wish := 1.0
 var _fp_legs: FirstPersonLegs
+var _carry_exception: PhysicsBody3D
 
 
 func _ready() -> void:
@@ -201,9 +202,25 @@ func _physics_process(delta: float) -> void:
 		# Holding F at a station that wants it held (ladle handwheel).
 		if nearest_interactable() == _station:
 			_station.interact_tick(self, delta)
+	_update_carry_exception()
 	_update_grips()
 	_model.animate(delta, velocity, is_on_floor(), holding, _hand_target())
 	_update_hold_sounds(delta)
+
+
+## The carried thing sits close to the body: the two must not shove each
+## other about. Checked on every peer (each simulates its own worker).
+func _update_carry_exception() -> void:
+	var item := (held_item() if holding else null) as PhysicsBody3D
+	if item == _carry_exception:
+		return
+	if is_instance_valid(_carry_exception):
+		remove_collision_exception_with(_carry_exception)
+		_carry_exception.remove_collision_exception_with(self)
+	_carry_exception = item
+	if item:
+		add_collision_exception_with(item)
+		item.add_collision_exception_with(self)
 
 
 ## Hands go onto the handles of things that have them (crucible), on every peer.
@@ -522,6 +539,9 @@ func nearest_interactable() -> Node3D:
 	for node in get_tree().get_nodes_in_group(&"interactable"):
 		var n := node as Node3D
 		var point: Vector3 = n.interact_point() if n.has_method("interact_point") else n.global_position
+		if n.has_method("interact_point_for"):
+			# Big things (the scrap mountain) are worked wherever one stands at them.
+			point = n.interact_point_for(self)
 		var d := probe.distance_to(point)
 		if aims:
 			# In reach as before, or looked at from a bit further away; among

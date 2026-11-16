@@ -5,6 +5,8 @@ extends Node
 ## iris Transition; every button has hover/press motion and UI sounds.
 
 const LEVEL := "res://scenes/backyard.tscn"
+## Where a new game starts (the menu backdrop stays the backyard for now).
+const START := "res://scenes/scrap_hall.tscn"
 const COLUMN_X := 112.0
 
 var _camera: Camera3D
@@ -371,7 +373,7 @@ func _toggle_coop() -> void:
 
 
 func _on_solo() -> void:
-	_start(SaveGame.saved_level(LEVEL))
+	_start(SaveGame.saved_level(START))
 
 
 func _on_host() -> void:
@@ -379,7 +381,7 @@ func _on_host() -> void:
 	if err != OK:
 		_show_status("Hosten fehlgeschlagen (%s)" % error_string(err))
 		return
-	_start(SaveGame.saved_level(LEVEL))
+	_start(SaveGame.saved_level(START))
 
 
 ## Loads the backyard, then connects; the host sends us on if it plays elsewhere.
@@ -389,4 +391,4 @@ func _on_join() -> void:
 		_show_status("Bitte die Adresse des Hosts eingeben")
 		return
 	Network.join_after_load(address)
-	_start(LEVEL)
+	_start(START)

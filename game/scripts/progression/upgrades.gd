@@ -6,6 +6,9 @@ extends Node
 signal changed
 
 const CATALOG := [
+	# Scrap hall only: the first steps from bare hands to a foundry of one's own.
+	{id = &"bucket_big", name = "Großer Eimer", desc = "Fasst 30 statt 12 Teile – weniger Laufen zum Ankauf.", cost = 60, tier = 0, hall = true},
+	{id = &"foundry_corner", name = "Schmelzofen & Formkästen", desc = "Deine eigene Gießerei-Ecke: Metall einschmelzen und gießen. Guss bringt ein Vielfaches vom Schrottpreis.", cost = 150, tier = 0, hall = true},
 	{id = &"bellows_foot", name = "Fußblasebalg", desc = "Jeder Tritt bringt 50 % mehr Hitze.", cost = 120, tier = 0},
 	{id = &"crucible_big", name = "Großer Tiegel", desc = "Fasst 5 statt 3 Liter.", cost = 180, tier = 0},
 	{id = &"mold_slot", name = "Dritte Kavität", desc = "Jeder Formkasten nimmt ein Modell mehr.", cost = 220, tier = 0},
@@ -48,8 +51,19 @@ var world: GameWorld
 
 
 ## Catalogue entries a level offers (its tier and every tier below).
-static func catalog_for(tier: int) -> Array:
-	return CATALOG.filter(func(u: Dictionary) -> bool: return int(u.get("tier", 0)) <= tier)
+static func catalog_for(tier: int, hall := false) -> Array:
+	return CATALOG.filter(func(u: Dictionary) -> bool: return int(u.get("tier", 0)) <= tier and (hall or not u.get("hall", false)))
+
+
+## In the scrap hall everything for the foundry is only sold once the
+## foundry corner stands (ids that work without it are listed here).
+const HALL_BASICS := [&"bucket_big", &"foundry_corner", &"gloves", &"shovel", &"magnet", &"detector", &"scrap_premium"]
+
+
+func offered(u: Dictionary) -> bool:
+	if world == null or not world.is_scrap_hall():
+		return not u.get("hall", false)
+	return has(&"foundry_corner") or u.id in HALL_BASICS
 
 
 func has(id: StringName) -> bool:
@@ -65,7 +79,7 @@ func info(id: StringName) -> Dictionary:
 
 func can_buy(id: StringName) -> bool:
 	var u := info(id)
-	return not u.is_empty() and not has(id) and world and world.money >= u.cost and int(u.get("tier", 0)) <= world.upgrade_tier()
+	return not u.is_empty() and not has(id) and world and world.money >= u.cost and int(u.get("tier", 0)) <= world.upgrade_tier() and offered(u)
 
 
 ## Client entry point; forwards to the host.

@@ -64,7 +64,7 @@ func _unhandled_input(event: InputEvent) -> void:
 ## This hall's upgrades first, then older ones still to buy, bought ones last.
 func _ordered() -> Array:
 	var tier := world.upgrade_tier()
-	var entries := Upgrades.catalog_for(tier)
+	var entries := Upgrades.catalog_for(tier, world.is_scrap_hall()).filter(func(u: Dictionary) -> bool: return upgrades.offered(u) or upgrades.has(u.id))
 	var rank := func(u: Dictionary) -> int:
 		return (2 if upgrades.has(u.id) else 0) + (0 if int(u.get("tier", 0)) == tier else 1)
 	var out := []

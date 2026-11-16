@@ -98,6 +98,32 @@ static var target: Node3D
 
 ## The next thing to do, derived from what the stations are doing right now.
 ## Also sets `target` to the station it happens at, for the yellow marker.
+## Scrap hall: bucket, dealer across the street, saving up for the furnace.
+static func _hall_step(w: GameWorld, goal: StringName, pile: ScrapPile, furnace: Furnace) -> String:
+	var tree := w.get_tree()
+	var bucket := tree.get_first_node_in_group(&"scrap_buckets") as ScrapBucket
+	var shop := tree.get_first_node_in_group(&"scrap_shops") as Node3D
+	var count := bucket.count if bucket else 0
+	if goal == &"dig":
+		target = pile
+		return "Geh zum Schrottberg und halte F. Der Eimer daneben fängt die Funde auf."
+	if goal == &"scrap_sold" or goal == &"foundry_corner":
+		if goal == &"foundry_corner" and w.money >= 150:
+			target = _of_class(tree, "UpgradeBoard")
+			return "Du hast 150 $: Kauf Schmelzofen & Formkästen an der Werkstatt-Tafel (F)."
+		if bucket and (bucket.is_full() or (goal == &"scrap_sold" and count >= 3)):
+			target = shop
+			return "Nimm den Eimer (Linksklick), trag ihn über die Straße zum Schrott-Ankauf und drück F."
+		target = pile
+		if goal == &"foundry_corner":
+			return "Weiter abtragen und verkaufen – für den Schmelzofen brauchst du 150 $."
+		return "Füll den Eimer am Schrottberg (F halten)."
+	if goal == &"melt" and furnace and bucket and furnace.charge.is_empty() and bucket._metal_count() > 0:
+		target = furnace
+		return "Trag den Eimer zum Ofen und drück F: das Metall fällt hinein."
+	return ""
+
+
 static func next_step(w: GameWorld) -> String:
 	target = null
 	var tree := w.get_tree()
@@ -121,6 +147,10 @@ static func next_step(w: GameWorld) -> String:
 		if node is Item and FoundryRules.SCRAP.has((node as Item).kind):
 			loose += 1
 	var charged := furnace != null and not furnace.charge.is_empty()
+	if w.is_scrap_hall():
+		var hall_step := _hall_step(w, goal, pile, furnace)
+		if not hall_step.is_empty():
+			return hall_step
 	# The first two letters walk through digging and melting, one move at a time.
 	if goal == &"dig":
 		target = pile

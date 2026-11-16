@@ -28,6 +28,9 @@ var window := Vector4(0.6, 4.2, 1.35, 2.3)
 var bay_line_x := CAR_POS.x + 1.45
 ## Extra env_concrete parameters (colours) for other halls.
 var floor_params := {}
+## Ground slab and floor plane: size and where its middle lies along Z.
+var ground_size := Vector2(40.0, 40.0)
+var ground_z := 2.0
 var stations: Array = []
 var _passthrough: Array[RID] = []
 var _wall_mat: ShaderMaterial
@@ -72,15 +75,15 @@ func _floor() -> void:
 	body.name = "GroundCollision"
 	var shape := CollisionShape3D.new()
 	var box := BoxShape3D.new()
-	box.size = Vector3(40.0, 1.0, 40.0)
+	box.size = Vector3(ground_size.x, 1.0, ground_size.y)
 	shape.shape = box
-	body.position = Vector3(0, -0.5, 2.0)
+	body.position = Vector3(0, -0.5, ground_z)
 	body.add_child(shape)
 	add_child(body)
 	if not EnvMesh.visual():
 		return
 	var plane := PlaneMesh.new()
-	plane.size = Vector2(40.0, 40.0)
+	plane.size = ground_size
 	var mat := ShaderMaterial.new()
 	mat.shader = load("res://shaders/env_concrete.gdshader")
 	mat.set_shader_parameter(&"door_z", inner_max.y + WALL * 0.5)
@@ -93,7 +96,7 @@ func _floor() -> void:
 	stains.resize(MAX_STAINS)
 	mat.set_shader_parameter(&"stains", stains)
 	mat.set_shader_parameter(&"stain_count", count)
-	var mi := EnvMesh.add(self, plane, mat, Transform3D(Basis(), Vector3(0, 0, 2.0)), false)
+	var mi := EnvMesh.add(self, plane, mat, Transform3D(Basis(), Vector3(0, 0, ground_z)), false)
 	mi.name = "Floor"
 
 

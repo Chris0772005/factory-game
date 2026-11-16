@@ -22,7 +22,7 @@ var _t := 0.0
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var font := UITheme.display_font()
+	var font := UITheme.display_font(true)
 	var width := 0.0
 	for i in LINES.size():
 		width = maxf(width, font.get_string_size(LINES[i], HORIZONTAL_ALIGNMENT_LEFT, -1, FONT_SIZE).x + INDENT * i)

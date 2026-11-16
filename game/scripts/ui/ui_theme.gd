@@ -37,22 +37,28 @@ static var _theme: Theme
 static var _fonts := {}
 
 
-## Fredoka at the given weight (variable font); cached per weight.
+## The game's text face: Barlow Condensed (OFL), a sober industrial grotesque
+## in the spirit of factory signage. Cached per weight; the nearest of the
+## four cuts shipped is used.
 static func font(weight := 600) -> FontVariation:
 	if _fonts.has(weight):
 		return _fonts[weight]
+	var cut := "Medium" if weight <= 500 else ("SemiBold" if weight <= 600 else ("Bold" if weight <= 700 else "ExtraBold"))
 	var fv := FontVariation.new()
-	fv.base_font = load("res://assets/fonts/Fredoka.ttf")
-	fv.variation_opentype = {TextServerManager.get_primary_interface().name_to_tag("wght"): weight}
+	fv.base_font = load("res://assets/fonts/BarlowCondensed-%s.ttf" % cut)
+	# Condensed letters want a little air between them at UI sizes.
+	fv.spacing_glyph = 1
 	_fonts[weight] = fv
 	return fv
 
 
-## Chunky display face for the logo, banners and big numbers (Lilita One, OFL).
-static func display_font() -> Font:
-	if not _fonts.has(&"display"):
-		_fonts[&"display"] = load(DISPLAY_FONT)
-	return _fonts[&"display"]
+## Heavy cut for banners, headings and big numbers. `logo`: the rounded
+## Lilita One (OFL) of the MOLTEN MATES wordmark.
+static func display_font(logo := false) -> Font:
+	var key := &"logo" if logo else &"display"
+	if not _fonts.has(key):
+		_fonts[key] = load(DISPLAY_FONT) if logo else font(800)
+	return _fonts[key]
 
 
 static func get_theme() -> Theme:

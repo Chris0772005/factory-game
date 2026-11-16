@@ -23,10 +23,15 @@ const DETECTOR_BOOST := 2.5
 
 var progress := 0.0
 var stock := STOCK_MAX
+## Grabs in a full heap, and seconds per grab that grows back (INF: never).
+var stock_max := STOCK_MAX
+var restock_every := RESTOCK_EVERY
+## Share of grabs that bring plain junk (FoundryRules.JUNK) instead of metal.
+var junk_share := 0.0
 var _restock := 0.0
 var _sync_accum := 0.0
 var _dirty := false
-var _art: ScrapArt
+var _art: Node3D
 var _dig_fx := 0.0
 
 
@@ -38,6 +43,11 @@ func _ready() -> void:
 	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	add_to_group(&"interactable")
 	add_to_group(&"scrap_piles")
+	_build_heap()
+
+
+## Collider and look of the heap (the big hall heap overrides this).
+func _build_heap() -> void:
 	# Low solid core so workers stand at the heap instead of inside it.
 	var core := StaticBody3D.new()
 	core.position.y = 0.14
@@ -48,9 +58,20 @@ func _ready() -> void:
 	shape.shape = cyl
 	core.add_child(shape)
 	add_child(core)
-	_art = ScrapArt.new()
-	add_child(_art)
-	_art.build()
+	var art := ScrapArt.new()
+	add_child(art)
+	art.build()
+	_art = art
+
+
+## Where a find comes out of the heap for `p`.
+func _find_origin(_p: Player) -> Vector3:
+	return global_position + Vector3(0, 0.75, 0)
+
+
+## The heap centre a find flies away from.
+func _heap_centre() -> Vector3:
+	return global_position
 
 
 func interact_point() -> Vector3:
@@ -118,14 +139,24 @@ func _find(p: Player) -> void:
 	if guide:
 		guide.note(&"dig")
 	var count := 2 if world.has_upgrade(&"magnet") else 1
-	var top := global_position + Vector3(0, 0.75, 0)
-	var out := (p.global_position - global_position) if p else Vector3.BACK
+	var top := _find_origin(p)
+	var out := (p.global_position - _heap_centre()) if p else Vector3.BACK
 	out.y = 0.0
 	out = out.normalized() if out.length() > 0.1 else Vector3.BACK
 	for i in count:
 		var kind := _next if i == 0 and _next != &"" else _roll()
 		_next = &""
-		var info: Dictionary = FoundryRules.SCRAP[kind]
+		# A bucket standing by takes the find straight away.
+		var bucket := ScrapBucket.near(get_tree(), p.global_position if p else top)
+		if bucket and bucket.add(kind):
+			if RARE.has(kind):
+				world.popup_all(top + Vector3(0, 0.6, 0), "%s! ✨" % FoundryRules.find_info(kind).name, Color("#ffcf3f"))
+				_fx_all(&"rare")
+				var found := get_tree().get_first_node_in_group(&"find_books") as FindBook
+				if found:
+					found.note(kind, top)
+			continue
+		var info: Dictionary = FoundryRules.find_info(kind)
 		var item := world.spawn_item(kind, info.color, info.size, 0.4, top + Vector3(randf_range(-0.15, 0.15), i * 0.2, randf_range(-0.15, 0.15)))
 		if item:
 			item.apply_central_impulse((out * randf_range(1.2, 1.8) + Vector3(randf_range(-0.4, 0.4), 2.6, randf_range(-0.4, 0.4))) * item.mass)
@@ -146,11 +177,15 @@ func take_one() -> StringName:
 	stock -= 1
 	_dirty = true
 	_fx_all(&"rummage")
-	return _roll()
+	return _roll(false)
 
 
-func _roll() -> StringName:
+func _roll(junk_ok := true) -> StringName:
 	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
+	var detector := world and world.has_upgrade(&"detector")
+	# The detector also sorts out half the junk.
+	if junk_ok and junk_share > 0.0 and randf() < junk_share * (0.5 if detector else 1.0):
+		return FoundryRules.JUNK.keys()[randi() % FoundryRules.JUNK.size()]
 	var weights: Dictionary = PREMIUM_WEIGHTS if world and world.has_upgrade(&"scrap_premium") else WEIGHTS
 	var boost := DETECTOR_BOOST if world and world.has_upgrade(&"detector") else 1.0
 	var total := 0.0
@@ -167,12 +202,12 @@ func _roll() -> StringName:
 func _physics_process(delta: float) -> void:
 	if _art:
 		# The heap sinks as it is dug through.
-		_art.scale.y = lerpf(_art.scale.y, 0.45 + 0.55 * float(stock) / STOCK_MAX, 1.0 - exp(-4.0 * delta))
+		_shrink(delta)
 	if not Network.is_sim_authority():
 		return
-	if stock < STOCK_MAX:
+	if stock < stock_max:
 		_restock += delta
-		if _restock >= RESTOCK_EVERY:
+		if _restock >= restock_every:
 			_restock = 0.0
 			stock += 1
 			_dirty = true
@@ -182,6 +217,11 @@ func _physics_process(delta: float) -> void:
 			_sync_accum = 0.0
 			_dirty = false
 			_sync.rpc(progress, stock)
+
+
+## The heap sinks as it is dug through.
+func _shrink(delta: float) -> void:
+	_art.scale.y = lerpf(_art.scale.y, 0.45 + 0.55 * float(stock) / stock_max, 1.0 - exp(-4.0 * delta))
 
 
 @rpc("authority", "call_remote", "unreliable_ordered")

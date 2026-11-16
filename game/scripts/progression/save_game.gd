@@ -9,7 +9,7 @@ class_name SaveGame
 ## player's progress. Showcase scenes can also set `disabled` themselves.
 
 const PATH := "user://molten_mates_save.json"
-const VERSION := 1
+const VERSION := 2
 
 ## Set by scenes that stage the world (showcases, tools) before building a level.
 static var disabled := false
@@ -39,7 +39,7 @@ static func save(world: GameWorld, level := "") -> void:
 		money = world.money,
 		upgrades = world.upgrades.to_save() if world.upgrades else [],
 		level = level if level != "" else world.level_path(),
-		guide = (world.get("guide") as Guide).index if world.get("guide") else 0,
+		guide = (world.get("guide") as Guide).to_save() if world.get("guide") else "",
 		finds = (world.get("find_book") as FindBook).to_save() if world.get("find_book") else [],
 		time = Time.get_unix_time_from_system(),
 		rate = _rate(world),
@@ -61,7 +61,7 @@ static func load_into(world: GameWorld) -> bool:
 	if world.upgrades:
 		world.upgrades.load_save(data.get("upgrades", []))
 	if world.get("guide"):
-		(world.get("guide") as Guide).load_index(int(data.get("guide", 0)))
+		(world.get("guide") as Guide).load_save(data.get("guide", 0))
 	if world.get("find_book"):
 		(world.get("find_book") as FindBook).load_save(data.get("finds", []))
 	last_away = {time = float(data.get("time", 0.0)), rate = float(data.get("rate", 0.0))}
@@ -83,7 +83,7 @@ static func saved_level(fallback: String) -> String:
 		return fallback
 	var f := FileAccess.open(PATH, FileAccess.READ)
 	var data = JSON.parse_string(f.get_as_text()) if f else null
-	if typeof(data) != TYPE_DICTIONARY:
+	if typeof(data) != TYPE_DICTIONARY or data.get("version", 0) != VERSION:
 		return fallback
 	var level := str(data.get("level", ""))
 	return level if level != "" and ResourceLoader.exists(level) else fallback

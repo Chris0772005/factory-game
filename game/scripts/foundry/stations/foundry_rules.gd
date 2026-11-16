@@ -23,6 +23,33 @@ const SCRAP := {
 	&"scrap_bikebell": {metal = &"zinc_brass", amount = 0.3, name = "Fahrradklingel", color = Color("#dfe3e8"), size = Vector3(0.1, 0.07, 0.1)},
 }
 
+## Worthless-looking junk from the big scrap heap: no metal for the furnace,
+## but the scrap dealer pays a little for it by the bucket.
+const JUNK := {
+	&"junk_sheet": {name = "Altblech", color = Color("#8a6f5c"), size = Vector3(0.3, 0.05, 0.22), price = 2},
+	&"junk_gear": {name = "Zahnrad", color = Color("#6d6660"), size = Vector3(0.18, 0.06, 0.18), price = 3},
+	&"junk_bolt": {name = "Schrauben", color = Color("#7c7772"), size = Vector3(0.12, 0.08, 0.12), price = 1},
+	&"junk_spring": {name = "Sprungfeder", color = Color("#75604f"), size = Vector3(0.12, 0.2, 0.12), price = 2},
+}
+## What the scrap dealer pays for raw finds (casting them first pays far more).
+const RAW_PRICES := {&"scrap_can": 2, &"scrap_key": 3, &"scrap_pipe": 5, &"scrap_kettle": 12, &"scrap_tooth": 15, &"scrap_ring": 25,
+	&"scrap_trophy": 9, &"scrap_candle": 7, &"scrap_coin": 20, &"scrap_bikebell": 4}
+
+
+## Name, colour and size of a raw find (scrap or junk); empty if `kind` is neither.
+static func find_info(kind: StringName) -> Dictionary:
+	if SCRAP.has(kind):
+		return SCRAP[kind]
+	return JUNK.get(kind, {})
+
+
+## What the scrap dealer pays for one raw find.
+static func raw_price(kind: StringName) -> int:
+	if JUNK.has(kind):
+		return JUNK[kind].price
+	return RAW_PRICES.get(kind, 0)
+
+
 ## Sealed crates (garage): unknown mixes, revealed only by the casting.
 ## weight = relative chance; mix = metal -> litres.
 const CRATES := {

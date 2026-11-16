@@ -8,6 +8,9 @@ signal closed
 
 const STEPS := [["1", "Schrott sammeln", "Im Schrottberg wühlen"], ["2", "Einschmelzen", "Ofen füllen, Blasebalg treten"],
 	["3", "Gießen", "Modell zeichnen, Form füllen"], ["4", "Verkaufen", "Ab in die Verkaufskiste"]]
+## The scrap hall starts smaller: by hand, with a bucket, to the dealer.
+const HALL_STEPS := [["1", "Abtragen", "Am Schrottberg F halten"], ["2", "Eimer füllen", "Funde fallen hinein"],
+	["3", "Verkaufen", "Ankauf gegenüber, F drücken"], ["4", "Aufrüsten", "Werkzeug, dann der Schmelzofen"]]
 
 
 ## Opens the letter for a brand-new game (nothing dug, nothing sold, no money).
@@ -74,11 +77,16 @@ func _ready() -> void:
 	paper.add_child(col)
 	var ink := Color("#3a2c22")
 	col.add_child(_text("Mein Junge,", 40, ink, StationKit.hand_font()))
-	col.add_child(_text("meine alte Hinterhof-Gießerei gehört jetzt dir. Viel ist es nicht: ein Ofen, ein Haufen Schrott und zwei Formkästen. Aber daraus machst du Geld. So geht's:", 30, ink, StationKit.hand_font()))
+	var level := get_tree().get_first_node_in_group(&"world") as GameWorld
+	var hall := level != null and level.is_scrap_hall()
+	if hall:
+		col.add_child(_text("meine alte Schrotthalle gehört jetzt dir. Viel ist es nicht: ein Berg Schrott, ein Eimer und deine zwei Hände. Aber in dem Berg steckt Geld. So geht's:", 30, ink, StationKit.hand_font()))
+	else:
+		col.add_child(_text("meine alte Hinterhof-Gießerei gehört jetzt dir. Viel ist es nicht: ein Ofen, ein Haufen Schrott und zwei Formkästen. Aber daraus machst du Geld. So geht's:", 30, ink, StationKit.hand_font()))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 14)
 	col.add_child(row)
-	for step: Array in STEPS:
+	for step: Array in (HALL_STEPS if hall else STEPS):
 		var card := PanelContainer.new()
 		var cb := StyleBoxFlat.new()
 		cb.bg_color = Color("#ecd9b4")
