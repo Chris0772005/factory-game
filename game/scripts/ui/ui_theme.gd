@@ -161,6 +161,7 @@ static func get_theme() -> Theme:
 	var card := panel_box(28, 40)
 	card.content_margin_top = 34
 	card.content_margin_bottom = 34
+	card.set_border_width_all(0)
 	card.border_width_top = 3
 	card.border_color = ACCENT
 	t.set_stylebox("panel", "CardPanel", card)
