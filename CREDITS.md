@@ -54,3 +54,8 @@ Werkstatt-Geräte (ebenfalls Poly Haven, CC0): tool_cart, metal_tool_chest, old_
 ## Figuren (Stadt)
 
 - Quaternius, „Ultimate Modular Men Pack“, „Ultimate Modular Women Pack“ und „Cyberpunk Game Kit“ (Bewegungen), CC0 1.0 – https://quaternius.com – `game/assets/models/quaternius/`
+
+## Maschinen
+
+- Hydraulikbagger (`game/assets/models/machinery/zx200_hd.glb`): „20 t class hydraulic excavator“, prozedural modelliert von den Mitwirkenden des Projekts „Construction Site Simulation“ (https://github.com/dtt-github/construction-site-simulation) nach den Maßen des OPERA-ZX200-Modells des Public Works Research Institute, Japan. Apache License 2.0 (`game/assets/models/machinery/LICENSE-Apache-2.0.txt`, `NOTICE.txt`). Unverändert übernommen; das Spiel bewegt die Teile.
+- Kipper-LKW (`truck_hd.glb`): eigenes Modell, erzeugt mit `tools/blender/truck_hd.py` (Blender).

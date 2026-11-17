@@ -10,3 +10,4 @@ Thumbs.db
 # local screenshots
 /shots/
 game/_scratch/
+__pycache__/

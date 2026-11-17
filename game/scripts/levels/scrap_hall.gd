@@ -97,6 +97,8 @@ func _ensure_machines() -> void:
 		digger.heap = get_tree().get_first_node_in_group(&"scrap_piles") as ScrapPile
 		digger.skip = skip
 		digger.position = ScrapHallSet.DIGGER_POS
+		# Tracks towards the heap.
+		digger.rotation.y = PI
 		add_child(digger)
 		_announce("DER BAGGER IST DA!", "Er lädt den Berg in die Mulde – an der Mulde F drücken, dann holt Kowalski sie ab")
 	if not _truck_built and has_upgrade(&"truck"):
