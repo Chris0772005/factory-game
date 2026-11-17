@@ -38,6 +38,37 @@ func _ready() -> void:
 	add_to_group(GROUP)
 	if DisplayServer.get_name() != "headless":
 		add_child(LawHud.new())
+	for arg in OS.get_cmdline_user_args():
+		if arg == "--hot" or arg == "--pad":
+			_debug(arg)
+
+
+## Art checks: `--hot` puts a hot pistol into the player's hands and raises
+## the heat; `--pad` buys the foundry corner and opens the drawing pad.
+func _debug(arg: String) -> void:
+	await get_tree().create_timer(1.2).timeout
+	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
+	var me := world.local_player() if world else null
+	if me == null:
+		return
+	if arg == "--pad":
+		world.add_money(1000)
+		world.upgrades.buy(&"foundry_corner")
+		await get_tree().create_timer(0.5).timeout
+		var bench := get_tree().get_first_node_in_group(&"model_benches") as ModelBench
+		if bench == null:
+			for node in world.get_children():
+				if node is ModelBench:
+					bench = node
+		if bench:
+			bench._open_pad("Zeichne dein Modell", &"")
+		return
+	var info: Dictionary = FoundryRules.HOT[&"hot_pistol"]
+	var item := world.spawn_item(&"hot_pistol", info.color, info.size, 0.4, me.global_position + Vector3(0, 1.2, 0) + me.global_transform.basis.z * 0.5)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	me.grab(item)
+	add_heat(0.45)
 
 
 func _physics_process(delta: float) -> void:

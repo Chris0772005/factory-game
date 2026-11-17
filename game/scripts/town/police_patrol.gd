@@ -21,7 +21,9 @@ const FOV_OPEN := 0.45
 const FOV_BUCKET := 0.15
 const NOTICE_TIME := 1.1
 const FORGET_RATE := 0.45
-const CATCH_RANGE := 1.5
+const CATCH_RANGE := 2.1
+## He stops this far from whoever he is after: an arm's length, not nose to nose.
+const ARM_LENGTH := 1.7
 const LOSE_TIME := 5.0
 const COLLECT_RANGE := 3.5
 ## A chase ends by itself after this long, and this long after the goods are gone.
@@ -234,7 +236,12 @@ func _chase(delta: float) -> void:
 		_lost = 0.0
 	else:
 		_lost += delta
-	var arrived := _walk_to(_last_seen, CHASE_SPEED * (1.0 + 0.2 * heat()), delta)
+	var arrived := false
+	if _lost < 0.3 and global_position.distance_to(_target.global_position) < ARM_LENGTH:
+		_stop()
+		_face(_target.global_position - global_position, delta, 9.0)
+	else:
+		arrived = _walk_to(_last_seen, CHASE_SPEED * (1.0 + 0.2 * heat()), delta)
 	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
 	var law := TownLaw.of(get_tree())
 	var empty_handed := TownLaw.carried_hot(_target).is_empty()

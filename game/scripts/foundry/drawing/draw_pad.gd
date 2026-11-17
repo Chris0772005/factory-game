@@ -477,6 +477,7 @@ func _template_button(id: StringName, columns: int) -> Button:
 	b.theme_type_variation = &"BigButton" if id == guide_motif else &"SecondaryButton"
 	b.add_theme_font_size_override("font_size", 20)
 	b.custom_minimum_size = Vector2((SIDE_WIDTH - 6 * (columns - 1)) / float(columns), 44)
+	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	b.focus_mode = Control.FOCUS_NONE
 	b.pressed.connect(use_template.bind(id))
 	return b
