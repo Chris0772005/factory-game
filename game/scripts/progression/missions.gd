@@ -9,29 +9,29 @@ extends Node
 const GROUP := &"missions"
 ## Seconds until the next mission of a track appears after one is done.
 const NEXT_DELAY := 2.5
-## stat = what is counted, goal/reward for the first round, text with %d for
-## the goal, needs = upgrade that must be owned (the template is skipped otherwise).
+## stat = what is counted, goal/reward for the first round, text (the count
+## is shown beside it), needs = upgrade that must be owned (the template is skipped otherwise).
 const TRACKS := [
 	{name = "Schrott", color = Color("#f2b134"), list = [
-		{stat = &"dig", goal = 15, reward = 20, text = "Wühl %d Teile aus dem Schrottberg"},
-		{stat = &"scrap_sold", goal = 25, reward = 35, text = "Verkaufe %d Teile beim Scrap Dealer"},
-		{stat = &"handed_in", goal = 2, reward = 40, text = "Gib %d-mal heiße Ware bei der Police ab"},
-		{stat = &"cast_sold", goal = 3, reward = 80, text = "Verkaufe %d Gussstücke", needs = &"foundry_corner"},
-		{stat = &"heap", goal = 1, reward = 150, text = "Trag den Schrottberg %d-mal ganz ab"},
+		{stat = &"dig", goal = 15, reward = 20, text = "Schrott wühlen"},
+		{stat = &"scrap_sold", goal = 25, reward = 35, text = "Schrott verkaufen"},
+		{stat = &"handed_in", goal = 2, reward = 40, text = "Heiße Ware abgeben (Police)"},
+		{stat = &"cast_sold", goal = 3, reward = 80, text = "Gussstücke verkaufen", needs = &"foundry_corner"},
+		{stat = &"heap", goal = 1, reward = 150, text = "Schrottberg ganz abtragen"},
 	]},
 	{name = "Betrieb", color = Color("#5bb8e8"), list = [
-		{stat = &"earned", goal = 100, reward = 25, text = "Verdiene %d $"},
-		{stat = &"upgrade", goal = 1, reward = 30, text = "Kauf %d-mal einen Ausbau an der Werkstatt-Tafel"},
-		{stat = &"digger_grab", goal = 30, reward = 80, text = "Lass den Bagger %d Schaufeln laden", needs = &"excavator"},
-		{stat = &"earned", goal = 400, reward = 60, text = "Verdiene %d $"},
-		{stat = &"truck_load", goal = 3, reward = 120, text = "Lass den LKW %d Ladungen wegfahren", needs = &"truck"},
+		{stat = &"earned", goal = 100, reward = 25, text = "Geld verdienen ($)"},
+		{stat = &"upgrade", goal = 1, reward = 30, text = "Ausbau kaufen"},
+		{stat = &"digger_grab", goal = 30, reward = 80, text = "Bagger: Schaufeln laden", needs = &"excavator"},
+		{stat = &"earned", goal = 400, reward = 60, text = "Geld verdienen ($)"},
+		{stat = &"truck_load", goal = 3, reward = 120, text = "LKW: Ladungen wegfahren", needs = &"truck"},
 	]},
 	{name = "Unter der Hand", color = Color("#e5533d"), list = [
-		{stat = &"hot_sold", goal = 1, reward = 30, text = "Verkaufe %d-mal heiße Ware im Pawn Shop"},
-		{stat = &"craft", goal = 2, reward = 50, text = "Bastle %d Waffen an der Werkbank", needs = &"workbench"},
-		{stat = &"escape", goal = 1, reward = 60, text = "Entkomme der Polizei %d-mal"},
-		{stat = &"weapon_sold", goal = 1, reward = 120, text = "Verkaufe %d-mal eine gegossene Waffe im Pawn Shop", needs = &"foundry_corner"},
-		{stat = &"hot_sold", goal = 4, reward = 90, text = "Verkaufe %d-mal heiße Ware im Pawn Shop"},
+		{stat = &"hot_sold", goal = 1, reward = 30, text = "Heiße Ware verkaufen"},
+		{stat = &"craft", goal = 2, reward = 50, text = "Waffen basteln", needs = &"workbench"},
+		{stat = &"escape", goal = 1, reward = 60, text = "Der Polizei entkommen"},
+		{stat = &"weapon_sold", goal = 1, reward = 120, text = "Guss-Waffe verkaufen", needs = &"foundry_corner"},
+		{stat = &"hot_sold", goal = 4, reward = 90, text = "Heiße Ware verkaufen"},
 	]},
 ]
 
@@ -117,7 +117,7 @@ func current(t: int) -> Dictionary:
 	if m.stat == &"heap":
 		goal = 1 + r / 2
 	var reward := roundi(int(m.reward) * (1.0 + 0.5 * r) / 5.0) * 5
-	return {text = String(m.text) % goal, goal = goal, reward = reward, progress = mini(progress[t], goal), stat = m.stat}
+	return {text = String(m.text), goal = goal, reward = reward, progress = mini(progress[t], goal), stat = m.stat}
 
 
 func note(stat: StringName, amount := 1) -> void:

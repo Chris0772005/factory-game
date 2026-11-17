@@ -24,21 +24,24 @@ func _ready() -> void:
 	# Offsets from the top-right corner (setting `position` would be relative to
 	# the HUD's size at creation and can land off-screen).
 	set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	offset_left = -460
-	offset_right = -40
-	offset_top = 36
+	offset_left = -436
+	offset_right = -56
+	offset_top = 54
 	grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	custom_minimum_size = Vector2(420, 0)
+	custom_minimum_size = Vector2(380, 0)
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 2)
 	add_child(col)
 	_title = Label.new()
-	_title.text = "JETZT"
-	_title.add_theme_font_size_override("font_size", 18)
+	_title.text = "AUFGABE"
+	_title.add_theme_font_override("font", UITheme.font(700))
+	_title.add_theme_font_size_override("font_size", 17)
+	_title.add_theme_constant_override("outline_size", 0)
 	_title.add_theme_color_override("font_color", UITheme.ACCENT)
 	col.add_child(_title)
 	_text = Label.new()
-	_text.add_theme_font_size_override("font_size", 26)
+	_text.add_theme_font_size_override("font_size", 23)
+	_text.add_theme_constant_override("outline_size", 0)
 	_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	col.add_child(_text)
 	modulate.a = 0.0
@@ -106,21 +109,21 @@ static func _hall_step(w: GameWorld, goal: StringName, pile: ScrapPile, furnace:
 	var count := bucket.count if bucket else 0
 	if goal == &"dig":
 		target = pile
-		return "Geh zum Schrottberg und halte F. Der Eimer daneben fängt die Funde auf."
+		return "Am Schrottberg F halten. Der Eimer daneben fängt die Funde."
 	if goal == &"scrap_sold" or goal == &"foundry_corner":
 		if goal == &"foundry_corner" and w.money >= 150:
 			target = _of_class(tree, "UpgradeBoard")
-			return "Du hast 150 $: Kauf Schmelzofen & Formkästen an der Werkstatt-Tafel (F)."
+			return "150 $ sind da: Schmelzofen an der Werkstatt-Tafel kaufen."
 		if bucket and (bucket.is_full() or (goal == &"scrap_sold" and count >= 3)):
 			target = shop
-			return "Nimm den Eimer (Linksklick), trag ihn über die Straße zum Scrap Dealer und drück F."
+			return "Eimer über die Straße zum Scrap Dealer tragen, dort F."
 		target = pile
 		if goal == &"foundry_corner":
-			return "Weiter abtragen und verkaufen – für den Schmelzofen brauchst du 150 $."
-		return "Füll den Eimer am Schrottberg (F halten)."
+			return "Für den Schmelzofen sparen: 150 $."
+		return "Eimer am Schrottberg füllen."
 	if goal == &"melt" and furnace and bucket and furnace.charge.is_empty() and bucket._metal_count() > 0:
 		target = furnace
-		return "Trag den Eimer zum Ofen und drück F: das Metall fällt hinein."
+		return "Eimer zum Ofen tragen, dort F."
 	return ""
 
 
@@ -131,8 +134,8 @@ static func next_step(w: GameWorld) -> String:
 	if me and TownLaw.of(tree) and not TownLaw.carried_hot(me).is_empty():
 		target = tree.get_first_node_in_group(TownCounter.GROUP) as Node3D
 		if TownLaw.weapon_of(me.held) != &"":
-			return "Du trägst eine Waffe! Bring sie in den Pawn Shop (links vom Ankauf) – die Streife darf dich damit nicht sehen."
-		return "Heiße Ware dabei! Pawn Shop (links vom Ankauf): viel Geld, aber die Streife darf sie nicht sehen. Police (rechts): sicherer Finderlohn."
+			return "Waffe zum Pawn Shop bringen. Streife meiden."
+		return "Heiße Ware: Pawn Shop zahlt viel, Police zahlt sicher. Streife meiden."
 	for node in w.entities.get_children():
 		if (node is CastPiece and not (node as CastPiece).series) or node is BronzeStatue:
 			target = _of_class(tree, "SellCrate")

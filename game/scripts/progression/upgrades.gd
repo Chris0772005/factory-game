@@ -7,12 +7,12 @@ signal changed
 
 const CATALOG := [
 	# Scrap hall only: the first steps from bare hands to a foundry of one's own.
-	{id = &"bucket_big", name = "Großer Eimer", desc = "Fasst 30 statt 12 Teile – weniger Laufen zum Ankauf.", cost = 60, tier = 0, hall = true},
-	{id = &"workbench", name = "Werkbank im Hinterzimmer", desc = "Dein Nebengeschäft: aus Altblech, Federn, Schrauben, Zahnrädern und Rohr werden Waffen. Der Pawn Shop zahlt gut dafür.", cost = 120, tier = 0, hall = true},
-	{id = &"excavator", name = "Bagger & Mulde", desc = "Der Bagger lädt den Berg von selbst in die Mulde. Kowalski holt sie auf Zuruf ab.", cost = 450, tier = 0, hall = true},
-	{id = &"truck", name = "Eigener LKW", desc = "Fährt jede volle Mulde von selbst weg und bringt den Großhandelspreis (+20 %).", cost = 600, tier = 0, hall = true, needs = &"excavator"},
-	{id = &"excavator_fast", name = "Stärkere Hydraulik", desc = "Der Bagger arbeitet fast doppelt so schnell.", cost = 800, tier = 0, hall = true, needs = &"excavator"},
-	{id = &"foundry_corner", name = "Schmelzofen & Formkästen", desc = "Deine eigene Gießerei-Ecke: Metall einschmelzen und gießen. Guss bringt ein Vielfaches vom Schrottpreis.", cost = 150, tier = 0, hall = true},
+	{id = &"bucket_big", name = "Großer Eimer", desc = "Fasst 30 statt 12 Teile.", cost = 60, tier = 0, hall = true},
+	{id = &"workbench", name = "Werkbank im Hinterzimmer", desc = "Aus Altblech, Federn, Schrauben und Rohr werden Waffen für den Pawn Shop.", cost = 120, tier = 0, hall = true},
+	{id = &"excavator", name = "Bagger & Mulde", desc = "Lädt den Berg selbst in die Mulde. Kowalski holt sie für 80 % ab.", cost = 450, tier = 0, hall = true},
+	{id = &"truck", name = "Eigener LKW", desc = "Fährt volle Mulden selbst weg. Großhandel: +20 %.", cost = 600, tier = 0, hall = true, needs = &"excavator"},
+	{id = &"excavator_fast", name = "Stärkere Hydraulik", desc = "Bagger fast doppelt so schnell.", cost = 800, tier = 0, hall = true, needs = &"excavator"},
+	{id = &"foundry_corner", name = "Schmelzofen & Formkästen", desc = "Eigene Gießerei: Metall schmelzen und gießen. Guss bringt ein Vielfaches.", cost = 150, tier = 0, hall = true},
 	{id = &"bellows_foot", name = "Fußblasebalg", desc = "Jeder Tritt bringt 50 % mehr Hitze.", cost = 120, tier = 0},
 	{id = &"crucible_big", name = "Großer Tiegel", desc = "Fasst 5 statt 3 Liter.", cost = 180, tier = 0},
 	{id = &"mold_slot", name = "Dritte Kavität", desc = "Jeder Formkasten nimmt ein Modell mehr.", cost = 220, tier = 0},

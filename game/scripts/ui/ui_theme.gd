@@ -9,11 +9,11 @@ class_name UITheme
 ##   Panel:   "CardPanel" (pause/settings card), "HudPill" (money counter, prompts)
 ##   Label:   "H1", "H2", "Muted", "Small"
 
-const INK := Color("#1f1b2d")
-const PAPER := Color("#fff8ec")
-const ACCENT := Color("#f2b134")
-const ACCENT_DARK := Color("#c98a12")
-const PANEL := Color(0.122, 0.106, 0.176, 0.82)
+const INK := Color("#101214")
+const PAPER := Color("#f0ede6")
+const ACCENT := Color("#f0a51c")
+const ACCENT_DARK := Color("#b87a0c")
+const PANEL := Color(0.043, 0.047, 0.055, 0.9)
 const GOOD := Color("#6ccb5f")
 const BAD := Color("#e5533d")
 const INFO := Color("#5bb8e8")
@@ -22,7 +22,7 @@ const COIN := Color("#f7c948")
 const MOLTEN_HOT := Color("#ffd27a")
 const MOLTEN := Color("#ff7a1a")
 const MOLTEN_DEEP := Color("#ff6a1a")
-const MUTED := Color("#cfc4b4")
+const MUTED := Color("#a8a49a")
 
 ## Type scale at 1080p (Art Bible 12).
 const SIZE_TITLE := 72
@@ -69,7 +69,7 @@ static func get_theme() -> Theme:
 	t.default_font_size = 28
 	t.set_color("font_color", "Label", PAPER)
 	t.set_color("font_outline_color", "Label", INK)
-	t.set_constant("outline_size", "Label", 8)
+	t.set_constant("outline_size", "Label", 3)
 
 	_label_variation(t, &"H1", SIZE_TITLE, font(700), PAPER, 16)
 	_label_variation(t, &"H2", SIZE_H2, font(700), PAPER, 12)
@@ -112,11 +112,11 @@ static func get_theme() -> Theme:
 	# Secondary: dark glass with paper text, turns gold on hover.
 	t.set_type_variation(&"SecondaryButton", &"Button")
 	var sec := _box(Color(INK, 0.72), Color(0.0, 0.0, 0.0, 0.35))
-	sec.border_width_left = 2
-	sec.border_width_right = 2
-	sec.border_width_top = 2
+	sec.border_width_left = 1
+	sec.border_width_right = 1
+	sec.border_width_top = 1
 	sec.border_color = Color(PAPER, 0.14)
-	sec.border_width_bottom = 6
+	sec.border_width_bottom = 1
 	t.set_stylebox("normal", "SecondaryButton", sec)
 	t.set_stylebox("hover", "SecondaryButton", hover)
 	t.set_stylebox("pressed", "SecondaryButton", pressed)
@@ -130,8 +130,8 @@ static func get_theme() -> Theme:
 	for variation in [&"SegmentButton", &"ToggleButton"]:
 		t.set_type_variation(variation, &"Button")
 		var off := _box(Color(PAPER, 0.08), Color(0, 0, 0, 0.3))
-		off.set_corner_radius_all(14)
-		off.border_width_bottom = 4
+		off.set_corner_radius_all(3)
+		off.border_width_bottom = 2
 		off.content_margin_left = 22
 		off.content_margin_right = 22
 		off.content_margin_top = 6
@@ -161,34 +161,37 @@ static func get_theme() -> Theme:
 	var card := panel_box(28, 40)
 	card.content_margin_top = 34
 	card.content_margin_bottom = 34
-	card.shadow_size = 24
-	card.shadow_offset = Vector2(0, 10)
-	card.shadow_color = Color(0, 0, 0, 0.35)
+	card.border_width_top = 3
+	card.border_color = ACCENT
 	t.set_stylebox("panel", "CardPanel", card)
 	t.set_type_variation(&"HudPill", &"PanelContainer")
-	var pill := panel_box(40, 14)
+	# HUD boxes: a dark slab with an amber bar down the left edge.
+	var pill := panel_box(3, 12)
 	pill.content_margin_left = 16
-	pill.content_margin_right = 26
+	pill.content_margin_right = 18
 	pill.content_margin_top = 8
 	pill.content_margin_bottom = 8
+	pill.set_border_width_all(0)
+	pill.border_width_left = 3
+	pill.border_color = ACCENT
 	t.set_stylebox("panel", "HudPill", pill)
 
 	# Text fields: dark glass like the secondary buttons, gold rim when focused.
 	var field := StyleBoxFlat.new()
 	field.bg_color = Color(INK, 0.78)
-	field.set_corner_radius_all(18)
+	field.set_corner_radius_all(3)
 	field.set_content_margin_all(12)
 	field.content_margin_left = 20
 	field.content_margin_right = 20
 	field.border_color = Color(PAPER, 0.16)
-	field.set_border_width_all(2)
-	field.border_width_bottom = 6
+	field.set_border_width_all(1)
+	field.border_width_bottom = 2
 	field.anti_aliasing_size = 1.2
 	t.set_stylebox("normal", "LineEdit", field)
 	var field_focus := field.duplicate() as StyleBoxFlat
 	field_focus.border_color = ACCENT
-	field_focus.set_border_width_all(3)
-	field_focus.border_width_bottom = 6
+	field_focus.set_border_width_all(1)
+	field_focus.border_width_bottom = 2
 	t.set_stylebox("focus", "LineEdit", field_focus)
 	t.set_color("font_color", "LineEdit", PAPER)
 	t.set_color("caret_color", "LineEdit", ACCENT)
@@ -199,7 +202,7 @@ static func get_theme() -> Theme:
 	# Sliders: rounded track, gold fill, paper knob with an ink rim.
 	var track := StyleBoxFlat.new()
 	track.bg_color = Color(PAPER, 0.12)
-	track.set_corner_radius_all(8)
+	track.set_corner_radius_all(2)
 	track.content_margin_top = 6
 	track.content_margin_bottom = 6
 	var fill := track.duplicate() as StyleBoxFlat
@@ -221,14 +224,14 @@ static func get_theme() -> Theme:
 static func panel_box(radius := 22, margin := 18) -> StyleBoxFlat:
 	var panel := StyleBoxFlat.new()
 	panel.bg_color = PANEL
-	panel.set_corner_radius_all(radius)
+	# Flat and square like a works notice: `radius` is kept for callers but
+	# capped, the rim is one pixel, nothing casts a shadow.
+	panel.set_corner_radius_all(mini(radius, 4))
 	panel.set_content_margin_all(margin)
-	panel.border_color = Color(PAPER, 0.1)
-	panel.set_border_width_all(3)
-	panel.shadow_color = Color(0, 0, 0, 0.25)
-	panel.shadow_size = 12
-	panel.shadow_offset = Vector2(0, 4)
-	panel.anti_aliasing_size = 1.2
+	panel.border_color = Color(PAPER, 0.09)
+	panel.set_border_width_all(1)
+	panel.shadow_size = 0
+	panel.anti_aliasing_size = 0.6
 	return panel
 
 
@@ -314,10 +317,10 @@ static func _label_variation(t: Theme, name: StringName, size: int, f: Font, col
 static func _focus_ring() -> StyleBoxFlat:
 	var ring := StyleBoxFlat.new()
 	ring.draw_center = false
-	ring.set_corner_radius_all(24)
+	ring.set_corner_radius_all(5)
 	ring.border_color = PAPER
-	ring.set_border_width_all(4)
-	ring.set_expand_margin_all(6)
+	ring.set_border_width_all(2)
+	ring.set_expand_margin_all(4)
 	ring.anti_aliasing_size = 1.2
 	return ring
 
@@ -325,15 +328,13 @@ static func _focus_ring() -> StyleBoxFlat:
 static func _box(bg: Color, border: Color) -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = bg
-	sb.set_corner_radius_all(18)
+	sb.set_corner_radius_all(3)
 	sb.border_color = border
-	sb.border_width_bottom = 6
-	sb.content_margin_left = 34
-	sb.content_margin_right = 34
-	sb.content_margin_top = 12
-	sb.content_margin_bottom = 14
-	sb.shadow_color = Color(0, 0, 0, 0.25)
-	sb.shadow_size = 6
-	sb.shadow_offset = Vector2(0, 4)
-	sb.anti_aliasing_size = 1.2
+	sb.border_width_bottom = 3
+	sb.content_margin_left = 28
+	sb.content_margin_right = 28
+	sb.content_margin_top = 10
+	sb.content_margin_bottom = 11
+	sb.shadow_size = 0
+	sb.anti_aliasing_size = 0.6
 	return sb

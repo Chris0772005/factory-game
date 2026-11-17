@@ -39,7 +39,7 @@ func _ready() -> void:
 	if DisplayServer.get_name() != "headless":
 		add_child(LawHud.new())
 	for arg in OS.get_cmdline_user_args():
-		if arg == "--hot" or arg == "--pad" or arg == "--machines":
+		if arg == "--hot" or arg == "--pad" or arg == "--machines" or arg == "--shop":
 			_debug(arg)
 
 
@@ -51,6 +51,13 @@ func _debug(arg: String) -> void:
 	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
 	var me := world.local_player() if world else null
 	if me == null:
+		return
+	if arg == "--shop":
+		world.add_money(640)
+		world.upgrades.buy(&"bucket_big")
+		for node in world.get_children():
+			if node is UpgradeBoard:
+				(node as UpgradeBoard).interact(me)
 		return
 	if arg == "--machines":
 		world.add_money(5000)

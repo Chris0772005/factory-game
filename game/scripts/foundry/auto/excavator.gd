@@ -110,7 +110,9 @@ func _pose(p: float) -> void:
 func _build_art() -> void:
 	if not StationKit.visual():
 		return
-	var yellow := MachineArt.yellow_mat()
+	# Machine paint without the streaks of a wall: a digger is washed by rain, not by drips.
+	var yellow := StationKit.metal("digger_yellow", {steel_color = Color("#6f5a1c"), paint = 0.96, paint_color = Color("#e0a51f"), rust = 0.12,
+		metallic_steel = 0.4, roughness_steel = 0.5, roughness_paint = 0.45, grime = 0.1, dust = 0.3, dents = 0.12, edge_wear = 0.35})
 	var dark := StationKit.metal("digger_dark", {steel_color = Color("#2b2e31"), rust = 0.25, metallic_steel = 0.5, roughness_steel = 0.6})
 	var rubber := StandardMaterial3D.new()
 	rubber.albedo_color = Color("#191a1c")

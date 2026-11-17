@@ -27,7 +27,7 @@ func _ready() -> void:
 	col.add_theme_constant_override("separation", 2)
 	add_child(col)
 	_head = Label.new()
-	_head.text = "✉  POST VON ONKEL HEINZ"
+	_head.text = "POST VON ONKEL HEINZ"
 	_head.add_theme_font_size_override("font_size", 16)
 	_head.add_theme_color_override("font_color", UITheme.ACCENT)
 	col.add_child(_head)
@@ -53,16 +53,17 @@ func _process(delta: float) -> void:
 			return
 		_guide.changed.connect(_on_changed)
 		_on_changed(true)
-	visible = true
 	_open = maxf(0.0, _open - delta)
+	# Only while a letter is open: the standing goal is the task box's job.
+	visible = _open > 0.0
 	_text.visible = _open > 0.0
-	_head.text = "✉  POST VON ONKEL HEINZ" if _open > 0.0 else "ZIEL"
+	_head.text = "POST VON ONKEL HEINZ"
 
 
 func _on_changed(new_letter: bool) -> void:
 	var l := _guide.letter()
 	_text.text = "„%s“" % l.text
-	_goal.text = "➜ %s" % l.goal
+	_goal.text = l.goal
 	if new_letter:
 		_open = OPEN_FOR
 		Sfx.play_ui(&"pop")
