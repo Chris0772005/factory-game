@@ -30,6 +30,8 @@ const COLLECT_RANGE := 3.5
 const CHASE_MAX := 25.0
 const EMPTY_HANDS_TIME := 2.0
 const EYE := Vector3(0, 1.55, 0)
+## The Swat figure in police blue.
+const UNIFORM := {"Swat": Color("#1f3160"), "Swat_Black": Color("#14161c")}
 
 var route: Array[Vector3] = []
 ## He stays on the street side of this line: the houses are out of his way for
@@ -51,7 +53,7 @@ var _chase_time := 0.0
 var _empty_time := 0.0
 var _return_time := 0.0
 var _sweep := 0.0
-var _model: PlayerModel
+var _model: TownFigure
 var _net_accum := 0.0
 var _net_pos := Vector3.ZERO
 var _net_vel := Vector3.ZERO
@@ -67,7 +69,8 @@ func _ready() -> void:
 	shape.position.y = 0.85
 	add_child(shape)
 	floor_snap_length = 0.3
-	_model = TownNpc.dressed(self, Color("#1d2c52"))
+	_model = TownFigure.make("Swat", UNIFORM)
+	add_child(_model)
 	_net_pos = global_position
 
 
@@ -123,7 +126,7 @@ func _physics_process(delta: float) -> void:
 		_net_pos += _net_vel * delta
 		global_position = global_position.lerp(_net_pos, 1.0 - exp(-12.0 * delta))
 	if _model:
-		_model.animate(delta, velocity if Network.is_sim_authority() else _net_vel, true, false, Vector3.ZERO)
+		_model.animate(delta, velocity if Network.is_sim_authority() else _net_vel)
 
 
 @rpc("authority", "call_remote", "unreliable_ordered")

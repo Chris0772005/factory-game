@@ -1,0 +1,5 @@
+Models by Quaternius (https://quaternius.com), CC0 1.0 Universal (public domain).
+- Swat, Suit, Worker, Casual: Ultimate Modular Men Pack
+- Casual_Woman: Ultimate Modular Women Pack
+- Anim_Character: Cyberpunk Game Kit (used for its animations)
+Copied from https://github.com/trebeljahr/quaternius-showcase (public/glb).

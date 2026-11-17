@@ -50,3 +50,7 @@ Dazu `bark_brown_02` (Rinde) und `leafy_grass` (Laub).
 3D-Modelle von [Poly Haven](https://polyhaven.com) (CC0, 1k-Texturen) in `game/assets/models/polyhaven/`: Barrel_01, Barrel_02, barrel_03, wine_barrel_01, wooden_crate_01, wooden_crate_02, cardboard_box_01, wooden_bucket_01, cement_bag, shrub_02, shrub_03, old_tyre, metal_toolbox, painted_wooden_chair_01, propane_tank, wooden_ladder. `PhotoProp` tauscht sie gegen die Bausatz-Requisiten.
 
 Werkstatt-Geräte (ebenfalls Poly Haven, CC0): tool_cart, metal_tool_chest, old_drill_press, bench_vice_01, hand_truck, industrial_storage_cart, old_military_compressor, power_box_01, steel_frame_shelves_01, cross_pein_hammer, pipe_wrench, WetFloorSign_01.
+
+## Figuren (Stadt)
+
+- Quaternius, „Ultimate Modular Men Pack“, „Ultimate Modular Women Pack“ und „Cyberpunk Game Kit“ (Bewegungen), CC0 1.0 – https://quaternius.com – `game/assets/models/quaternius/`

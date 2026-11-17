@@ -244,11 +244,11 @@ func _town() -> void:
 	if not EnvMesh.visual():
 		return
 	# Who stands behind the counters.
-	var broker := TownNpc.make(Color("#54463a"), false)
+	var broker := TownNpc.make("Suit", {"Suit": Color("#4a4038"), "Tie": Color("#7a2f2a")})
 	broker.position = PAWN + Vector3(0.7, 0, COUNTER_Z + 1.1)
 	broker.rotation.y = PI
 	add_child(broker)
-	var officer := TownNpc.make(Color("#1d2c52"), true)
+	var officer := TownNpc.make("Swat", PolicePatrol.UNIFORM)
 	officer.position = POLICE + Vector3(-0.9, 0, COUNTER_Z + 1.1)
 	officer.rotation.y = PI
 	add_child(officer)
