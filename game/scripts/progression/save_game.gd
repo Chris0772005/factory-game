@@ -40,6 +40,7 @@ static func save(world: GameWorld, level := "") -> void:
 		upgrades = world.upgrades.to_save() if world.upgrades else [],
 		level = level if level != "" else world.level_path(),
 		guide = (world.get("guide") as Guide).to_save() if world.get("guide") else "",
+		missions = Missions.of(world.get_tree()).to_save() if Missions.of(world.get_tree()) else {},
 		finds = (world.get("find_book") as FindBook).to_save() if world.get("find_book") else [],
 		time = Time.get_unix_time_from_system(),
 		rate = _rate(world),
@@ -62,6 +63,8 @@ static func load_into(world: GameWorld) -> bool:
 		world.upgrades.load_save(data.get("upgrades", []))
 	if world.get("guide"):
 		(world.get("guide") as Guide).load_save(data.get("guide", 0))
+	if Missions.of(world.get_tree()):
+		Missions.of(world.get_tree()).load_save(data.get("missions", {}))
 	if world.get("find_book"):
 		(world.get("find_book") as FindBook).load_save(data.get("finds", []))
 	last_away = {time = float(data.get("time", 0.0)), rate = float(data.get("rate", 0.0))}

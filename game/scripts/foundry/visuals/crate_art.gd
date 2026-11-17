@@ -59,7 +59,7 @@ func build(size: Vector3) -> void:
 		fluff.append(EnvMesh.piece(StationKit.chunk(rng.randf_range(0.17, 0.24), 30 + i, 0.4, 0.3), Transform3D(Basis(Vector3.UP, rng.randf() * TAU), p)))
 	StationKit.add_merged(_root, fluff, straw)
 	var ink := Color(0.13, 0.12, 0.13, 0.78)
-	StationKit.label(_root, "VERKAUF", Transform3D(Basis(), Vector3(0, 0.34, hz + 0.022)), 84, ink, 700, 0.0019)
+	StationKit.label(_root, "SALE", Transform3D(Basis(), Vector3(0, 0.34, hz + 0.022)), 84, ink, 700, 0.0019)
 	StationKit.label(_root, "MOLTEN MATES  ·  GIESSEREI", Transform3D(Basis(), Vector3(0, 0.585, hz + 0.022)), 40, ink, 600, 0.0019)
 	_chalkboard(size)
 
@@ -89,7 +89,7 @@ func _chalkboard(size: Vector3) -> void:
 	var lift := Vector3(0, 0, 0.004)
 	var hand := StationKit.hand_font()
 	var gold := Color(0.96, 0.85, 0.55, 0.92)
-	StationKit.label(_root, "VERKAUF", face * Transform3D(Basis(), Vector3(-0.07, 0.13, 0) + lift), 110, chalk, 700, 0.0011, StationKit.chalk_font())
+	StationKit.label(_root, "SALE", face * Transform3D(Basis(), Vector3(-0.07, 0.13, 0) + lift), 110, chalk, 700, 0.0011, StationKit.chalk_font())
 	StationKit.label(_root, "Gussteile aller Art", face * Transform3D(Basis(), Vector3(-0.07, 0.03, 0) + lift), 64, chalk, 500, 0.0011, hand)
 	StationKit.label(_root, "Bar auf die Hand!", face * Transform3D(Basis(Vector3.BACK, 0.05), Vector3(-0.08, -0.06, 0) + lift), 64, gold, 600, 0.0011, hand)
 	StationKit.label(_root, "$", face * Transform3D(Basis(), Vector3(0.27, 0.07, 0) + lift), 120, gold, 700, 0.0011, StationKit.chalk_font())

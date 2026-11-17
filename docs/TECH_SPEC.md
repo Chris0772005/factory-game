@@ -276,3 +276,13 @@ Ziel des Nutzers: der Kern bleibt „im Schrott wühlen und ausbauen“ (Find th
 - `town/town_npc.gd` (`TownNpc`): Pfandleiher und Wachhabender hinter den Theken (das Arbeiter-Modell in anderer Kleidung; eigene Stadtfiguren fehlen noch).
 - Test: `tests/test_town`. Prüfhilfe: `-- --at=x,z` stellt den Spieler an eine Stelle.
 - Noch offen für die offene Welt: weitere Straßen und Häuser (Werkzeugladen, Bank, Kneipe, Hafen), Kunden und Passanten, Grundstücke kaufen, Fahrzeuge, Nacht, Gefängnis/Kaution, mehrere Streifen, Mitarbeiter.
+
+## Modul V – Hochfahren: Missionen, Bagger, LKW, Werkbank (Nebengeschäft)
+
+- Schilder an Häusern und Tafeln sind englisch (POLICE, PAWN SHOP, SCRAP DEALER, FOR RENT, ROAD CLOSED, ORDERS, OFF THE BOOKS, SALE); Spieltexte bleiben deutsch und nennen die Orte so, wie sie auf den Schildern stehen.
+- `progression/missions.gd` (`Missions`): drei Missionen laufen gleichzeitig, eine je Strang (Schrott, Betrieb, Unter der Hand). Jeder Strang ist eine Liste von Vorlagen, die immer wieder durchlaufen wird; jede Runde verlangt 60 % mehr und zahlt 50 % mehr. Vorlagen mit `needs` werden übersprungen, bis der Ausbau da ist. Stationen melden mit `Missions.report(tree, stat, n)`; „verdient“ zählt über `money_changed`. Im Spielstand gespeichert. Anzeige: `ui/missions_panel.gd` links unter dem Geld.
+- `auto/excavator.gd` (`Excavator`): Zyklus 8 s (mit `excavator_fast` 5 s), nimmt bei 30 % drei Teile aus dem Berg (`ScrapPile.take_bulk`: Schrott und Blech, nie heiße Ware) und kippt sie bei 75 % in die Mulde. Steht, solange die Mulde voll oder der Berg leer ist.
+- `auto/scrap_skip.gd` (`ScrapSkip`): 60 Teile. [F] mit dem Eimer kippt hinein (heiße Ware bleibt im Eimer). Ohne LKW: [F] an der Mulde, Kowalski holt ab und zahlt 80 %. Mit LKW: `auto/scrap_truck.gd` (`ScrapTruck`) fährt bei voller Mulde vor, lädt, fährt durch die Schranke (`town/boom_gate.gd`) aus dem Viertel und kommt am anderen Ende wieder herein; bezahlt wird der Großhandelspreis (120 %).
+- `stations/workbench.gd` (`Workbench`): [F] mit dem Eimer baut aus dem Inhalt Waffen nach `FoundryRules.RECIPES` (Rohrpistole, Federstock, Zahnrad-Schlagring, Blechklinge); sie liegen danach als heiße Ware im Eimer und gehen an den Pawn Shop.
+- Ausbauten in der Halle (`Upgrades`, `hall = true`): `workbench` 120 $, `excavator` 450 $, `truck` 600 $ und `excavator_fast` 800 $ (beide mit `needs = excavator`).
+- Tests: `tests/test_missions`. Prüfhilfe: `-- --machines` kauft Werkbank, Bagger und LKW.

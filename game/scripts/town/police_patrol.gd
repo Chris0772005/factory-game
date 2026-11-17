@@ -254,6 +254,7 @@ func _chase(delta: float) -> void:
 			_say("Diesmal hast du Glück gehabt.")
 			if law:
 				law.add_heat(TownLaw.ESCAPE_HEAT)
+			Missions.report(get_tree(), &"escape", 1)
 		elif law and world:
 			law.arrest(world, _target)
 			_collect(COLLECT_RANGE, false)
@@ -264,12 +265,14 @@ func _chase(delta: float) -> void:
 		_say("Ich behalte dich im Auge.")
 		if law:
 			law.add_heat(TownLaw.ESCAPE_HEAT)
+		Missions.report(get_tree(), &"escape", 1)
 		_end_chase()
 	elif _lost > LOSE_TIME or (arrived and _lost > 1.5) or _chase_time > CHASE_MAX:
 		_collect(COLLECT_RANGE, false)
 		_say("Wo ist der hin …?")
 		if law:
 			law.add_heat(TownLaw.ESCAPE_HEAT)
+		Missions.report(get_tree(), &"escape", 1)
 		_end_chase()
 
 

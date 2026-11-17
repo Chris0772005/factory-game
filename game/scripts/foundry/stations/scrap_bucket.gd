@@ -241,6 +241,22 @@ func _counter_near(player: Node3D) -> TownCounter:
 	return null
 
 
+func _bench_near(player: Node3D) -> Workbench:
+	for node in get_tree().get_nodes_in_group(Workbench.GROUP):
+		var bench := node as Workbench
+		if bench.in_reach(player):
+			return bench
+	return null
+
+
+func _skip_near(player: Node3D) -> ScrapSkip:
+	for node in get_tree().get_nodes_in_group(ScrapSkip.GROUP):
+		var skip := node as ScrapSkip
+		if skip.interact_point().distance_to(player.global_position + Vector3(0, 0.9, 0)) < USE_RANGE:
+			return skip
+	return null
+
+
 func _furnace_near(player: Node3D) -> Furnace:
 	for node in get_tree().get_nodes_in_group(&"furnaces"):
 		var f := node as Furnace
@@ -264,17 +280,23 @@ func held_hint(player: Node) -> String:
 	var counter := _counter_near(player as Node3D)
 	if counter and hot > 0:
 		return counter.bucket_hint(counter.worth_of(hot_kinds()))
+	var bench := _bench_near(player as Node3D)
+	if bench:
+		return bench.bucket_hint(self)
+	var skip := _skip_near(player as Node3D)
+	if skip and count > hot:
+		return "[F] In die Mulde kippen (%d/%d)" % [skip.count, ScrapSkip.CAPACITY]
 	if hot > 0:
 		load_text += " · %d× heiße Ware (im Eimer versteckt)" % hot
 	if _shop_near(player as Node3D):
 		if count == hot:
-			return "Kowalski: „Heiße Ware fass ich nicht an.“ → Polizeiwache oder Pfandhaus"
+			return "Kowalski: „Heiße Ware fass ich nicht an.“ → Police oder Pawn Shop"
 		return "[F] Schrott verkaufen · %d $" % worth
 	if _furnace_near(player as Node3D) and _metal_count() > 0:
 		return "[F] Metall in den Ofen kippen (%d Teile)" % _metal_count()
 	if is_full():
-		return "%s · voll! Zum Schrott-Ankauf über die Straße" % load_text
-	return "%s · zum Schrott-Ankauf über die Straße" % load_text
+		return "%s · voll! Zum Scrap Dealer über die Straße" % load_text
+	return "%s · zum Scrap Dealer über die Straße" % load_text
 
 
 func use_start(player: Node) -> void:
@@ -283,6 +305,23 @@ func use_start(player: Node) -> void:
 	var counter := _counter_near(player as Node3D)
 	if counter and hot > 0:
 		counter.take_bucket(self)
+		return
+	var bench := _bench_near(player as Node3D)
+	if bench:
+		bench.craft(self)
+		return
+	var skip := _skip_near(player as Node3D)
+	if skip and count > hot:
+		var keep: Array[StringName] = []
+		var tip := []
+		for k in contents:
+			if FoundryRules.is_hot(k) or tip.size() >= skip.room():
+				keep.append(k)
+			else:
+				tip.append(k)
+		skip.add(tip)
+		contents = keep
+		_changed()
 		return
 	var shop := _shop_near(player as Node3D)
 	if shop:

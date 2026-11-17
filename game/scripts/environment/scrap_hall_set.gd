@@ -19,6 +19,14 @@ const PAWN := Vector3(-11.0, 0, FRONT_Z)
 const POLICE := Vector3(17.0, 0, FRONT_Z)
 ## Depth of the counters inside, from the front.
 const COUNTER_Z := 3.5
+## The scrap truck: lane on the street, parking spot and the spot at the
+## skip (both on the apron), the skip and the excavator inside the hall.
+const TRUCK_LANE_Z := 13.0
+const TRUCK_PARK := Vector3(-21.0, 0, 9.8)
+const TRUCK_DOCK := Vector3(-11.5, 0, 9.7)
+const SKIP_POS := Vector3(-10.4, 0, 6.3)
+const DIGGER_POS := Vector3(-6.0, 0, 5.4)
+const WORKBENCH_POS := Vector3(-12.2, 0, -9.3)
 ## Where the street is closed off, left and right.
 const TOWN_X := 27.0
 ## The pavement the patrol walks.
@@ -78,7 +86,7 @@ func _extra_stains() -> PackedVector4Array:
 
 
 func _sign() -> void:
-	StationKit.label(self, "SCHROTTHALLE · HEINZ & NEFFE", Transform3D(Basis(), Vector3(0.0, window.z - 0.5, inner_min.y + 0.012)), 150,
+	StationKit.label(self, "SCRAPYARD · HEINZ & NEPHEW", Transform3D(Basis(), Vector3(0.0, window.z - 0.5, inner_min.y + 0.012)), 150,
 		Color("#e8dcc4"), 800, 0.0026)
 
 
@@ -172,7 +180,7 @@ func _outside() -> void:
 			kerbs.append(EnvMesh.piece(EnvMesh.box(Vector3(80.0, 0.12, 0.2)), Transform3D(Basis(), Vector3(0, 0.06, z))))
 		EnvMesh.add(self, EnvMesh.merge(kerbs), kerb)
 		_shop(Vector3(3.0, 0, shop_z))
-	prop("kaykit_city/streetlight.gltf", Vector3(-9.0, 0, zf + APRON - 0.6), 0.0, {scale = 1.0, solid = PropKit.Solid.CYLINDER})
+	prop("kaykit_city/streetlight.gltf", Vector3(-4.5, 0, zf + APRON - 0.6), 0.0, {scale = 1.0, solid = PropKit.Solid.CYLINDER})
 	prop("kaykit_city/streetlight.gltf", Vector3(10.0, 0, zf + APRON + ROAD + 0.6), 180.0, {scale = 1.0, solid = PropKit.Solid.CYLINDER})
 	prop("kaykit_city/streetlight.gltf", Vector3(-19.0, 0, zf + APRON + ROAD + 0.6), 180.0, {scale = 1.0, solid = PropKit.Solid.CYLINDER})
 	prop("kaykit_city/streetlight.gltf", Vector3(21.0, 0, zf + APRON - 0.6), 0.0, {scale = 1.0, solid = PropKit.Solid.CYLINDER})
@@ -196,19 +204,19 @@ func _town() -> void:
 	var back_z := FRONT_Z + HOUSE_D
 	# Pfandhaus: the door on the left, a shop window on the right.
 	TownBlock.house(self, PAWN, 8.0, HOUSE_D, {key = "pawn", brick = Color("#7d4a3a"), mortar = Color("#b9a88f"), door_x = -2.6,
-		windows = [[-0.4, 3.2]], sign = "PFANDHAUS", sign_back = Color("#3a2a20"), sign_color = Color("#e8c66a"),
+		windows = [[-0.4, 3.2]], sign = "PAWN SHOP", sign_back = Color("#3a2a20"), sign_color = Color("#e8c66a"),
 		floor = Color("#6a4a30"), lining = Color("#b8ab8f"), trim = Color("#3a2a20"), lamp = Color("#ffd49a")})
 	TownBlock.counter(self, PAWN + Vector3(0, 0, COUNTER_Z), 7.4, "pawn_counter", Color("#4f3a28"))
 	TownBlock.shelves(self, PAWN + Vector3(0, 0, HOUSE_D - TownBlock.WALL - 0.24), 6.8, "pawn_shelf", 7)
 	# Polizeiwache: plastered, blue sign, the desk across the room.
 	TownBlock.house(self, POLICE, 9.0, HOUSE_D, {key = "police", plaster = Color("#c9cdc6"), brick = Color("#6d7377"), door_x = 0.0,
-		windows = [[-3.8, -2.2], [2.3, 3.8]], sign = "POLIZEI", sign_back = Color("#1f3f7a"), sign_color = Color("#f4f4f0"),
+		windows = [[-3.8, -2.2], [2.3, 3.8]], sign = "POLICE", sign_back = Color("#1f3f7a"), sign_color = Color("#f4f4f0"),
 		floor = Color("#7a7468"), lining = Color("#d2d6cf"), trim = Color("#1f3f7a"), lamp = Color("#eef2ff")})
 	TownBlock.counter(self, POLICE + Vector3(0, 0, COUNTER_Z), 8.4, "police_desk", Color("#5a5348"))
 	TownBlock.shelves(self, POLICE + Vector3(1.6, 0, HOUSE_D - TownBlock.WALL - 0.24), 4.6, "police_shelf", 11)
 	WorldBuilder.add_collider(self, Vector3(0.5, 0.5, 2.0), Transform3D(Basis(), POLICE + Vector3(-3.9, 0.25, 1.7)))
 	# Shut for now: the houses that fill the row.
-	TownBlock.closed(self, Vector3(-21.0, 0, FRONT_Z), 10.0, HOUSE_D, {key = "let", brick = Color("#8c5a44"), sign = "ZU VERMIETEN"})
+	TownBlock.closed(self, Vector3(-21.0, 0, FRONT_Z), 10.0, HOUSE_D, {key = "let", brick = Color("#8c5a44"), sign = "FOR RENT"})
 	TownBlock.closed(self, Vector3(24.3, 0, FRONT_Z), 4.6, HOUSE_D, {key = "kiosk", brick = Color("#6f6a62"), sign = "KIOSK"})
 	# The yard wall behind the row and the walls beside the hall.
 	var brick := EnvMesh.material("town_yardwall", "res://shaders/env_plaster.gdshader", {
@@ -223,8 +231,16 @@ func _town() -> void:
 		walls.append(EnvMesh.piece(EnvMesh.box(r[1]), Transform3D(Basis(), r[0])))
 	if EnvMesh.visual():
 		EnvMesh.add(self, EnvMesh.merge(walls), brick)
+	# Barriers on the pavements, a boom across the road: it lifts for the truck.
+	var road_from := zf + APRON
 	for s: float in [-1.0, 1.0]:
-		TownBlock.barrier(self, Vector3(s * TOWN_X, 0, (zf + back_z) * 0.5), back_z - zf, "STRASSE GESPERRT")
+		WorldBuilder.add_collider(self, Vector3(0.4, 2.4, back_z - zf), Transform3D(Basis(), Vector3(s * TOWN_X, 1.2, (zf + back_z) * 0.5)))
+		TownBlock.barrier(self, Vector3(s * TOWN_X, 0, (zf + road_from) * 0.5), road_from - zf - 0.3)
+		TownBlock.barrier(self, Vector3(s * TOWN_X, 0, (road_from + ROAD + back_z) * 0.5), back_z - road_from - ROAD - 0.3, "ROAD CLOSED")
+		var gate := BoomGate.new()
+		gate.length = ROAD
+		gate.position = Vector3(s * TOWN_X, 0, road_from + ROAD * 0.5)
+		add_child(gate)
 	if not EnvMesh.visual():
 		return
 	# Who stands behind the counters.
@@ -236,9 +252,9 @@ func _town() -> void:
 	officer.position = POLICE + Vector3(-0.9, 0, COUNTER_Z + 1.1)
 	officer.rotation.y = PI
 	add_child(officer)
-	StationKit.label(self, "An- und Verkauf · Bargeld sofort · keine Fragen", Transform3D(Basis(Vector3.UP, PI),
+	StationKit.label(self, "BUY & SELL · CASH NOW · NO QUESTIONS", Transform3D(Basis(Vector3.UP, PI),
 		PAWN + Vector3(0, 2.72, HOUSE_D - TownBlock.WALL - 0.04)), 80, Color("#3a2a20"), 700, 0.0032)
-	StationKit.label(self, "FUNDBÜRO · Finderlohn für ehrliche Finder", Transform3D(Basis(Vector3.UP, PI),
+	StationKit.label(self, "LOST & FOUND · Reward for honest finders", Transform3D(Basis(Vector3.UP, PI),
 		POLICE + Vector3(0, 2.72, HOUSE_D - TownBlock.WALL - 0.04)), 80, Color("#1f3f7a"), 700, 0.0032)
 	# The blue lamp by the station door, and the bench for those who wait.
 	var blue := StandardMaterial3D.new()
@@ -287,8 +303,8 @@ func _shop(base: Vector3) -> void:
 	dark.albedo_color = Color("#16181c")
 	dark.roughness = 1.0
 	EnvMesh.add(self, EnvMesh.box(Vector3(w - 2.5, h - 2.2, 0.05), 0.0), dark, Transform3D(Basis(), base + Vector3(0, 2.0, 1.6 + d - 0.2)), false)
-	StationKit.label(self, "SCHROTT-ANKAUF", Transform3D(Basis(Vector3.UP, PI), base + Vector3(0, h - 0.55, 1.44)), 150, Color("#f2e6c8"), 800, 0.0042)
-	StationKit.label(self, "Kowalski · zahlt bar", Transform3D(Basis(Vector3.UP, PI), base + Vector3(0, h - 1.02, 1.44)), 80, Color("#e0c88a"), 600, 0.003)
+	StationKit.label(self, "SCRAP DEALER", Transform3D(Basis(Vector3.UP, PI), base + Vector3(0, h - 0.55, 1.44)), 150, Color("#f2e6c8"), 800, 0.0042)
+	StationKit.label(self, "Kowalski · cash paid", Transform3D(Basis(Vector3.UP, PI), base + Vector3(0, h - 1.02, 1.44)), 80, Color("#e0c88a"), 600, 0.003)
 	# Warm light under the awning: the shop is the brightest thing on the street.
 	var lamp := OmniLight3D.new()
 	lamp.light_color = Color("#ffcf8a")

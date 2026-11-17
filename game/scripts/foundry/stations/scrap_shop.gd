@@ -11,7 +11,7 @@ func _ready() -> void:
 
 
 func hint(_player: Node) -> String:
-	return "Schrott-Ankauf · Eimer herbringen und [F] drücken"
+	return "Scrap Dealer · Eimer herbringen und [F] drücken"
 
 
 func toss_accepts(body: Node3D) -> bool:
@@ -44,6 +44,7 @@ func buy_bucket(bucket: ScrapBucket) -> void:
 	var pay := bucket.worth
 	# Hot goods stay in the bucket: Kowalski does not touch them.
 	var pieces := bucket.sell_scrap()
+	Missions.report(get_tree(), &"scrap_sold", pieces)
 	_pay(world, pay, "+%d $ · %d Teile" % [pay, pieces], interact_point())
 
 
@@ -78,4 +79,5 @@ func _physics_process(delta: float) -> void:
 		var local := to_local(piece.global_position)
 		if absf(local.x) < SIZE.x * 0.5 and absf(local.z) < SIZE.z * 0.5 and local.y < SIZE.y + 0.12 and local.y > -0.1:
 			_pay(world, price, "+%d $" % price, piece.global_position)
+			Missions.report(get_tree(), &"scrap_sold", 1)
 			piece.queue_free()

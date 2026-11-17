@@ -50,7 +50,7 @@ const LETTERS := [
 ]
 ## The scrap hall starts earlier: these come right after the first letter there.
 const HALL_LETTERS := [
-	{id = &"scrap_sold", goal = "Trag den Eimer über die Straße zum Schrott-Ankauf und verkauf den Inhalt (F)", reward = 10,
+	{id = &"scrap_sold", goal = "Trag den Eimer über die Straße zum Scrap Dealer und verkauf den Inhalt (F)", reward = 10,
 		text = "Siehst du den Laden gegenüber? Der alte Kowalski kauft alles, was rostet. Eimer vollmachen, rübertragen, kassieren."},
 	{id = &"foundry_corner", goal = "Spar 150 $ und kauf Schmelzofen & Formkästen an der Werkstatt-Tafel", reward = 20,
 		text = "Schrott verkaufen ist Kleingeld. Wer das Metall selber einschmilzt und gießt, verdient das Zehnfache. Spar auf den Ofen!"},

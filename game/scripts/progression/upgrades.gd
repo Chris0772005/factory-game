@@ -8,6 +8,10 @@ signal changed
 const CATALOG := [
 	# Scrap hall only: the first steps from bare hands to a foundry of one's own.
 	{id = &"bucket_big", name = "Großer Eimer", desc = "Fasst 30 statt 12 Teile – weniger Laufen zum Ankauf.", cost = 60, tier = 0, hall = true},
+	{id = &"workbench", name = "Werkbank im Hinterzimmer", desc = "Dein Nebengeschäft: aus Altblech, Federn, Schrauben, Zahnrädern und Rohr werden Waffen. Der Pawn Shop zahlt gut dafür.", cost = 120, tier = 0, hall = true},
+	{id = &"excavator", name = "Bagger & Mulde", desc = "Der Bagger lädt den Berg von selbst in die Mulde. Kowalski holt sie auf Zuruf ab.", cost = 450, tier = 0, hall = true},
+	{id = &"truck", name = "Eigener LKW", desc = "Fährt jede volle Mulde von selbst weg und bringt den Großhandelspreis (+20 %).", cost = 600, tier = 0, hall = true, needs = &"excavator"},
+	{id = &"excavator_fast", name = "Stärkere Hydraulik", desc = "Der Bagger arbeitet fast doppelt so schnell.", cost = 800, tier = 0, hall = true, needs = &"excavator"},
 	{id = &"foundry_corner", name = "Schmelzofen & Formkästen", desc = "Deine eigene Gießerei-Ecke: Metall einschmelzen und gießen. Guss bringt ein Vielfaches vom Schrottpreis.", cost = 150, tier = 0, hall = true},
 	{id = &"bellows_foot", name = "Fußblasebalg", desc = "Jeder Tritt bringt 50 % mehr Hitze.", cost = 120, tier = 0},
 	{id = &"crucible_big", name = "Großer Tiegel", desc = "Fasst 5 statt 3 Liter.", cost = 180, tier = 0},
@@ -57,12 +61,14 @@ static func catalog_for(tier: int, hall := false) -> Array:
 
 ## In the scrap hall everything for the foundry is only sold once the
 ## foundry corner stands (ids that work without it are listed here).
-const HALL_BASICS := [&"bucket_big", &"foundry_corner", &"gloves", &"shovel", &"magnet", &"detector", &"scrap_premium"]
+const HALL_BASICS := [&"workbench", &"excavator", &"truck", &"excavator_fast", &"bucket_big", &"foundry_corner", &"gloves", &"shovel", &"magnet", &"detector", &"scrap_premium"]
 
 
 func offered(u: Dictionary) -> bool:
 	if world == null or not world.is_scrap_hall():
 		return not u.get("hall", false)
+	if u.has("needs") and not has(u.needs):
+		return false
 	return has(&"foundry_corner") or u.id in HALL_BASICS
 
 
@@ -101,6 +107,7 @@ func buy(id: StringName) -> bool:
 	var u := info(id)
 	world.add_money(-u.cost)
 	owned[id] = true
+	Missions.report(world.get_tree(), &"upgrade", 1)
 	world.popup_all(world.local_player().global_position + Vector3(0, 2.4, 0) if world.local_player() else Vector3.ZERO,
 		"%s gekauft!" % u.name, UITheme.ACCENT)
 	_broadcast()

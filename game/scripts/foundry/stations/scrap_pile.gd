@@ -140,6 +140,7 @@ func _find(p: Player) -> void:
 	var guide := get_tree().get_first_node_in_group(&"guides") as Guide
 	if guide:
 		guide.note(&"dig")
+	Missions.report(get_tree(), &"dig", 1)
 	var count := 2 if world.has_upgrade(&"magnet") else 1
 	var top := _find_origin(p)
 	var out := (p.global_position - _heap_centre()) if p else Vector3.BACK
@@ -182,6 +183,23 @@ func take_one() -> StringName:
 	_dirty = true
 	_fx_all(&"rummage")
 	return _roll(false)
+
+
+## Host: a machine takes up to `n` pieces in bulk – scrap and junk as they
+## come, but never the hot goods only hands find.
+func take_bulk(n: int) -> Array:
+	var out := []
+	while n > 0 and stock > 0:
+		stock -= 1
+		n -= 1
+		if junk_share > 0.0 and randf() < junk_share:
+			out.append(FoundryRules.JUNK.keys()[randi() % FoundryRules.JUNK.size()])
+		else:
+			out.append(_roll(false))
+	if not out.is_empty():
+		_dirty = true
+		_fx_all(&"rummage")
+	return out
 
 
 func _roll(junk_ok := true) -> StringName:

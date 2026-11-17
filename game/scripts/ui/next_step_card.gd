@@ -113,7 +113,7 @@ static func _hall_step(w: GameWorld, goal: StringName, pile: ScrapPile, furnace:
 			return "Du hast 150 $: Kauf Schmelzofen & Formkästen an der Werkstatt-Tafel (F)."
 		if bucket and (bucket.is_full() or (goal == &"scrap_sold" and count >= 3)):
 			target = shop
-			return "Nimm den Eimer (Linksklick), trag ihn über die Straße zum Schrott-Ankauf und drück F."
+			return "Nimm den Eimer (Linksklick), trag ihn über die Straße zum Scrap Dealer und drück F."
 		target = pile
 		if goal == &"foundry_corner":
 			return "Weiter abtragen und verkaufen – für den Schmelzofen brauchst du 150 $."
@@ -131,8 +131,8 @@ static func next_step(w: GameWorld) -> String:
 	if me and TownLaw.of(tree) and not TownLaw.carried_hot(me).is_empty():
 		target = tree.get_first_node_in_group(TownCounter.GROUP) as Node3D
 		if TownLaw.weapon_of(me.held) != &"":
-			return "Du trägst eine Waffe! Bring sie ins Pfandhaus (links vom Ankauf) – die Streife darf dich damit nicht sehen."
-		return "Heiße Ware dabei! Pfandhaus (links vom Ankauf): viel Geld, aber die Streife darf sie nicht sehen. Polizeiwache (rechts): sicherer Finderlohn."
+			return "Du trägst eine Waffe! Bring sie in den Pawn Shop (links vom Ankauf) – die Streife darf dich damit nicht sehen."
+		return "Heiße Ware dabei! Pawn Shop (links vom Ankauf): viel Geld, aber die Streife darf sie nicht sehen. Police (rechts): sicherer Finderlohn."
 	for node in w.entities.get_children():
 		if (node is CastPiece and not (node as CastPiece).series) or node is BronzeStatue:
 			target = _of_class(tree, "SellCrate")

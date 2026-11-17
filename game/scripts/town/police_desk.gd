@@ -11,6 +11,10 @@ func price(kind: StringName) -> int:
 	return FoundryRules.finder_reward(kind)
 
 
+func mission_stat() -> StringName:
+	return &"handed_in"
+
+
 func heat_per_piece() -> float:
 	return TownLaw.HAND_IN_HEAT
 
@@ -28,4 +32,4 @@ func _verb() -> String:
 
 
 func hint(_player: Node) -> String:
-	return "Polizeiwache · Fundsachen abgeben, es gibt Finderlohn"
+	return "Police · Fundsachen abgeben, es gibt Finderlohn"

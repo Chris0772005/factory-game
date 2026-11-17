@@ -267,7 +267,7 @@ func _build_art() -> void:
 		bars.append(EnvMesh.piece(EnvMesh.box(Vector3(size.x + 0.1, 0.05, 0.05)), Transform3D(Basis(), Vector3(0, y + s * (size.y + 0.05) * 0.5, 0.03))))
 		bars.append(EnvMesh.piece(EnvMesh.box(Vector3(0.05, size.y, 0.05)), Transform3D(Basis(), Vector3(s * (size.x + 0.05) * 0.5, y, 0.03))))
 	StationKit.add_merged(self, bars, frame)
-	StationKit.label(self, "UNTER DER HAND" if dark else "AUFTRÄGE", Transform3D(Basis(), Vector3(0, y + size.y * 0.5 + 0.12, 0.04)), 96, Color("#6a231c") if dark else Color("#f0e2c4"), 800, 0.0016)
+	StationKit.label(self, "OFF THE BOOKS" if dark else "ORDERS", Transform3D(Basis(), Vector3(0, y + size.y * 0.5 + 0.12, 0.04)), 96, Color("#6a231c") if dark else Color("#f0e2c4"), 800, 0.0016)
 	var paper := StationKit.paper()
 	var pin := StandardMaterial3D.new()
 	pin.albedo_color = Color("#c0392b")

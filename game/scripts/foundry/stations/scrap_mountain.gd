@@ -114,6 +114,7 @@ func _physics_process(delta: float) -> void:
 		var world := get_tree().get_first_node_in_group(&"world") as GameWorld
 		if world:
 			world.add_money(BONUS)
+			Missions.report(get_tree(), &"heap", 1)
 			world.banner_all("BERG ABGETRAGEN!", UITheme.ACCENT, "+%d $ Prämie · neue Ladung Schrott rollt an" % BONUS)
 	elif _reload >= 0.0:
 		_reload -= delta

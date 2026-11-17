@@ -39,17 +39,23 @@ func _ready() -> void:
 	if DisplayServer.get_name() != "headless":
 		add_child(LawHud.new())
 	for arg in OS.get_cmdline_user_args():
-		if arg == "--hot" or arg == "--pad":
+		if arg == "--hot" or arg == "--pad" or arg == "--machines":
 			_debug(arg)
 
 
 ## Art checks: `--hot` puts a hot pistol into the player's hands and raises
-## the heat; `--pad` buys the foundry corner and opens the drawing pad.
+## the heat; `--pad` buys the foundry corner and opens the drawing pad;
+## `--machines` buys workbench, excavator and truck.
 func _debug(arg: String) -> void:
 	await get_tree().create_timer(1.2).timeout
 	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
 	var me := world.local_player() if world else null
 	if me == null:
+		return
+	if arg == "--machines":
+		world.add_money(5000)
+		for id: StringName in [&"workbench", &"excavator", &"truck"]:
+			world.upgrades.buy(id)
 		return
 	if arg == "--pad":
 		world.add_money(1000)
@@ -109,7 +115,7 @@ static func hot_found(world: GameWorld, kind: StringName, pos: Vector3) -> void:
 	var law := of(world.get_tree())
 	if law and not law._told:
 		law._told = true
-		world.banner_all("HEISSE WARE", UITheme.BAD, "Polizeiwache: kleiner Finderlohn · Pfandhaus: viel Geld – lass dich nicht erwischen")
+		world.banner_all("HEISSE WARE", UITheme.BAD, "Police: kleiner Finderlohn · Pawn Shop: viel Geld – lass dich nicht erwischen")
 
 
 ## Black-market price of a cast weapon: this many times its honest value.

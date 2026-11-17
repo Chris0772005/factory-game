@@ -456,7 +456,7 @@ func _build_templates() -> Control:
 	# Where there is a pawnbroker, his wishes can be cast too.
 	if is_inside_tree() and TownLaw.of(get_tree()):
 		var dark_title := Label.new()
-		dark_title.text = "Unter der Hand (fürs Pfandhaus)"
+		dark_title.text = "Unter der Hand (für den Pawn Shop)"
 		dark_title.add_theme_font_size_override("font_size", 20)
 		dark_title.add_theme_color_override("font_color", UITheme.BAD)
 		dark_title.add_theme_constant_override("outline_size", 0)

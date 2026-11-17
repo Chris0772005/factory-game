@@ -28,6 +28,11 @@ func heat_per_piece() -> float:
 	return 0.0
 
 
+## What a hand-over counts as for the missions (subclasses).
+func mission_stat() -> StringName:
+	return &""
+
+
 ## Popup text for a payment (subclasses).
 func pay_text(pay: int, _pieces: int) -> String:
 	return "+%d $" % pay
@@ -109,6 +114,7 @@ func _take(kinds: Array) -> void:
 	if world == null or kinds.is_empty():
 		return
 	_pay_out(world, worth_of(kinds), kinds.size(), heat_per_piece() * kinds.size())
+	Missions.report(get_tree(), mission_stat(), kinds.size())
 
 
 func _pay_out(world: GameWorld, pay: int, pieces: int, heat: float) -> void:

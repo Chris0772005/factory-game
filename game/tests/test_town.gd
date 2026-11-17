@@ -17,6 +17,8 @@ func _run() -> void:
 	var world: GameWorld = load("res://scenes/scrap_hall.tscn").instantiate()
 	add_child(world)
 	await _frames(10)
+	# Mission rewards have their own test (test_missions); here they would blur the sums.
+	Missions.of(get_tree()).free()
 	var me := world.local_player()
 	var law := TownLaw.of(get_tree())
 	var heap := get_tree().get_first_node_in_group(&"scrap_piles") as ScrapMountain

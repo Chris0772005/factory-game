@@ -78,6 +78,7 @@ func _physics_process(_delta: float) -> void:
 			else:
 				_cha_ching()
 			sold.emit(v)
+			Missions.report(get_tree(), &"cast_sold", 1)
 			var guide := get_tree().get_first_node_in_group(&"guides") as Guide
 			if guide:
 				guide.note(&"sold")

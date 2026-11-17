@@ -11,6 +11,9 @@ const SPAWN := Vector3(3.2, 0.2, 5.6)
 const FURNACE_POS := Vector3(6.6, 0, -4.8)
 
 var _corner_built := false
+var _bench_built := false
+var _digger_built := false
+var _truck_built := false
 var _items_spawned := false
 
 
@@ -45,6 +48,7 @@ func build_stations() -> void:
 ## officer on the beat.
 func _build_town() -> void:
 	add_child(TownLaw.new())
+	add_child(Missions.new())
 	var fence := FenceCounter.new()
 	fence.position = ScrapHallSet.PAWN + Vector3(0, 0, ScrapHallSet.COUNTER_Z)
 	add_child(fence)
@@ -73,6 +77,42 @@ func is_scrap_hall() -> bool:
 func _apply_upgrades() -> void:
 	super()
 	_ensure_foundry()
+	_ensure_machines()
+
+
+## Workbench, excavator with its skip, and the truck arrive when they are bought.
+func _ensure_machines() -> void:
+	if not _bench_built and has_upgrade(&"workbench"):
+		_bench_built = true
+		var bench := Workbench.new()
+		bench.position = ScrapHallSet.WORKBENCH_POS
+		add_child(bench)
+		_announce("WERKBANK STEHT!", "Hinten links in der Halle: Eimer mit Altblech, Federn, Schrauben hinbringen und F")
+	if not _digger_built and has_upgrade(&"excavator"):
+		_digger_built = true
+		var skip := ScrapSkip.new()
+		skip.position = ScrapHallSet.SKIP_POS
+		add_child(skip)
+		var digger := Excavator.new()
+		digger.heap = get_tree().get_first_node_in_group(&"scrap_piles") as ScrapPile
+		digger.skip = skip
+		digger.position = ScrapHallSet.DIGGER_POS
+		add_child(digger)
+		_announce("DER BAGGER IST DA!", "Er lädt den Berg in die Mulde – an der Mulde F drücken, dann holt Kowalski sie ab")
+	if not _truck_built and has_upgrade(&"truck"):
+		_truck_built = true
+		var truck := ScrapTruck.new()
+		truck.park = ScrapHallSet.TRUCK_PARK
+		truck.dock = ScrapHallSet.TRUCK_DOCK
+		truck.lane_z = ScrapHallSet.TRUCK_LANE_Z
+		truck.skip = get_tree().get_first_node_in_group(ScrapSkip.GROUP) as ScrapSkip
+		add_child(truck)
+		_announce("DEIN LKW STEHT VOR DER HALLE!", "Er fährt jede volle Mulde von selbst weg – Großhandelspreis")
+
+
+func _announce(title: String, subtitle: String) -> void:
+	if _items_spawned and Network.is_sim_authority():
+		banner_all(title, UITheme.ACCENT, subtitle)
 
 
 ## The foundry corner arrives when it is bought (or with a save that owns it).

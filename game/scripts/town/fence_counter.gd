@@ -11,6 +11,10 @@ func price(kind: StringName) -> int:
 	return FoundryRules.black_price(kind)
 
 
+func mission_stat() -> StringName:
+	return &"hot_sold"
+
+
 func heat_per_piece() -> float:
 	return TownLaw.SALE_HEAT
 
@@ -49,9 +53,10 @@ func toss_place(body: Node3D) -> bool:
 		return false
 	var pay := TownLaw.weapon_price(body) + OrderBoard.fulfil(world, body, true)
 	_pay_out(world, pay, 1, TownLaw.WEAPON_HEAT)
+	Missions.report(get_tree(), &"weapon_sold", 1)
 	body.queue_free()
 	return true
 
 
 func hint(_player: Node) -> String:
-	return "Pfandhaus · kauft heiße Ware, keine Fragen"
+	return "Pawn Shop · kauft heiße Ware, keine Fragen"

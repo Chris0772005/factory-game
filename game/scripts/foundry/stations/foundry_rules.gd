@@ -44,7 +44,19 @@ const HOT := {
 	&"hot_cashbox": {name = "Aufgebrochene Geldkassette", color = Color("#56664f"), size = Vector3(0.26, 0.1, 0.18), black = 55, reward = 10, weight = 30},
 	&"hot_pistol": {name = "Alte Pistole", color = Color("#34373c"), size = Vector3(0.2, 0.13, 0.04), black = 85, reward = 15, weight = 20},
 	&"hot_jewels": {name = "Schmuck aus einem Einbruch", color = Color("#e8c66a"), size = Vector3(0.16, 0.08, 0.12), black = 130, reward = 22, weight = 10},
+	# Built at the workbench from scrap (RECIPES), never found in the heap (weight 0).
+	&"hot_shiv": {name = "Blechklinge", color = Color("#8d8a84"), size = Vector3(0.3, 0.02, 0.06), black = 14, reward = 2, weight = 0},
+	&"hot_gearknuckle": {name = "Zahnrad-Schlagring", color = Color("#6d6660"), size = Vector3(0.16, 0.04, 0.12), black = 20, reward = 2, weight = 0},
+	&"hot_baton": {name = "Federstock", color = Color("#5f5248"), size = Vector3(0.42, 0.05, 0.05), black = 22, reward = 2, weight = 0},
+	&"hot_zipgun": {name = "Rohrpistole", color = Color("#a8683c"), size = Vector3(0.3, 0.12, 0.05), black = 48, reward = 3, weight = 0},
 }
+## Workbench recipes, most valuable first: what goes in, what comes out.
+const RECIPES := [
+	{makes = &"hot_zipgun", needs = [&"scrap_pipe", &"junk_spring", &"junk_bolt"]},
+	{makes = &"hot_baton", needs = [&"junk_spring", &"junk_spring", &"junk_bolt"]},
+	{makes = &"hot_gearknuckle", needs = [&"junk_gear", &"junk_gear"]},
+	{makes = &"hot_shiv", needs = [&"junk_sheet", &"junk_sheet"]},
+]
 
 
 ## Name, colour and size of a raw find (scrap, junk or hot goods); empty if `kind` is none of them.
