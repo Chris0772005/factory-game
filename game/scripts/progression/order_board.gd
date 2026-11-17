@@ -39,6 +39,11 @@ const TEMPLATES := [
 	{id = &"motif_crown", kind = &"motif", tier = 0, motif = &"crown", title = "Krone für den Schützenkönig", need = "Guss in Kronenform", reward = 80, weight = 3},
 	{id = &"motif_gear", kind = &"motif", tier = 0, motif = &"gear", title = "Zahnrad fürs Uhrenmuseum", need = "Guss in Zahnradform", reward = 75, weight = 3},
 	{id = &"motif_anchor", kind = &"motif", tier = 0, motif = &"anchor", title = "Anker für die Hafenkneipe", need = "Guss in Ankerform", reward = 85, weight = 3},
+	# Dark orders: only on the pawnbroker's board (`dark`). The casting is a
+	# weapon: handed over at his counter, never to be seen with by the police.
+	{id = &"dark_knuckles", kind = &"motif", tier = 0, dark = true, motif = &"knuckles", title = "Schlagring für einen „Bekannten“", need = "Guss in Schlagringform · hier an der Theke abgeben", reward = 160, weight = 5},
+	{id = &"dark_dagger", kind = &"motif", tier = 0, dark = true, motif = &"dagger", title = "Dolch – keine Fragen", need = "Guss in Dolchform · hier an der Theke abgeben", reward = 190, weight = 4},
+	{id = &"dark_pistol", kind = &"motif", tier = 0, dark = true, motif = &"pistol", title = "Pistole für den Hafen", need = "Guss in Pistolenform · hier an der Theke abgeben", reward = 260, weight = 3},
 	{id = &"knocker", kind = &"cast", alloy = &"brass", min = 0.35, title = "Türklopfer aus Messing", need = "Messing · mind. Gut", reward = 90, weight = 5},
 	{id = &"trophy", kind = &"cast", alloy = &"", min = 0.6, title = "Pokal für den Kegelverein", need = "Beliebiges Metall · mind. Fein", reward = 110, weight = 5},
 	{id = &"plaque", kind = &"cast", alloy = &"verdigris", min = 0.35, title = "Grünspan-Plakette fürs Rathaus", need = "Grünspan · mind. Gut", reward = 160, weight = 3},
@@ -49,6 +54,8 @@ const TEMPLATES := [
 
 ## Order on the first card when the board is built (the hall's signature job).
 var first_order := &"bronze_buddy"
+## The pawnbroker's board: weapons only, delivered at his counter.
+var dark := false
 ## Active orders: template ids, &"" for an empty slot.
 var slots: Array[StringName] = []
 var _refill := [0.0, 0.0, 0.0]
@@ -76,6 +83,8 @@ func _ready() -> void:
 ## bench offers it as the sheet's guide.
 static func wanted_motif(tree: SceneTree) -> Dictionary:
 	for node in tree.get_nodes_in_group(&"order_boards"):
+		if (node as OrderBoard).dark:
+			continue
 		for id in (node as OrderBoard).slots:
 			var t := template(id)
 			if t.get("kind", &"") == &"motif":
@@ -91,9 +100,12 @@ static func template(id: StringName) -> Dictionary:
 
 
 ## Host: pays the bonus of the first order `piece` fulfils (0 if none).
-static func fulfil(world: GameWorld, piece: Node) -> int:
+## `dark_orders`: the pawnbroker's counter asks his own board only.
+static func fulfil(world: GameWorld, piece: Node, dark_orders := false) -> int:
 	for node in world.get_tree().get_nodes_in_group(&"order_boards"):
 		var board := node as OrderBoard
+		if board.dark != dark_orders:
+			continue
 		var bonus := board._take(piece)
 		if bonus > 0:
 			return bonus
@@ -159,7 +171,8 @@ func _roll() -> StringName:
 	if world and world.is_scrap_hall():
 		# The first hall only knows motif orders: no alloys to mix there yet.
 		tier = 0
-	var pool := TEMPLATES.filter(func(t: Dictionary) -> bool: return not slots.has(t.id) and _offered(t, tier))
+	var pool := TEMPLATES.filter(func(t: Dictionary) -> bool:
+		return not slots.has(t.id) and bool(t.get("dark", false)) == dark and (dark or _offered(t, tier)))
 	var total := 0
 	for t in pool:
 		total += int(t.weight)
@@ -168,7 +181,7 @@ func _roll() -> StringName:
 		r -= int(t.weight)
 		if r < 0:
 			return t.id
-	return &"trophy"
+	return &"dark_knuckles" if dark else &"trophy"
 
 
 ## Orders a hall of `tier` rolls. The Eisenhalle has no small molds or
@@ -228,6 +241,8 @@ func interact_point() -> Vector3:
 
 
 func hint(_player: Node) -> String:
+	if dark:
+		return "Dunkle Aufträge · Guss an der Theke abgeben"
 	return "Aufträge – passendes Gussteil (oder Bronzefreund) in die Verkaufskiste = Bonus"
 
 
@@ -252,7 +267,7 @@ func _build_art() -> void:
 		bars.append(EnvMesh.piece(EnvMesh.box(Vector3(size.x + 0.1, 0.05, 0.05)), Transform3D(Basis(), Vector3(0, y + s * (size.y + 0.05) * 0.5, 0.03))))
 		bars.append(EnvMesh.piece(EnvMesh.box(Vector3(0.05, size.y, 0.05)), Transform3D(Basis(), Vector3(s * (size.x + 0.05) * 0.5, y, 0.03))))
 	StationKit.add_merged(self, bars, frame)
-	StationKit.label(self, "AUFTRÄGE", Transform3D(Basis(), Vector3(0, y + size.y * 0.5 + 0.12, 0.04)), 96, Color("#f0e2c4"), 800, 0.0016)
+	StationKit.label(self, "UNTER DER HAND" if dark else "AUFTRÄGE", Transform3D(Basis(), Vector3(0, y + size.y * 0.5 + 0.12, 0.04)), 96, Color("#6a231c") if dark else Color("#f0e2c4"), 800, 0.0016)
 	var paper := StationKit.paper()
 	var pin := StandardMaterial3D.new()
 	pin.albedo_color = Color("#c0392b")

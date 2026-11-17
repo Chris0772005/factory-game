@@ -261,3 +261,18 @@ Füllen, Abkühlen, Zerschlagen), Hammer, Modellbank (öffnet DrawPad), Verkaufs
 - Flammen (`shaders/fx_flame.gdshader`): weich, additiv, zwei Turbulenz-Schichten statt harter Farbbänder.
 - Geräusche: Aufnahmen aus Kenney „Impact Sounds“ (CC0) in `assets/sfx/real/` haben Vorrang vor den erzeugten Klängen; Schritte auf Hallenboden.
 - Prüfhilfen: `-- --hold=<kind>` gibt dem Spieler einen Gegenstand in die Hand, `--yaw=<Grad>` dreht den Startblick, `--menu=settings|coop` öffnet Menüteile.
+
+## Modul U – Das Viertel: offene Stadt, heiße Ware, Polizei (Richtung „Schedule I“)
+
+Ziel des Nutzers: der Kern bleibt „im Schrott wühlen und ausbauen“ (Find the Needle), dazu eine offene Stadt mit begehbaren Häusern, die einen Zweck haben, und ein zweiter, krimineller Weg zu schnellerem Geld mit höherem Risiko. Erste Stufe:
+
+- `environment/town_block.gd` (`TownBlock`): `house` baut ein begehbares Haus (Türöffnung, Fenster mit Glas, Innenputz, Boden, Decke mit Lampe, Schild), `closed` ein geschlossenes mit Rollladen, dazu `counter`, `shelves`, `barrier`. `ScrapHallSet._town` stellt Pfandhaus und Polizeiwache (beide begehbar), ein Haus „zu vermieten“ und einen Kiosk in die Reihe gegenüber; die Straße endet links und rechts an Absperrungen (`TOWN_X`).
+- Heiße Ware (`FoundryRules.HOT`): Kennzeichen, Geldkassette, Pistole, Schmuck. Kommt nur beim Wühlen von Hand aus dem Berg (`ScrapPile.hot_share`, Berg 2,5 %), Maschinen übergehen sie. Kowalski kauft sie nicht; sie bleibt im Eimer (`ScrapBucket.hot`, `take_hot`, `sell_scrap`).
+- `town/town_counter.gd` (`TownCounter`) mit `FenceCounter` (Pfandhaus: Schwarzmarktpreis, Fahndung steigt) und `PoliceDesk` (Polizeiwache: Finderlohn, Fahndung sinkt). Abgabe: Ware an der Theke loslassen oder [F] mit dem Eimer.
+- `town/town_law.gd` (`TownLaw`): `heat` 0..1 („Fahndung“, fünf Stufen im HUD, kühlt in 5 min ab), `carried_hot` (offen in der Hand oder versteckt im Eimer), `arrest` (Ware weg, Strafe = halber Schwarzmarktwert), `weapon_of` (Gussstück in Waffenform).
+- `town/police_patrol.gd` (`PolicePatrol`): Streife auf dem Gehweg. Offen getragene Ware sieht sie auf 11 m im Blickfeld, Ware im Eimer erst auf 3,2 m; bleibt der Spieler in Sicht, füllt sich `alert`, bei 1 beginnt die Verfolgung. Eingeholt mit Ware: `arrest`. Ware fallen lassen oder 5 s außer Sicht bleiben beendet die Verfolgung ohne Strafe; herumliegende heiße Ware sammelt die Streife ein. In die Häuser folgt sie noch nicht (`max_z`): wer es ins Pfandhaus schafft und verkauft, ist die Ware los, bevor sie ihn hat. Der Host rechnet, die anderen bekommen Position, Zustand und `alert`.
+- `town/law_hud.gd` (`LawHud`): Fahndungsanzeige unter dem Geld, Warnung oben, solange ein Polizist Verdacht schöpft oder verfolgt.
+- Waffenschmiede: `DrawingTemplates` hat drei dunkle Motive (Schlagring, Dolch, Pistole; `dark`), die Zeichenfläche zeigt sie in einer eigenen Zeile. `OrderBoard.dark` ist die Tafel im Pfandhaus mit den dunklen Aufträgen; ein Guss in Waffenform bringt an der Theke das Dreifache seines Werts plus den Auftragsbonus (`OrderBoard.fulfil(world, piece, true)`). Mit einer Waffe in der Hand gilt dasselbe wie mit heißer Ware.
+- `town/town_npc.gd` (`TownNpc`): Pfandleiher und Wachhabender hinter den Theken (das Arbeiter-Modell in anderer Kleidung; eigene Stadtfiguren fehlen noch).
+- Test: `tests/test_town`. Prüfhilfe: `-- --at=x,z` stellt den Spieler an eine Stelle.
+- Noch offen für die offene Welt: weitere Straßen und Häuser (Werkzeugladen, Bank, Kneipe, Hafen), Kunden und Passanten, Grundstücke kaufen, Fahrzeuge, Nacht, Gefängnis/Kaution, mehrere Streifen, Mitarbeiter.

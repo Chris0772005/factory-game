@@ -16,7 +16,7 @@ func hint(_player: Node) -> String:
 
 func toss_accepts(body: Node3D) -> bool:
 	if body is ScrapBucket:
-		return (body as ScrapBucket).count > 0
+		return (body as ScrapBucket).count > (body as ScrapBucket).hot
 	var item := body as Item
 	return item != null and (item.has_method("value") or FoundryRules.raw_price(item.kind) > 0)
 
@@ -39,11 +39,11 @@ func toss_place(body: Node3D) -> bool:
 ## Host: pays for everything in `bucket` and empties it.
 func buy_bucket(bucket: ScrapBucket) -> void:
 	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
-	if world == null or bucket.count == 0:
+	if world == null or bucket.count - bucket.hot <= 0:
 		return
 	var pay := bucket.worth
-	var pieces := bucket.count
-	bucket.empty()
+	# Hot goods stay in the bucket: Kowalski does not touch them.
+	var pieces := bucket.sell_scrap()
 	_pay(world, pay, "+%d $ · %d Teile" % [pay, pieces], interact_point())
 
 

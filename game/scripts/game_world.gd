@@ -261,8 +261,14 @@ func held_hint(player: Player) -> String:
 	var target := player.toss_target(node as Node3D)
 	if target:
 		return "[LMB] %s" % target.toss_hint(node)
+	if TownLaw.weapon_of(node) != &"" and TownLaw.of(get_tree()):
+		return "Waffe! Das Pfandhaus zahlt %d $ · die Streife darf dich damit nicht sehen" % TownLaw.weapon_price(node)
 	if node and node.has_method("held_hint"):
 		return node.held_hint(player)
+	var item := node as Item
+	if item and FoundryRules.is_hot(item.kind):
+		return "Heiße Ware · Pfandhaus %d $ / Polizeiwache %d $ · offen getragen sieht sie jeder – im Eimer ist sie versteckt" % [
+			FoundryRules.black_price(item.kind), FoundryRules.finder_reward(item.kind)]
 	return "[LMB] Ablegen   [RMB] Werfen"
 
 

@@ -447,20 +447,39 @@ func _build_templates() -> Control:
 	grid.add_theme_constant_override("h_separation", 6)
 	grid.add_theme_constant_override("v_separation", 6)
 	box.add_child(grid)
-	var ids: Array = DrawingTemplates.MOTIFS.keys()
-	if guide_motif != &"":
+	var ids: Array = DrawingTemplates.MOTIFS.keys().filter(func(id: StringName) -> bool: return not DrawingTemplates.MOTIFS[id].get("dark", false))
+	if guide_motif != &"" and ids.has(guide_motif):
 		ids.erase(guide_motif)
 		ids.push_front(guide_motif)
 	for id: StringName in ids:
-		var b := Button.new()
-		b.text = DrawingTemplates.MOTIFS[id].label
-		b.theme_type_variation = &"BigButton" if id == guide_motif else &"SecondaryButton"
-		b.add_theme_font_size_override("font_size", 20)
-		b.custom_minimum_size = Vector2((SIDE_WIDTH - 18) / 4.0, 44)
-		b.focus_mode = Control.FOCUS_NONE
-		b.pressed.connect(use_template.bind(id))
-		grid.add_child(b)
+		grid.add_child(_template_button(id, 4))
+	# Where there is a pawnbroker, his wishes can be cast too.
+	if is_inside_tree() and TownLaw.of(get_tree()):
+		var dark_title := Label.new()
+		dark_title.text = "Unter der Hand (fürs Pfandhaus)"
+		dark_title.add_theme_font_size_override("font_size", 20)
+		dark_title.add_theme_color_override("font_color", UITheme.BAD)
+		dark_title.add_theme_constant_override("outline_size", 0)
+		box.add_child(dark_title)
+		var dark_grid := GridContainer.new()
+		dark_grid.columns = 3
+		dark_grid.add_theme_constant_override("h_separation", 6)
+		box.add_child(dark_grid)
+		for id: StringName in DrawingTemplates.MOTIFS:
+			if DrawingTemplates.MOTIFS[id].get("dark", false):
+				dark_grid.add_child(_template_button(id, 3))
 	return box
+
+
+func _template_button(id: StringName, columns: int) -> Button:
+	var b := Button.new()
+	b.text = DrawingTemplates.MOTIFS[id].label
+	b.theme_type_variation = &"BigButton" if id == guide_motif else &"SecondaryButton"
+	b.add_theme_font_size_override("font_size", 20)
+	b.custom_minimum_size = Vector2((SIDE_WIDTH - 6 * (columns - 1)) / float(columns), 44)
+	b.focus_mode = Control.FOCUS_NONE
+	b.pressed.connect(use_template.bind(id))
+	return b
 
 
 ## Replaces the sheet with motif `id` (still editable afterwards).

@@ -27,6 +27,7 @@ func _init() -> void:
 	stock = GRABS
 	restock_every = INF
 	junk_share = 0.6
+	hot_share = 0.025
 
 
 func _build_heap() -> void:

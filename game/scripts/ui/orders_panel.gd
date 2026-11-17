@@ -45,7 +45,12 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	if _board == null or not is_instance_valid(_board):
-		_board = get_tree().get_first_node_in_group(&"order_boards") as OrderBoard
+		_board = null
+		# The pawnbroker's dark board is read at his wall, not in the HUD.
+		for node in get_tree().get_nodes_in_group(&"order_boards"):
+			if not (node as OrderBoard).dark:
+				_board = node
+				break
 		if _board:
 			_board.changed.connect(_refresh)
 			_refresh()

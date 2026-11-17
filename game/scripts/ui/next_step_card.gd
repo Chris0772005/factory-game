@@ -127,6 +127,12 @@ static func _hall_step(w: GameWorld, goal: StringName, pile: ScrapPile, furnace:
 static func next_step(w: GameWorld) -> String:
 	target = null
 	var tree := w.get_tree()
+	var me := w.local_player()
+	if me and TownLaw.of(tree) and not TownLaw.carried_hot(me).is_empty():
+		target = tree.get_first_node_in_group(TownCounter.GROUP) as Node3D
+		if TownLaw.weapon_of(me.held) != &"":
+			return "Du trägst eine Waffe! Bring sie ins Pfandhaus (links vom Ankauf) – die Streife darf dich damit nicht sehen."
+		return "Heiße Ware dabei! Pfandhaus (links vom Ankauf): viel Geld, aber die Streife darf sie nicht sehen. Polizeiwache (rechts): sicherer Finderlohn."
 	for node in w.entities.get_children():
 		if (node is CastPiece and not (node as CastPiece).series) or node is BronzeStatue:
 			target = _of_class(tree, "SellCrate")

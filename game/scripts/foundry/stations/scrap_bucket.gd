@@ -19,8 +19,11 @@ const USE_RANGE := 3.4
 var contents: Array[StringName] = []
 var count := 0
 var worth := 0
+## Pieces of hot goods under the scrap (FoundryRules.HOT), mirrored to peers.
+var hot := 0
 var _fill: MeshInstance3D
 var _pop := 0.0
+var _hot_mirror: Array[StringName] = []
 
 
 static func create_bucket(data: Dictionary) -> ScrapBucket:
@@ -110,18 +113,60 @@ func add(kind_in: StringName) -> bool:
 func _changed() -> void:
 	count = contents.size()
 	worth = 0
+	hot = 0
 	for k in contents:
 		worth += FoundryRules.raw_price(k)
+		if FoundryRules.is_hot(k):
+			hot += 1
 	_update_look()
 	if Network.is_online() and multiplayer.is_server():
-		_sync.rpc(count, worth)
+		_sync.rpc(count, worth, hot, PackedStringArray(hot_kinds()))
 
 
 @rpc("authority", "call_remote", "reliable")
-func _sync(c: int, w: int) -> void:
+func _sync(c: int, w: int, h: int, hot_list: PackedStringArray) -> void:
 	count = c
 	worth = w
+	hot = h
+	_hot_mirror.clear()
+	for k in hot_list:
+		_hot_mirror.append(StringName(k))
 	_update_look()
+
+
+## The hot goods in the load (host: from the contents, peers: mirrored).
+func hot_kinds() -> Array:
+	if not Network.is_sim_authority():
+		return _hot_mirror.duplicate()
+	var out := []
+	for k in contents:
+		if FoundryRules.is_hot(k):
+			out.append(k)
+	return out
+
+
+## Host: takes the hot goods out of the load and returns them.
+func take_hot() -> Array:
+	var out := hot_kinds()
+	var rest: Array[StringName] = []
+	for k in contents:
+		if not FoundryRules.is_hot(k):
+			rest.append(k)
+	contents = rest
+	_changed()
+	return out
+
+
+## Host: the dealer took everything he buys; hot goods stay in the bucket.
+func sell_scrap() -> int:
+	var sold := count - hot
+	var rest: Array[StringName] = []
+	for k in contents:
+		if FoundryRules.is_hot(k):
+			rest.append(k)
+	contents = rest
+	_changed()
+	return sold
 
 
 func _update_look() -> void:
@@ -188,6 +233,14 @@ func _shop_near(player: Node3D) -> ScrapShop:
 	return null
 
 
+func _counter_near(player: Node3D) -> TownCounter:
+	for node in get_tree().get_nodes_in_group(TownCounter.GROUP):
+		var counter := node as TownCounter
+		if counter.in_reach(player):
+			return counter
+	return null
+
+
 func _furnace_near(player: Node3D) -> Furnace:
 	for node in get_tree().get_nodes_in_group(&"furnaces"):
 		var f := node as Furnace
@@ -208,8 +261,15 @@ func held_hint(player: Node) -> String:
 	var load_text := "Eimer %d/%d · %d $" % [count, capacity(), worth]
 	if count == 0:
 		return "Eimer leer – neben den Schrottberg stellen (Linksklick) und wühlen"
+	var counter := _counter_near(player as Node3D)
+	if counter and hot > 0:
+		return counter.bucket_hint(counter.worth_of(hot_kinds()))
+	if hot > 0:
+		load_text += " · %d× heiße Ware (im Eimer versteckt)" % hot
 	if _shop_near(player as Node3D):
-		return "[F] Alles verkaufen · %d $" % worth
+		if count == hot:
+			return "Kowalski: „Heiße Ware fass ich nicht an.“ → Polizeiwache oder Pfandhaus"
+		return "[F] Schrott verkaufen · %d $" % worth
 	if _furnace_near(player as Node3D) and _metal_count() > 0:
 		return "[F] Metall in den Ofen kippen (%d Teile)" % _metal_count()
 	if is_full():
@@ -219,6 +279,10 @@ func held_hint(player: Node) -> String:
 
 func use_start(player: Node) -> void:
 	if not Network.is_sim_authority() or count == 0:
+		return
+	var counter := _counter_near(player as Node3D)
+	if counter and hot > 0:
+		counter.take_bucket(self)
 		return
 	var shop := _shop_near(player as Node3D)
 	if shop:

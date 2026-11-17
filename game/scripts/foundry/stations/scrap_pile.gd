@@ -28,6 +28,8 @@ var stock_max := STOCK_MAX
 var restock_every := RESTOCK_EVERY
 ## Share of grabs that bring plain junk (FoundryRules.JUNK) instead of metal.
 var junk_share := 0.0
+## Chance per grab by hand that the find is hot goods (FoundryRules.HOT).
+var hot_share := 0.0
 var _restock := 0.0
 var _sync_accum := 0.0
 var _dirty := false
@@ -146,6 +148,8 @@ func _find(p: Player) -> void:
 	for i in count:
 		var kind := _next if i == 0 and _next != &"" else _roll()
 		_next = &""
+		if FoundryRules.is_hot(kind):
+			TownLaw.hot_found(world, kind, top)
 		# A bucket standing by takes the find straight away.
 		var bucket := ScrapBucket.near(get_tree(), p.global_position if p else top)
 		if bucket and bucket.add(kind):
@@ -183,6 +187,9 @@ func take_one() -> StringName:
 func _roll(junk_ok := true) -> StringName:
 	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
 	var detector := world and world.has_upgrade(&"detector")
+	# Only hands find what somebody hid in the heap; machines pass it over.
+	if junk_ok and hot_share > 0.0 and randf() < hot_share:
+		return FoundryRules.roll_hot()
 	# The detector also sorts out half the junk.
 	if junk_ok and junk_share > 0.0 and randf() < junk_share * (0.5 if detector else 1.0):
 		return FoundryRules.JUNK.keys()[randi() % FoundryRules.JUNK.size()]

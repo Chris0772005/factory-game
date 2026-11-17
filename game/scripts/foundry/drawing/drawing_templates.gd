@@ -18,6 +18,11 @@ const MOTIFS := {
 	&"crown": {name = "eine Krone", label = "Krone"},
 	&"gear": {name = "ein Zahnrad", label = "Zahnrad"},
 	&"anchor": {name = "einen Anker", label = "Anker"},
+	# Weapons: only the pawnbroker asks for these (dark = true). A casting in
+	# one of these shapes is contraband (TownLaw.weapon_of).
+	&"knuckles": {name = "einen Schlagring", label = "Schlagring", dark = true},
+	&"dagger": {name = "einen Dolch", label = "Dolch", dark = true},
+	&"pistol": {name = "eine Pistole", label = "Pistole", dark = true},
 }
 
 static var _rasters := {}
@@ -90,6 +95,26 @@ static func _strokes(id: StringName) -> Array:
 				_arc(Vector2(0.5, 0.58), Vector2(0.34, 0.3), 10.0, 170.0),
 				_line([Vector2(0.84, 0.63), Vector2(0.78, 0.5), Vector2(0.92, 0.52)]),
 				_line([Vector2(0.16, 0.63), Vector2(0.22, 0.5), Vector2(0.08, 0.52)]),
+			]
+		&"knuckles":
+			var rings := []
+			for x: float in [0.2, 0.4, 0.6, 0.8]:
+				rings.append(_arc(Vector2(x, 0.36), Vector2(0.075, 0.1), 0.0, 360.0))
+			rings.append(_line([Vector2(0.08, 0.22), Vector2(0.92, 0.22), Vector2(0.92, 0.52), Vector2(0.8, 0.78), Vector2(0.2, 0.78), Vector2(0.08, 0.52), Vector2(0.08, 0.22)]))
+			return rings
+		&"dagger":
+			return [
+				_line([Vector2(0.5, 0.05), Vector2(0.59, 0.6), Vector2(0.41, 0.6), Vector2(0.5, 0.05)]),
+				_line([Vector2(0.27, 0.6), Vector2(0.73, 0.6), Vector2(0.73, 0.66), Vector2(0.27, 0.66), Vector2(0.27, 0.6)]),
+				_line([Vector2(0.45, 0.66), Vector2(0.45, 0.88), Vector2(0.55, 0.88), Vector2(0.55, 0.66)]),
+				_arc(Vector2(0.5, 0.92), Vector2(0.06, 0.05), 0.0, 360.0),
+			]
+		&"pistol":
+			return [
+				_line([Vector2(0.08, 0.28), Vector2(0.88, 0.28), Vector2(0.88, 0.46), Vector2(0.08, 0.46), Vector2(0.08, 0.28)]),
+				_line([Vector2(0.62, 0.46), Vector2(0.7, 0.88), Vector2(0.9, 0.88), Vector2(0.84, 0.46)]),
+				_arc(Vector2(0.5, 0.48), Vector2(0.12, 0.14), 0.0, 180.0),
+				_line([Vector2(0.53, 0.46), Vector2(0.5, 0.56)]),
 			]
 	return []
 

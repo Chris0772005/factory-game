@@ -36,11 +36,51 @@ const RAW_PRICES := {&"scrap_can": 2, &"scrap_key": 3, &"scrap_pipe": 5, &"scrap
 	&"scrap_trophy": 9, &"scrap_candle": 7, &"scrap_coin": 20, &"scrap_bikebell": 4}
 
 
-## Name, colour and size of a raw find (scrap or junk); empty if `kind` is neither.
+## Hot goods: things somebody hid in the scrap. Kowalski will not touch them.
+## The pawnbroker pays `black` under the counter (and the police take notice);
+## the police station pays `reward` for handing them in. weight = how often.
+const HOT := {
+	&"hot_plates": {name = "Geklaute Kennzeichen", color = Color("#d9d4c0"), size = Vector3(0.34, 0.03, 0.12), black = 30, reward = 6, weight = 40},
+	&"hot_cashbox": {name = "Aufgebrochene Geldkassette", color = Color("#56664f"), size = Vector3(0.26, 0.1, 0.18), black = 55, reward = 10, weight = 30},
+	&"hot_pistol": {name = "Alte Pistole", color = Color("#34373c"), size = Vector3(0.2, 0.13, 0.04), black = 85, reward = 15, weight = 20},
+	&"hot_jewels": {name = "Schmuck aus einem Einbruch", color = Color("#e8c66a"), size = Vector3(0.16, 0.08, 0.12), black = 130, reward = 22, weight = 10},
+}
+
+
+## Name, colour and size of a raw find (scrap, junk or hot goods); empty if `kind` is none of them.
 static func find_info(kind: StringName) -> Dictionary:
 	if SCRAP.has(kind):
 		return SCRAP[kind]
+	if HOT.has(kind):
+		return HOT[kind]
 	return JUNK.get(kind, {})
+
+
+static func is_hot(kind: StringName) -> bool:
+	return HOT.has(kind)
+
+
+## What the pawnbroker pays under the counter for one piece of hot goods.
+static func black_price(kind: StringName) -> int:
+	return HOT[kind].black if HOT.has(kind) else 0
+
+
+## What the police pay for handing one piece in.
+static func finder_reward(kind: StringName) -> int:
+	return HOT[kind].reward if HOT.has(kind) else 0
+
+
+## Random hot find (weights above).
+static func roll_hot() -> StringName:
+	var total := 0
+	for k in HOT:
+		total += int(HOT[k].weight)
+	var r := randi() % total
+	for k in HOT:
+		r -= int(HOT[k].weight)
+		if r < 0:
+			return k
+	return &"hot_plates"
 
 
 ## What the scrap dealer pays for one raw find.

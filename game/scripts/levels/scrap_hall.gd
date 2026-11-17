@@ -35,8 +35,35 @@ func build_stations() -> void:
 	board.rotation.y = -PI * 0.5
 	add_child(board)
 	ScrapHallSet.build_hall(self, [heap, shop, board])
+	_build_town()
 	for at: Vector3 in [Vector3(-4.0, 7.2, 3.0), Vector3(5.0, 7.2, -1.0)]:
 		SwayLamp.hang(self, at, 1.6)
+
+
+## The quarter across the street: the law, the pawnbroker who buys hot goods
+## under the counter, the police desk that pays a finder's reward, and the
+## officer on the beat.
+func _build_town() -> void:
+	add_child(TownLaw.new())
+	var fence := FenceCounter.new()
+	fence.position = ScrapHallSet.PAWN + Vector3(0, 0, ScrapHallSet.COUNTER_Z)
+	add_child(fence)
+	var dark := OrderBoard.new()
+	dark.name = "DarkBoard"
+	dark.dark = true
+	dark.first_order = &"dark_knuckles"
+	dark.position = ScrapHallSet.PAWN + Vector3(-4.0 + TownBlock.WALL + 0.03, 0, 1.95)
+	dark.rotation.y = PI * 0.5
+	add_child(dark)
+	var desk := PoliceDesk.new()
+	desk.position = ScrapHallSet.POLICE + Vector3(0, 0, ScrapHallSet.COUNTER_Z)
+	add_child(desk)
+	var cop := PolicePatrol.new()
+	cop.name = "Patrol"
+	cop.route = [Vector3(-23.0, 0, ScrapHallSet.BEAT_Z), Vector3(24.0, 0, ScrapHallSet.BEAT_Z)]
+	cop.position = Vector3(14.0, 0.05, ScrapHallSet.BEAT_Z)
+	cop.max_z = ScrapHallSet.FRONT_Z - 0.8
+	add_child(cop)
 
 
 func is_scrap_hall() -> bool:

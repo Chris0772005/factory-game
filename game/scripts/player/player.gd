@@ -146,6 +146,17 @@ func _ready() -> void:
 		for arg in OS.get_cmdline_user_args():
 			if arg.begins_with("--hold="):
 				_debug_hold(arg.trim_prefix("--hold="))
+			if arg.begins_with("--at="):
+				_debug_at(arg.trim_prefix("--at="))
+
+
+## Art checks: `--at=x,z` stands the player there.
+func _debug_at(spot: String) -> void:
+	var parts := spot.split(",")
+	if parts.size() < 2:
+		return
+	await get_tree().create_timer(0.6).timeout
+	_do_teleport(Vector3(parts[0].to_float(), 0.1, parts[1].to_float()))
 
 
 ## Art checks: `--hold=<kind>` puts the first thing of that kind into the hands.

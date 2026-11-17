@@ -24,6 +24,8 @@ func _run() -> void:
 	if heap == null or bucket == null or shop == null:
 		_finish()
 		return
+	# Hot goods have their own test (test_town).
+	heap.hot_share = 0.0
 	_check(get_tree().get_nodes_in_group(&"furnaces").is_empty(), "no furnace before the foundry corner is bought")
 	_check(world.guide.letter().id == &"dig", "first letter: dig")
 	# Dig with the bucket standing by: finds go straight in, the heap shrinks.

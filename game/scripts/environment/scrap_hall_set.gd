@@ -11,6 +11,18 @@ const COLUMN_Z := [-7.0, -1.0, 5.0]
 const APRON := 3.2
 const ROAD := 5.6
 const SHOP_Z := 12.4
+## The row of houses across the street: front line, depth, and the fronts
+## (middle of the front, ground level) of the two that are open.
+const FRONT_Z := 22.12
+const HOUSE_D := 6.6
+const PAWN := Vector3(-11.0, 0, FRONT_Z)
+const POLICE := Vector3(17.0, 0, FRONT_Z)
+## Depth of the counters inside, from the front.
+const COUNTER_Z := 3.5
+## Where the street is closed off, left and right.
+const TOWN_X := 27.0
+## The pavement the patrol walks.
+const BEAT_Z := 18.6
 
 
 static func build_hall(world: Node3D, level_stations: Array) -> ScrapHallSet:
@@ -161,19 +173,86 @@ func _outside() -> void:
 		EnvMesh.add(self, EnvMesh.merge(kerbs), kerb)
 		_shop(Vector3(3.0, 0, shop_z))
 	prop("kaykit_city/streetlight.gltf", Vector3(-9.0, 0, zf + APRON - 0.6), 0.0, {scale = 1.0, solid = PropKit.Solid.CYLINDER})
-	prop("kaykit_city/streetlight.gltf", Vector3(11.0, 0, zf + APRON + ROAD + 0.6), 180.0, {scale = 1.0, solid = PropKit.Solid.CYLINDER})
+	prop("kaykit_city/streetlight.gltf", Vector3(10.0, 0, zf + APRON + ROAD + 0.6), 180.0, {scale = 1.0, solid = PropKit.Solid.CYLINDER})
+	prop("kaykit_city/streetlight.gltf", Vector3(-19.0, 0, zf + APRON + ROAD + 0.6), 180.0, {scale = 1.0, solid = PropKit.Solid.CYLINDER})
+	prop("kaykit_city/streetlight.gltf", Vector3(21.0, 0, zf + APRON - 0.6), 0.0, {scale = 1.0, solid = PropKit.Solid.CYLINDER})
 	prop("kaykit_city/firehydrant.gltf", Vector3(-4.0, 0, zf + APRON + ROAD + 0.7), 0.0, {scale = 0.9, solid = PropKit.Solid.CYLINDER})
-	prop("kaykit_city/dumpster.gltf", Vector3(-6.5, 0, shop_z + 0.6), 0.0, {scale = 0.85})
-	# The street's other houses, left and right of the shop and behind the hall.
-	prop("kaykit_city/building_A_withoutBase.gltf", Vector3(-13.0, 0, shop_z + 6.0), 180.0, {solid = PropKit.Solid.NONE, desaturate = 0.5})
-	prop("kaykit_city/building_F_withoutBase.gltf", Vector3(17.0, 0, shop_z + 6.0), 180.0, {solid = PropKit.Solid.NONE, desaturate = 0.5})
-	prop("kaykit_city/building_C_withoutBase.gltf", Vector3(-24.0, 0, shop_z + 6.5), 180.0, {solid = PropKit.Solid.NONE, desaturate = 0.5})
+	prop("kaykit_city/dumpster.gltf", Vector3(-4.6, 0, shop_z + 4.6), 90.0, {scale = 0.85})
+	_town()
+	# The rest of the town, beyond the barriers and behind the yard walls.
+	prop("kaykit_city/building_A_withoutBase.gltf", Vector3(-35.0, 0, FRONT_Z + 4.0), 180.0, {solid = PropKit.Solid.NONE, desaturate = 0.5})
+	prop("kaykit_city/building_F_withoutBase.gltf", Vector3(35.0, 0, FRONT_Z + 4.0), 180.0, {solid = PropKit.Solid.NONE, desaturate = 0.5})
 	prop("kaykit_city/building_C_withoutBase.gltf", Vector3(-20.0, 0, -16.0), 0.0, {solid = PropKit.Solid.NONE, desaturate = 0.5})
 	prop("kaykit_city/building_F_withoutBase.gltf", Vector3(20.0, 0, -15.5), 0.0, {solid = PropKit.Solid.NONE, desaturate = 0.5})
-	# Workers stay between the hall and the shop.
-	for x: float in [inner_min.x - 4.0, inner_max.x + 4.0]:
-		WorldBuilder.add_collider(self, Vector3(0.4, 2.0, SHOP_Z + 4.0), Transform3D(Basis(), Vector3(x, 1.0, zf + (SHOP_Z + 4.0) * 0.5)))
-	WorldBuilder.add_collider(self, Vector3(40.0, 2.0, 0.4), Transform3D(Basis(), Vector3(0, 1.0, shop_z + 1.4)))
+	prop("kaykit_city/building_C_withoutBase.gltf", Vector3(-22.0, 0, 0.5), 0.0, {solid = PropKit.Solid.NONE, desaturate = 0.5})
+	prop("kaykit_city/building_A_withoutBase.gltf", Vector3(22.5, 0, 0.5), 0.0, {solid = PropKit.Solid.NONE, desaturate = 0.5})
+
+
+## The quarter around the hall: the pawnbroker and the police station, both
+## open to walk into, a shuttered shop and a kiosk, the yard walls beside the
+## hall and the barriers where the street ends for now.
+func _town() -> void:
+	var zf := inner_max.y + WALL * 0.5
+	var back_z := FRONT_Z + HOUSE_D
+	# Pfandhaus: the door on the left, a shop window on the right.
+	TownBlock.house(self, PAWN, 8.0, HOUSE_D, {key = "pawn", brick = Color("#7d4a3a"), mortar = Color("#b9a88f"), door_x = -2.6,
+		windows = [[-0.4, 3.2]], sign = "PFANDHAUS", sign_back = Color("#3a2a20"), sign_color = Color("#e8c66a"),
+		floor = Color("#6a4a30"), lining = Color("#b8ab8f"), trim = Color("#3a2a20"), lamp = Color("#ffd49a")})
+	TownBlock.counter(self, PAWN + Vector3(0, 0, COUNTER_Z), 7.4, "pawn_counter", Color("#4f3a28"))
+	TownBlock.shelves(self, PAWN + Vector3(0, 0, HOUSE_D - TownBlock.WALL - 0.24), 6.8, "pawn_shelf", 7)
+	# Polizeiwache: plastered, blue sign, the desk across the room.
+	TownBlock.house(self, POLICE, 9.0, HOUSE_D, {key = "police", plaster = Color("#c9cdc6"), brick = Color("#6d7377"), door_x = 0.0,
+		windows = [[-3.8, -2.2], [2.3, 3.8]], sign = "POLIZEI", sign_back = Color("#1f3f7a"), sign_color = Color("#f4f4f0"),
+		floor = Color("#7a7468"), lining = Color("#d2d6cf"), trim = Color("#1f3f7a"), lamp = Color("#eef2ff")})
+	TownBlock.counter(self, POLICE + Vector3(0, 0, COUNTER_Z), 8.4, "police_desk", Color("#5a5348"))
+	TownBlock.shelves(self, POLICE + Vector3(1.6, 0, HOUSE_D - TownBlock.WALL - 0.24), 4.6, "police_shelf", 11)
+	WorldBuilder.add_collider(self, Vector3(0.5, 0.5, 2.0), Transform3D(Basis(), POLICE + Vector3(-3.9, 0.25, 1.7)))
+	# Shut for now: the houses that fill the row.
+	TownBlock.closed(self, Vector3(-21.0, 0, FRONT_Z), 10.0, HOUSE_D, {key = "let", brick = Color("#8c5a44"), sign = "ZU VERMIETEN"})
+	TownBlock.closed(self, Vector3(24.3, 0, FRONT_Z), 4.6, HOUSE_D, {key = "kiosk", brick = Color("#6f6a62"), sign = "KIOSK"})
+	# The yard wall behind the row and the walls beside the hall.
+	var brick := EnvMesh.material("town_yardwall", "res://shaders/env_plaster.gdshader", {
+		brick = Color("#84503c"), mortar = Color("#b6a58d"), brickwork = 1.0})
+	var runs := [[Vector3(0, 1.5, back_z + 0.15), Vector3(TOWN_X * 2.0, 3.0, 0.3)]]
+	for s: float in [-1.0, 1.0]:
+		var from := inner_max.x + WALL
+		runs.append([Vector3(s * (from + TOWN_X) * 0.5, 1.2, zf - 0.15), Vector3(TOWN_X - from, 2.4, 0.3)])
+	var walls := []
+	for r: Array in runs:
+		WorldBuilder.add_collider(self, r[1], Transform3D(Basis(), r[0]))
+		walls.append(EnvMesh.piece(EnvMesh.box(r[1]), Transform3D(Basis(), r[0])))
+	if EnvMesh.visual():
+		EnvMesh.add(self, EnvMesh.merge(walls), brick)
+	for s: float in [-1.0, 1.0]:
+		TownBlock.barrier(self, Vector3(s * TOWN_X, 0, (zf + back_z) * 0.5), back_z - zf, "STRASSE GESPERRT")
+	if not EnvMesh.visual():
+		return
+	# Who stands behind the counters.
+	var broker := TownNpc.make(Color("#54463a"), false)
+	broker.position = PAWN + Vector3(0.7, 0, COUNTER_Z + 1.1)
+	broker.rotation.y = PI
+	add_child(broker)
+	var officer := TownNpc.make(Color("#1d2c52"), true)
+	officer.position = POLICE + Vector3(-0.9, 0, COUNTER_Z + 1.1)
+	officer.rotation.y = PI
+	add_child(officer)
+	StationKit.label(self, "An- und Verkauf · Bargeld sofort · keine Fragen", Transform3D(Basis(Vector3.UP, PI),
+		PAWN + Vector3(0, 2.72, HOUSE_D - TownBlock.WALL - 0.04)), 80, Color("#3a2a20"), 700, 0.0032)
+	StationKit.label(self, "FUNDBÜRO · Finderlohn für ehrliche Finder", Transform3D(Basis(Vector3.UP, PI),
+		POLICE + Vector3(0, 2.72, HOUSE_D - TownBlock.WALL - 0.04)), 80, Color("#1f3f7a"), 700, 0.0032)
+	# The blue lamp by the station door, and the bench for those who wait.
+	var blue := StandardMaterial3D.new()
+	blue.albedo_color = Color("#2a5fd0")
+	blue.emission_enabled = true
+	blue.emission = Color("#3f7bff")
+	blue.emission_energy_multiplier = 2.5
+	EnvMesh.add(self, EnvMesh.box(Vector3(0.24, 0.34, 0.24), 0.04), blue, Transform3D(Basis(), POLICE + Vector3(-1.25, 2.75, -0.2)), false)
+	var bench := EnvMesh.wood("town_bench", {base_color = Color("#6f563c"), grain_color = Color("#3d2c1d"), weathering = 0.4, roughness_base = 0.6})
+	var seat := []
+	seat.append(EnvMesh.piece(EnvMesh.box(Vector3(0.45, 0.06, 2.0)), Transform3D(Basis(), POLICE + Vector3(-3.9, 0.46, 1.7))))
+	for z: float in [-0.85, 0.85]:
+		seat.append(EnvMesh.piece(EnvMesh.box(Vector3(0.4, 0.44, 0.06)), Transform3D(Basis(), POLICE + Vector3(-3.9, 0.22, 1.7 + z))))
+	EnvMesh.add(self, EnvMesh.merge(seat), bench)
 
 
 ## The dealer's shop: a small brick building with an open counter, an awning
