@@ -68,6 +68,8 @@ func _physics_process(delta: float) -> void:
 			working = can
 			if Network.is_online():
 				_sync.rpc(working)
+	if _rig and _rig.lamps_on != working:
+		_rig.lamps_on = working
 	if not working and phase == 0.0:
 		_pose(0.0)
 		return

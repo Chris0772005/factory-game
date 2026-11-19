@@ -299,7 +299,39 @@ Ziel des Nutzers: der Kern bleibt „im Schrott wühlen und ausbauen“ (Find th
 Kritik des Nutzers: LKW und Bagger aus Spielcode-Klötzen wirken eckig; sie sollen wie die Fahrzeuge in den Vergleichsbildern aussehen, mit Blick durch die Scheiben auf Sitze und Armaturen. Langfristiges Ziel des Nutzers: Grafik „wie im echten Leben“.
 
 - **Blender als Werkzeug:** `pip install bpy` (Blender 5.3 als Python-Modul, liegt außerhalb des Repos). `tools/blender/mm_kit.py` (eigener Code): Formen in ein bmesh (`add_box`, `add_obox`, `add_cyl`, `add_prism`, `add_tube`, `add_lathe_y`, `fillet`, `arc`), `make` macht daraus ein Objekt mit abgerundeten Kanten (Bevel + Weighted Normal), glatter Schattierung und Box-UVs; `surface` erzeugt PBR-Materialien mit Albedo-, Rauheit/Metall- und Normal-Textur (Lack, abgenutzter Lack, Stahl, Gummi, Kunststoff); `export_glb` schreibt GLB (Y-up) und entfernt eingebettete Farbprofile aus den JPEGs (Godot liest sie sonst nicht).
-- **LKW:** `tools/blender/truck_hd.py` → `game/assets/models/machinery/truck_hd.glb`. Dreiachs-Kipper: Fahrerhaus mit Radlauf, Glashaus aus Säulen und Dach, durchsichtige Scheiben, Innenraum (Armaturenbrett, Lenkrad, zwei Sitze), Stoßfänger, Grill mit Chromstreben, Spiegel, Wischer, Rahmen mit Achsen, Blattfedern, Tank, Lufttanks, Kotflügel, Rücklichter, Kippmulde mit Rippen, Bordwand, Stahlboden, Reifen mit Profilrillen und Felgen mit Radmuttern. Räder sind eigene Knoten (`wheel_*`, Ursprung an der Achse) und drehen sich im Spiel mit der gefahrenen Strecke (`ScrapTruck._roll_wheels`).
+- **LKW:** Der erste, aus Formen zusammengesetzte Kipper (`truck_hd.py`) ist ersetzt, siehe Modul Y. Räder sind eigene Knoten (`wheel_*`, Ursprung an der Nabe) und drehen sich im Spiel mit der gefahrenen Strecke (`ScrapTruck._roll_wheels`).
 - **Bagger:** fertiges Modell `zx200_hd.glb` (Apache 2.0, siehe CREDITS). `auto/digger_rig.gd` (`DiggerRig`) dreht Oberwagen, Ausleger, Stiel und Löffel in ihren Gelenken und setzt die losen Teile der Datei für jede Stellung an ihre Bolzen: drei Hydraulikzylinder (Rohr und Stange) zwischen Fuß- und Augenbolzen, das Löffelgestänge als Gelenkviereck. `Excavator.KEYS` beschreibt einen Arbeitstakt (greifen, eindrehen, heben, schwenken, auskippen, zurück).
 - **Schnelle Vorschau:** `game/tools/model_view.tscn` zeigt ein Modell in Tageslicht (`-- --model=res://… --yaw= --pitch= --dist= --h=`, `--rig=schwenk,ausleger,stiel,löffel` für den Bagger); ein Bild dauert etwa 25 s statt 5–8 min in der Halle.
 - **Weitere freie Quellen, geprüft:** Poly Haven (CC0) hat keine Fahrzeuge, aber fotorealistische Straßen- und Werkstattteile (Laternen, Hydrant, Betonbarrieren, Rolltore, Fabrikfassade, Zäune, Werkzeugschrank, Schraubstock); im selben Projekt wie der Bagger liegen Planierraupe, Walze und Kettendumper (Apache 2.0).
+
+## Modul Y – Grafikstandard „wie auf dem Vorbild“ (verbindliche Regel)
+
+Vorgabe des Nutzers: Ein Bild aus dem Construction Simulator (gelber Bagger im Schlamm, rot-oranger LKW mit Licht, Arbeiter, Herbstwald) ist ab jetzt der Maßstab für **alles**: Fahrzeuge, Maschinen, Häuser, offene Welt. Seine Kritik am Stand davor: „zu eckig, zu kantig, zu verschachtelt, sieht 3D-modelliert aus“; es soll aussehen wie ein echter Bagger und ein echter LKW, mit Blick durch die Scheiben auf Sitze und Armaturen. Das Vorbild ist urheberrechtlich geschützt und liegt nur außerhalb des Repos.
+
+**Die Regel.** Vor jedem neuen Modell, Gebäude oder Bildschirm Vergleichsbilder aus passenden Spielen ansehen (Modul W) und das Ergebnis im Licht des Spiels daneben legen. Ein Teil gilt erst als fertig, wenn es im Bild besteht:
+
+1. **Form:** echte Proportionen und runde Übergänge. Fahrzeuge und Maschinen kommen aus fertigen Modellen mit freier Lizenz oder aus sauber gebauten Blender-Modellen, nicht aus Spielcode-Klötzen.
+2. **Oberfläche:** Lack unter Klarlack, der den Himmel spiegelt; Glas, durch das man hineinsieht; Gummi und Stahl matt; unten Schlamm, oben sauber.
+3. **Licht:** Lampen leuchten wirklich (Leuchtfläche mit Schein und ein Lichtkegel), wenn die Maschine arbeitet.
+4. **Umgebung:** Foto-Himmel, harte Sonne, klare Luft. Böden, Wände und Requisiten aus Foto-Texturen und Scans (Poly Haven, CC0) statt gemalter Muster.
+5. **Ehrlich bleiben:** Im Bericht steht, was noch vom Vorbild abweicht.
+
+**Umgesetzt in diesem Schritt**
+
+- **Tageslicht der Schrotthalle** (`GarageLighting.daylight`): Foto-Himmel `shaders/env_sky_photo.gdshader` aus zwei Bildern in `assets/sky/` – das 8k-Bild, das man sieht (`day_sky_view.jpg`, als BPTC importiert), und sein 2k-HDR-Original, das die Szene beleuchtet und sich in Lack und Glas spiegelt (`day_sky_light.hdr`, die Sonnenscheibe ist dort gekappt). Die Sonne des Fotos steht 47,9° hoch; `DAY_SUN` richtet das Sonnenlicht genauso aus. Sonne 3,0 mit scharfem Schatten (Winkelgröße 0,55°, vier Schattenstufen bis 80 m; auf niedriger Stufe zwei bis 45 m), kein Dunst im Raum, kein Abend-Farbstich, mehr Kontrast und Sättigung, kräftigere Umgebungsverdeckung. Das Fülllicht und die Randabdunklung der Abendhallen entfallen am Tag. Die Halle selbst bekommt neutrales Streulicht (`ScrapHallSet._reflection_probe`).
+- **`VehicleFinish`** (`foundry/visuals/vehicle_finish.gd`): ein Finish für alle Fahrzeuge, nach Materialnamen. `paint*` bekommt Klarlack (auf Wunsch eine neue Farbe), `glass*` wird durchsichtig und wirft keinen Schatten, `chrome*` spiegelt, `lamp*`/`lens*` leuchten, und über jedes Teil liegt der Schmutz aus `shaders/vehicle_dirt.gdshader`: unten angebackener Schlamm, darüber Spritzer in Streifen, oben ein Hauch Staub, dazwischen sauberer Lack. `VehicleFinish.lamps` und `.light` schalten die Leuchten, `.beam` setzt einen Lichtkegel.
+- **Bagger** (`DiggerRig`): gelb mit weißer Kabine. Die Kabine der Datei ist ein geschlossener Block mit aufgeklebten Scheiben; `tools/blender/zx200_cab.py` höhlt ihn aus und schneidet die Fenster (`zx200_cab_open.glb`), sodass man Sitz, Konsole und Hebel sieht. Arbeitsscheinwerfer (Leuchtfläche und Lichtkegel) und ein gelber Warnbalken auf dem Dach laufen, solange der Bagger arbeitet (`Excavator.working`).
+- **LKW:** neues Modell `dump_truck.glb` nach „Dump Truck“ von ElectroNick (CC BY 4.0, Namensnennung in `CREDITS.md` und im Spiel unter „Lizenzen“). `tools/blender/dump_truck.py` zerlegt die Vorlage (ein verschmolzenes Objekt) in Teile, bringt sie auf 7,6 m Länge, trennt die sechs Räder ab (`wheel_fl` … `wheel_r2r`), vergibt Materialien nach Bauteil (roter Lack, graue Mulde, Kunststoff, Gummi, Sitzstoff), macht die Scheiben klar, kleidet die Kabine innen aus und ergänzt Rücklichter und Rundumleuchten. `ScrapTruck` schaltet Scheinwerfer, Rücklichter und zwei Lichtkegel für die Fahrt ein.
+- **Vorschau** (`game/tools/model_view.tscn`): zeigt ein Modell jetzt im Licht der Halle (`--plain` für das alte schlichte Licht), mit `--finish`, `--lamps` und `--hide=teil1,teil2`.
+
+**Geprüft und verworfen oder zurückgestellt**
+
+- Ein eigener LKW aus Blender-Formen (zwei Anläufe) blieb sichtbar kantig; ein echtes Modell als Grundlage bringt mehr als weiteres Feilen.
+- Zweite Wahl für den LKW: `Truck.fbx` aus OpenConstructionSimulator (Apache 2.0, sechs Radknoten, kippbare Mulde, kein Innenraum). Er bildet eine echte Marke nach und trägt deren Schriftzug als Geometrie; deshalb nicht genommen.
+- Weitere Funde mit freier Lizenz für später: Absetzmulde („Old rubbish Skip“, CC BY 4.0), Radlader, Gabelstapler, Lieferwagen mit Innenraum, Autos ohne echte Marke. Listen mit Quelle und Lizenz: Recherche-Berichte vom 18.11.2026 (nicht im Repo).
+
+**Offen**
+
+- Häuser, Straße und Boden: noch gemalte Muster und Bausatz-Häuser. Die passenden Foto-Texturen und Requisiten von Poly Haven sind ausgesucht (Asphalt, Pflaster, Ziegel, Putz, Trapezblech, Rolltore, Laternen), aber noch nicht eingebaut.
+- Die Ladung auf dem LKW ist noch ein abgerundeter Block.
+- Alles hier ist als Standbild geprüft; Bewegung (Radlauf, Blinken) und die Leistung auf echter Grafikkarte nicht.

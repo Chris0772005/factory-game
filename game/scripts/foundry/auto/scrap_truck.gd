@@ -9,8 +9,8 @@ const GROUP := &"scrap_trucks"
 const SPEED := 7.0
 const LOAD_TIME := 3.0
 const AWAY_TIME := 8.0
-const MODEL := "res://assets/models/machinery/truck_hd.glb"
-const WHEEL_RADIUS := 0.54
+const MODEL := "res://assets/models/machinery/dump_truck.glb"
+const WHEEL_RADIUS := 0.554
 
 ## Parking spot, the spot at the skip, the lane on the street and how far
 ## out the street leaves the map (the truck goes out one end and comes back
@@ -29,6 +29,9 @@ var _wheels: Array = []
 var _roll := 0.0
 var _last_pos := Vector3.ZERO
 var _paid := false
+var _lamps: Array[BaseMaterial3D] = []
+var _beams: Array[SpotLight3D] = []
+var _lit := false
 
 
 func _init() -> void:
@@ -112,6 +115,7 @@ func _physics_process(delta: float) -> void:
 		rotation.y = PI * 0.5
 	if _load_mesh:
 		_load_mesh.visible = loaded
+	_light(busy())
 	_roll_wheels()
 
 
@@ -142,7 +146,7 @@ func _drive(path: Array[Vector3], k: float) -> void:
 		want -= seg
 
 
-## The model (tools/blender/truck_hd.py -> truck_hd.glb) faces +X; the truck faces +Z.
+## The model (tools/blender/dump_truck.py -> dump_truck.glb, from a CC-BY model, see CREDITS.md) faces +X; the truck faces +Z.
 func _build_art() -> void:
 	if not StationKit.visual():
 		return
@@ -152,18 +156,39 @@ func _build_art() -> void:
 	var model := packed.instantiate() as Node3D
 	model.rotation.y = -PI * 0.5
 	add_child(model)
+	# Paint, glass and road dirt (the project's vehicle finish); headlamps that come on for the trip.
+	VehicleFinish.apply(model, {mud = 0.7, mud_height = 0.9, dust = 0.3})
+	_lamps = VehicleFinish.lamps(model)
+	var heads := model.find_child("head_lamps", true, false) as MeshInstance3D
+	if heads:
+		var box := (global_transform.affine_inverse() * heads.global_transform) * heads.get_aabb()
+		for side: float in [-1.0, 1.0]:
+			var at := Vector3(box.get_center().x + side * (box.size.x * 0.5 - 0.18), box.get_center().y, box.end.z + 0.05)
+			_beams.append(VehicleFinish.beam(self, at, Vector3(0.0, -0.13, 1.0)))
+	_lit = true
+	_light(false)
 	for node in model.find_children("wheel_*", "Node3D", true, false):
 		var wheel := node as Node3D
 		if wheel is MeshInstance3D:
 			continue
-		# Hubs on the right are turned round in the file: their axle points the other way.
-		_wheels.append([wheel, wheel.transform, 1.0 if String(wheel.name).ends_with("r") else -1.0])
+		# The file's wheel nodes all stand the same way: their local Z points to the truck's right.
+		_wheels.append([wheel, wheel.transform, -1.0])
 	_load_mesh = MeshInstance3D.new()
-	_load_mesh.mesh = EnvMesh.box(Vector3(2.25, 0.85, 4.7), 0.3, 2)
+	_load_mesh.mesh = EnvMesh.box(Vector3(1.8, 0.9, 4.6), 0.3, 2)
 	_load_mesh.material_override = StationKit.metal("skip_load", {steel_color = Color("#6f6a66"), rust = 0.75, dents = 1.0, metallic_steel = 0.6, roughness_steel = 0.65})
-	_load_mesh.position = Vector3(0, 2.35, -1.25)
+	_load_mesh.position = Vector3(0, 2.05, -0.95)
 	_load_mesh.visible = false
 	add_child(_load_mesh)
+
+
+## Lamps and beams: on while the truck is on its trip.
+func _light(on: bool) -> void:
+	if on == _lit:
+		return
+	_lit = on
+	VehicleFinish.light(_lamps, on)
+	for spot in _beams:
+		spot.visible = on
 
 
 ## The wheels roll with the distance driven.

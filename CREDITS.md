@@ -45,6 +45,10 @@ Fünf Textursätze von [Poly Haven](https://polyhaven.com) (CC0, 1k): `concrete_
 
 Dazu `bark_brown_02` (Rinde) und `leafy_grass` (Laub).
 
+## Foto-Himmel (CC0)
+
+„Kloofendal 48d Partly Cloudy (Pure Sky)“ von Greg Zaal und Jarod Guest, [Poly Haven](https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky) (CC0). In `game/assets/sky/`: `day_sky_view.jpg` (oberer Teil des 8k-Bilds, das man sieht) und `day_sky_light.hdr` (2k, beleuchtet die Szene und spiegelt sich in Lack und Glas). Shader: `shaders/env_sky_photo.gdshader`.
+
 ## Gescannte Requisiten (CC0)
 
 3D-Modelle von [Poly Haven](https://polyhaven.com) (CC0, 1k-Texturen) in `game/assets/models/polyhaven/`: Barrel_01, Barrel_02, barrel_03, wine_barrel_01, wooden_crate_01, wooden_crate_02, cardboard_box_01, wooden_bucket_01, cement_bag, shrub_02, shrub_03, old_tyre, metal_toolbox, painted_wooden_chair_01, propane_tank, wooden_ladder. `PhotoProp` tauscht sie gegen die Bausatz-Requisiten.
@@ -58,4 +62,5 @@ Werkstatt-Geräte (ebenfalls Poly Haven, CC0): tool_cart, metal_tool_chest, old_
 ## Maschinen
 
 - Hydraulikbagger (`game/assets/models/machinery/zx200_hd.glb`): „20 t class hydraulic excavator“, prozedural modelliert von den Mitwirkenden des Projekts „Construction Site Simulation“ (https://github.com/dtt-github/construction-site-simulation) nach den Maßen des OPERA-ZX200-Modells des Public Works Research Institute, Japan. Apache License 2.0 (`game/assets/models/machinery/LICENSE-Apache-2.0.txt`, `NOTICE.txt`). Unverändert übernommen; das Spiel bewegt die Teile.
-- Kipper-LKW (`truck_hd.glb`): eigenes Modell, erzeugt mit `tools/blender/truck_hd.py` (Blender).
+- Kipper-LKW (`game/assets/models/machinery/dump_truck.glb`): nach „Dump Truck“ von ElectroNick, https://sketchfab.com/3d-models/dump-truck-781c616da8f44982a59cb3fc3fa67f98, Lizenz CC BY 4.0 (http://creativecommons.org/licenses/by/4.0/). Die unveränderte Vorlage mit ihrer Lizenzdatei liegt in `tools/blender/sources/dump_truck_electronick/`. Änderungen (`tools/blender/dump_truck.py`): auf echte Größe gebracht, sechs Räder als eigene Teile abgetrennt, neue Materialien und Farben (roter Lack, graue Mulde), klare Scheiben, Kabine innen ausgekleidet, Rücklichter und Rundumleuchten ergänzt. Die Namensnennung steht auch im Spiel unter „Lizenzen“. Herkunft: Die Lizenz stammt aus der Datei, die Sketchfab dem Download beilegt; die Sketchfab-Seite selbst war von der Arbeitsumgebung aus nicht erreichbar und sollte vor der Veröffentlichung einmal gegengeprüft werden.
+- Bagger-Kabine (`zx200_cab_open.glb`): aus dem Kabinenteil des Baggers oben abgeleitet (Apache 2.0); `tools/blender/zx200_cab.py` höhlt den Block aus und schneidet die Fensteröffnungen.

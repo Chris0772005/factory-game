@@ -57,8 +57,10 @@ def _principled(m):
     return p
 
 
-def material(name, color, rough=0.5, metal=0.0, coat=0.0, alpha=1.0, emit=None, emit_strength=1.0):
+def material(name, color, rough=0.5, metal=0.0, coat=0.0, alpha=1.0, emit=None, emit_strength=1.0, one_sided=False):
+    """`one_sided`: back faces are not drawn (a shell seen from inside shows what lies behind it)."""
     m = bpy.data.materials.new(name)
+    m.use_backface_culling = one_sided
     p = _principled(m)
     p.inputs["Base Color"].default_value = (*srgb(color), 1)
     p.inputs["Roughness"].default_value = rough
@@ -116,9 +118,11 @@ def _image(name, rgb, colour):
     return img
 
 
-def surface(name, color, kind, size=512, seed=0, coat=0.0):
+def surface(name, color, kind, size=512, seed=0, coat=0.0, one_sided=False, chips=None):
     """A textured PBR material: albedo, occlusion/roughness/metal and normal maps generated for `kind`."""
-    k = KINDS[kind]
+    k = dict(KINDS[kind])
+    if chips is not None:
+        k["chips"] = chips
     rng = np.random.default_rng(seed)
     n = size
     h = color.lstrip("#")
@@ -145,7 +149,7 @@ def surface(name, color, kind, size=512, seed=0, coat=0.0):
     normal = np.stack([0.5 - 0.5 * dx * nz, 0.5 - 0.5 * dy * nz, 0.5 + 0.5 * nz], axis=-1)
     orm = np.stack([np.ones((n, n)), np.clip(rough, 0.04, 1), np.clip(metal, 0, 1)], axis=-1)
 
-    m = material(name, color, rough=k["rough"][0], metal=k["metal"], coat=coat)
+    m = material(name, color, rough=k["rough"][0], metal=k["metal"], coat=coat, one_sided=one_sided)
     nt = m.node_tree
     p = _principled(m)
     uv = nt.nodes.new("ShaderNodeUVMap")
@@ -180,8 +184,10 @@ def _box_uv(bm):
             loop[layer].uv = (co[a] / UV_TILE, co[b] / UV_TILE)
 
 
-def make(name, parent, mat, build, bevel=0.0, segs=3, smooth=True, loc=None, angle=35):
-    """Object from a bmesh builder. `bevel` rounds every edge sharper than `angle` degrees."""
+def make(name, parent, mat, build, bevel=0.0, segs=3, smooth=True, loc=None, angle=35, subsurf=0):
+    """Object from a bmesh builder. `mat` is one material or a list (the builder sets face.material_index).
+    `bevel` rounds every edge sharper than `angle` degrees. `subsurf` > 0 treats the mesh as a control
+    cage and smooths it that many times (Catmull-Clark): for curved bodies such as a cab."""
     bm = bmesh.new()
     build(bm)
     bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=1e-6)
@@ -193,10 +199,15 @@ def make(name, parent, mat, build, bevel=0.0, segs=3, smooth=True, loc=None, ang
     bm.free()
     for poly in mesh.polygons:
         poly.use_smooth = smooth
-    if smooth and hasattr(mesh, "set_sharp_from_angle"):
+    if smooth and subsurf == 0 and hasattr(mesh, "set_sharp_from_angle"):
         mesh.set_sharp_from_angle(angle=math.radians(angle))
-    mesh.materials.append(mat)
+    for m in mat if isinstance(mat, (list, tuple)) else [mat]:
+        mesh.materials.append(m)
     ob = _link(bpy.data.objects.new(name, mesh), parent, loc)
+    if subsurf > 0:
+        sub = ob.modifiers.new("subsurf", "SUBSURF")
+        sub.levels = subsurf
+        sub.render_levels = subsurf
     if bevel > 0:
         mod = ob.modifiers.new("bevel", "BEVEL")
         mod.width = bevel
@@ -210,8 +221,6 @@ def make(name, parent, mat, build, bevel=0.0, segs=3, smooth=True, loc=None, ang
         wn.weight = 100
     return ob
 
-
-# ------------------------------------------------------------------ shapes
 
 def add_box(bm, lo, hi):
     lo, hi = Vector(lo), Vector(hi)
@@ -260,25 +269,37 @@ def add_prism(bm, pts, axis, a0, a1):
         bm.faces.new((lo[i], hi[i], hi[j], lo[j]))
 
 
-def add_tube(bm, pts, r, segs=10):
-    """Round tube along a polyline, capped."""
+def add_tube(bm, pts, r, segs=10, closed=False):
+    """Round tube along a polyline: capped, or a closed loop."""
     pts = [Vector(p) for p in pts]
+    n = len(pts)
     rings = []
-    up = Vector((0, 0, 1))
+    side = None
     for i, p in enumerate(pts):
-        t = (pts[min(i + 1, len(pts) - 1)] - pts[max(i - 1, 0)]).normalized()
-        side = t.cross(up)
-        if side.length < 1e-4:
-            side = t.cross(Vector((0, 1, 0)))
+        before = pts[(i - 1) % n] if closed else pts[max(i - 1, 0)]
+        after = pts[(i + 1) % n] if closed else pts[min(i + 1, n - 1)]
+        t = (after - before).normalized()
+        if side is None:
+            side = t.cross(Vector((0, 0, 1)))
+            if side.length < 1e-4:
+                side = t.cross(Vector((0, 1, 0)))
+        # Carry the frame along the path so the tube does not twist.
+        side = side - t * side.dot(t)
+        if side.length < 1e-5:
+            side = t.cross(Vector((0, 0, 1)))
         side.normalize()
         top = side.cross(t)
         rings.append([bm.verts.new(p + r * (math.cos(2 * math.pi * k / segs) * side + math.sin(2 * math.pi * k / segs) * top)) for k in range(segs)])
-    for a, b in zip(rings, rings[1:]):
+    pairs = list(zip(rings, rings[1:]))
+    if closed:
+        pairs.append((rings[-1], rings[0]))
+    for a, b in pairs:
         for k in range(segs):
             k1 = (k + 1) % segs
             bm.faces.new((a[k], a[k1], b[k1], b[k]))
-    bm.faces.new(rings[0][::-1])
-    bm.faces.new(rings[-1])
+    if not closed:
+        bm.faces.new(rings[0][::-1])
+        bm.faces.new(rings[-1])
 
 
 def add_lathe_y(bm, profile, center=(0, 0, 0), segs=48):

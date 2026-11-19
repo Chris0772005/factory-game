@@ -41,34 +41,73 @@ static func build(parent: Node3D) -> void:
 		parent.add_child(YardLighting.create_vignette())
 
 
-## Turns a hall built with `build` from dusk to a bright working day: blue
-## sky with white clouds, a high pale sun through the door, more sky light
-## inside. The scrap hall uses it (the first hall should read clean and clear).
+## The day sky: a photographed panorama for the view and its HDR original for the light (see
+## shaders/env_sky_photo.gdshader). The panorama's sun stands 47.9 degrees up; DAY_SUN points the sun
+## light the same way, so the shadows fall where the sky says they should.
+const DAY_SKY_VIEW := "res://assets/sky/day_sky_view.jpg"
+const DAY_SKY_LIGHT := "res://assets/sky/day_sky_light.hdr"
+const DAY_SUN := Vector3(-47.9, -34.2, 0.0)
+
+
+## Turns a hall built with `build` from dusk to a clear working day in the open: a photographed sky
+## that lights the scene and mirrors in paint and glass, a hard high sun with crisp shadows, clear air
+## instead of workshop haze, and a grade with punch (the project's graphics standard, TECH_SPEC Modul Y).
+## The scrap hall uses it.
 static func daylight(parent: Node3D) -> void:
+	var low := EnvQuality.is_low()
 	var we := parent.get_node_or_null(^"WorldEnvironment") as WorldEnvironment
 	if we:
 		var env := we.environment
-		env.ambient_light_color = Color("#aab6c8")
-		env.ambient_light_energy = 0.8
-		env.ambient_light_sky_contribution = 0.75
-		env.volumetric_fog_density = 0.012
-		env.volumetric_fog_albedo = Color("#dfe3e6")
-		var sky := env.sky.sky_material as ShaderMaterial if env.sky else null
-		if sky:
-			sky.set_shader_parameter(&"zenith", Color(0.16, 0.38, 0.74))
-			sky.set_shader_parameter(&"upper", Color(0.36, 0.58, 0.88))
-			sky.set_shader_parameter(&"horizon", Color(0.74, 0.84, 0.94))
-			sky.set_shader_parameter(&"afterglow", Color(0.86, 0.9, 0.95))
-			sky.set_shader_parameter(&"venus_belt", Color(0.78, 0.86, 0.95))
-			sky.set_shader_parameter(&"earth_shadow", Color(0.68, 0.78, 0.9))
-			sky.set_shader_parameter(&"below", Color(0.36, 0.37, 0.4))
-			sky.set_shader_parameter(&"star_amount", 0.0)
-			sky.set_shader_parameter(&"moon_size", 0.0)
-			sky.set_shader_parameter(&"cloud_lit", Color(1.0, 1.0, 1.0))
-			sky.set_shader_parameter(&"cloud_shade", Color(0.7, 0.75, 0.84))
-			sky.set_shader_parameter(&"energy", 1.15)
+		var sky_mat := ShaderMaterial.new()
+		sky_mat.shader = load("res://shaders/env_sky_photo.gdshader")
+		sky_mat.set_shader_parameter(&"view_panorama", load(DAY_SKY_VIEW))
+		sky_mat.set_shader_parameter(&"light_panorama", load(DAY_SKY_LIGHT))
+		sky_mat.set_shader_parameter(&"view_energy", 1.2)
+		sky_mat.set_shader_parameter(&"light_energy", 1.0)
+		var sky := Sky.new()
+		sky.sky_material = sky_mat
+		sky.radiance_size = Sky.RADIANCE_SIZE_256 if low else Sky.RADIANCE_SIZE_512
+		sky.process_mode = Sky.PROCESS_MODE_QUALITY
+		env.sky = sky
+		env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+		env.ambient_light_sky_contribution = 1.0
+		env.ambient_light_energy = 1.0
+		env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
+		# Clear air: only a breath of distance haze, no lit dust in the room.
+		env.fog_light_color = Color("#b4c8de")
+		env.fog_density = 0.0012
+		env.fog_aerial_perspective = 0.0
+		env.fog_sky_affect = 0.0
+		env.volumetric_fog_enabled = false
+		# Grade: no dusk tint; sunlit surfaces bright, shadows deep, colours full.
+		env.tonemap_exposure = 1.0
+		env.tonemap_agx_white = 8.0
+		env.tonemap_agx_contrast = 1.35
+		env.adjustment_color_correction = null
+		env.adjustment_contrast = 1.08
+		env.adjustment_saturation = 1.2
+		env.ssao_radius = 1.0
+		env.ssao_intensity = 2.2
+		env.ssao_power = 1.6
+		env.ssao_light_affect = 0.0
+		env.ssil_enabled = not low and not EnvQuality.disabled("ssil")
+		env.glow_intensity = 0.5
+		env.glow_hdr_threshold = 1.6
 	var sun := parent.get_node_or_null(^"Sun") as DirectionalLight3D
 	if sun:
-		sun.light_color = Color("#fff1d8")
-		sun.light_energy = 2.3
-		sun.rotation_degrees = Vector3(-46.0, -34.0, 0.0)
+		sun.light_color = Color("#fff4e2")
+		sun.light_energy = 3.0
+		sun.rotation_degrees = DAY_SUN
+		# The real sun's disc is half a degree wide: shadows are sharp at the foot and soften with distance.
+		sun.light_angular_distance = 0.0 if low else 0.55
+		sun.shadow_blur = 0.8
+		sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS if low else DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
+		sun.directional_shadow_max_distance = 45.0 if low else 80.0
+		sun.directional_shadow_fade_start = 0.9
+	# The sky is the fill now.
+	var fill := parent.get_node_or_null(^"Fill") as DirectionalLight3D
+	if fill:
+		fill.visible = false
+	var vignette := parent.get_node_or_null(^"Vignette")
+	if vignette:
+		vignette.queue_free()

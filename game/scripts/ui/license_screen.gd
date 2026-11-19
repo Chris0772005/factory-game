@@ -55,7 +55,10 @@ func _ready() -> void:
 static func build_text() -> String:
 	var out := PackedStringArray()
 	out.append("MOLTEN MATES\n")
-	out.append("3D-Modelle: KayKit (Kay Lousberg, www.kaylousberg.com) und Kenney (www.kenney.nl) – CC0 1.0.")
+	out.append("3D-Modelle: KayKit (Kay Lousberg, www.kaylousberg.com), Kenney (www.kenney.nl) und Quaternius (quaternius.com) – CC0 1.0.")
+	out.append("Foto-Oberflächen, gescannte Requisiten und Himmel („Kloofendal 48d Partly Cloudy (Pure Sky)“, Greg Zaal und Jarod Guest): Poly Haven (polyhaven.com) – CC0 1.0.")
+	out.append("Bagger: „20 t class hydraulic excavator“ aus dem Projekt Construction Site Simulation (github.com/dtt-github/construction-site-simulation) – Apache License 2.0. Für das Spiel umlackiert und mit geöffneter Kabine.")
+	out.append("Kipper: nach „Dump Truck“ von ElectroNick (sketchfab.com/3d-models/dump-truck-781c616da8f44982a59cb3fc3fa67f98) – CC BY 4.0 (creativecommons.org/licenses/by/4.0). Für das Spiel zerlegt, umlackiert und ergänzt.")
 	out.append("Schriften: Fredoka (The Fredoka Project Authors) und Lilita One (Juan Montoreano) – SIL Open Font License 1.1.")
 	out.append("Geräusche, Glockenklang und Musik: eigene Synthese (Musik von einer KI komponiert). Maschinen, Hallen und Effekte: im Spiel erzeugt.\n")
 	out.append("Dieses Spiel verwendet die Godot Engine, verfügbar unter der folgenden Lizenz:\n")

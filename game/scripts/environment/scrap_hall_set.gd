@@ -100,6 +100,15 @@ func _dressing() -> void:
 	_lamps()
 
 
+## In daylight the hall's own bounce is neutral (the other halls stand in dusk).
+func _reflection_probe() -> void:
+	super()
+	var probe := get_node_or_null(^"GarageReflections") as ReflectionProbe
+	if probe:
+		probe.ambient_color = Color("#77736c")
+		probe.ambient_color_energy = 0.55
+
+
 ## The corner for the foundry stays clear until it is bought.
 func _workshop_gear() -> void:
 	pass

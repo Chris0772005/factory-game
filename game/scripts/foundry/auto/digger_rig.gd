@@ -10,12 +10,18 @@ extends Node3D
 ## degrees as the file's joints define them: boom < 0 is up, stick and bucket > 0 fold in.
 
 const MODEL := "res://assets/models/machinery/zx200_hd.glb"
+## The cab with real window openings (tools/blender/zx200_cab.py cuts them into the file's closed block).
+const CAB := "res://assets/models/machinery/zx200_cab_open.glb"
+const CAB_PAINT := Color("#e4e2dc")
 ## The links turn about their local Y (the file keeps the Z-up frames of its source), the swing about Z.
 const PIN := Vector3(0, 1, 0)
 const UP := Vector3(0, 0, 1)
 ## Far pins of the two link plates in their own frames (their near pin, shared with the rod eye, is the origin).
 const GUIDE_END := Vector3(-0.34, 0, -0.45)
 const SIDE_END := Vector3(-0.33, 0, 0.48)
+## Site yellow (the file's paint is orange), and what the lamps give when the machine works.
+const PAINT := Color("#f0b414")
+const LAMP_ENERGY := 5.0
 ## Pins on the links, by the name of the pin's mesh in the file.
 const PINS: Array[String] = ["boom_head_pins", "boom_rod_pin", "arm_head_pin", "arm_rod_pin", "bucket_head_pin", "guide_pin", "bucket_link_pin"]
 
@@ -27,6 +33,15 @@ var _rest := {}
 var _pins := {}
 var _parts := {}
 var _eyes := {}
+var _lens: StandardMaterial3D
+var _bar: StandardMaterial3D
+var _spots: Array[SpotLight3D] = []
+var _blink := 0.0
+## Work lamps and the amber bar on the cab roof: on while the machine works.
+var lamps_on := false:
+	set(value):
+		lamps_on = value
+		_light()
 
 
 func _ready() -> void:
@@ -61,6 +76,86 @@ func _ready() -> void:
 		if eye and rod:
 			_eyes[cyl] = rod.global_transform.affine_inverse() * (eye.global_transform * eye.get_aabb().get_center())
 	set_pose(0.0, -20.0, 95.0, 70.0)
+	_finish(scene)
+
+
+## Paint, glass, mud and lamps (the project's vehicle finish), and what the file leaves out: a cab you
+## can look into, work lamps that light the ground and an amber warning bar.
+func _finish(scene: Node3D) -> void:
+	var cab := scene.find_child("cab_shell", true, false) as MeshInstance3D
+	var open_cab := load(CAB) as PackedScene
+	if cab and open_cab:
+		# The painted shell takes the place of the file's closed block, the lining stands beside it.
+		var made := open_cab.instantiate()
+		for node in made.find_children("*", "MeshInstance3D", true, false):
+			var part := node as MeshInstance3D
+			if part.name == &"cab_shell":
+				cab.mesh = part.mesh
+			else:
+				var extra := MeshInstance3D.new()
+				extra.name = part.name
+				extra.mesh = part.mesh
+				cab.get_parent().add_child(extra)
+				extra.transform = cab.transform
+		made.free()
+	VehicleFinish.apply(self, {repaint = {"paint_orange": PAINT, "paint_cab_grey": CAB_PAINT}, mud = 0.85, mud_height = 1.1, dust = 0.3})
+	var interior := scene.find_child("cab_interior", true, false) as MeshInstance3D
+	if interior:
+		var trim := StandardMaterial3D.new()
+		trim.albedo_color = Color("#34373b")
+		trim.roughness = 0.75
+		interior.material_override = trim
+	_lens = StandardMaterial3D.new()
+	_lens.albedo_color = Color("#fff6de")
+	_lens.roughness = 0.1
+	_lens.emission_enabled = true
+	_lens.emission = Color("#fff1cf")
+	for lens_name: String in ["work_lamp_lenses", "boom_lamp_lens"]:
+		var lens := scene.find_child(lens_name, true, false) as MeshInstance3D
+		if lens == null:
+			continue
+		lens.material_override = _lens
+		lens.material_overlay = null
+		# A lamp shines forward and down, in the frame of the part it is bolted to (Z up, X forward).
+		var spot := SpotLight3D.new()
+		spot.light_color = Color("#fff0d0")
+		spot.spot_range = 16.0
+		spot.spot_angle = 42.0
+		spot.spot_attenuation = 1.2
+		spot.shadow_enabled = false
+		lens.get_parent().add_child(spot)
+		var at := lens.transform * lens.get_aabb().get_center()
+		spot.transform = Transform3D(Basis.looking_at(Vector3(0.9, 0.0, -0.44), UP), at + Vector3(0.12, 0, 0))
+		_spots.append(spot)
+	_bar = StandardMaterial3D.new()
+	_bar.albedo_color = Color("#ff9a12")
+	_bar.roughness = 0.2
+	_bar.emission_enabled = true
+	_bar.emission = Color("#ff8a00")
+	for bar_name: String in ["signal_amber", "signal_blue", "signal_green", "signal_red"]:
+		var lamp := scene.find_child(bar_name, true, false) as MeshInstance3D
+		if lamp:
+			lamp.material_override = _bar
+			lamp.material_overlay = null
+	_light()
+
+
+func _light() -> void:
+	if _lens:
+		_lens.emission_energy_multiplier = LAMP_ENERGY if lamps_on else 0.15
+	for spot in _spots:
+		spot.visible = lamps_on
+		spot.light_energy = LAMP_ENERGY
+	if _bar and not lamps_on:
+		_bar.emission_energy_multiplier = 0.2
+	set_process(lamps_on)
+
+
+## The warning bar flashes while the machine works.
+func _process(delta: float) -> void:
+	_blink = fmod(_blink + delta * 1.6, 1.0)
+	if _bar:
+		_bar.emission_energy_multiplier = 6.0 if _blink < 0.22 or (_blink > 0.36 and _blink < 0.58) else 0.4
 
 
 ## Swing in radians, joint angles in degrees.
