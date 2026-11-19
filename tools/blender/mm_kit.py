@@ -1,5 +1,14 @@
 """MOLTEN MATES model kit: small helpers to build vehicles and machines procedurally in Blender (bpy) and
-export them as GLB for Godot. Own code. Conventions: metres, X forward, Y left, Z up; ground at z = 0.
+export them as GLB for Godot. Conventions: metres, X forward, Y left, Z up; ground at z = 0.
+
+This file is a modified version of assets/blender/blendkit.py from the Construction Site Simulation project
+(https://github.com/dtt-github/construction-site-simulation), Copyright 2026 DigitalTwin Technology GmbH and the
+Construction Site Simulation contributors, licensed under the Apache License 2.0
+(game/assets/models/machinery/LICENSE-Apache-2.0.txt).
+CHANGED for this game: cut down to what the game's models need and adapted to Blender 5.3. The materials, the
+box UVs, make, the add_* shapes, fillet, the generated textures (surface, KINDS, _noise) and export_glb follow
+that file, some lines verbatim. New here: add_lathe_y, arc, the "plastic" kind, one-sided materials, the
+subdivision option of make, the copyright line of export_glb and the colour-profile fix (_strip_colour_profiles).
 
     PYTHONPATH=<dir with bpy> python3 tools/blender/<model>.py
 
@@ -345,10 +354,11 @@ def fillet(pts, r, n=4):
     return out
 
 
-def export_glb(path):
-    """Everything in the scene as one GLB, Y-up, modifiers applied, textures as JPEG."""
+def export_glb(path, copyright=""):
+    """Everything in the scene as one GLB, Y-up, modifiers applied, textures as JPEG. `copyright` goes into the
+    file's asset.copyright: a model made from third-party work keeps its notice and says what was changed."""
     args = dict(filepath=str(path), export_format="GLB", export_yup=True, export_apply=True, export_cameras=False,
-        export_lights=False, export_animations=False, export_image_format="JPEG")
+        export_lights=False, export_animations=False, export_image_format="JPEG", export_copyright=copyright)
     try:
         bpy.ops.export_scene.gltf(export_jpeg_quality=88, **args)
     except TypeError:

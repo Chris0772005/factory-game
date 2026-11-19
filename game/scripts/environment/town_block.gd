@@ -46,20 +46,13 @@ static func house(set: Node3D, base: Vector3, w: float, d: float, opts := {}) ->
 			WorldBuilder.add_collider(set, Vector3(o[1] - o[0], o[3] - o[2], 0.06), Transform3D(Basis(), base + Vector3((o[0] + o[1]) * 0.5, (o[2] + o[3]) * 0.5, WALL * 0.5)))
 	if not EnvMesh.visual():
 		return
-	var wall_mat: ShaderMaterial
-	if opts.has("plaster"):
-		wall_mat = EnvMesh.material("town_wall_" + key, "res://shaders/env_plaster.gdshader", {
-			plaster = opts.plaster, grime = Color("#5a554e"), brick = opts.get("brick", Color("#8f4a36")), mortar = Color("#c2b29a"),
-			chips = 0.35, streaks = 0.45, brick_below = 0.7})
-	else:
-		wall_mat = EnvMesh.material("town_wall_" + key, "res://shaders/env_plaster.gdshader", {
-			brick = opts.get("brick", Color("#9a5038")), mortar = opts.get("mortar", Color("#c4b49c")), brickwork = 1.0})
+	var wall_mat := wall_material(key, opts)
 	var walls := []
 	for b: Array in boxes:
 		walls.append(EnvMesh.piece(EnvMesh.box(b[1]), Transform3D(Basis(), base + b[0])))
-	# Flat roof with a parapet lip.
-	walls.append(EnvMesh.piece(EnvMesh.box(Vector3(w + 0.3, 0.22, d + 0.3)), Transform3D(Basis(), base + Vector3(0, HEIGHT + 0.11, d * 0.5))))
+	_crown(set, base, w, d, HEIGHT, walls)
 	EnvMesh.add(set, EnvMesh.merge(walls), wall_mat)
+	_stonework(set, base, w, [[door_x - DOOR_W * 0.5 - 0.12, door_x + DOOR_W * 0.5 + 0.12]])
 	# Inside: lining on the back and side walls, the ceiling, the floor.
 	var iw := w - WALL * 2.0
 	var id := d - WALL * 2.0
@@ -129,20 +122,158 @@ static func house(set: Node3D, base: Vector3, w: float, d: float, opts := {}) ->
 	set.add_child(lamp)
 
 
+## The wall of a house, a photo scan (EnvMesh.scan): `scan` names it and `tone` may tint it; without a
+## scan, `plaster` gives a rendered wall in that colour and anything else dark red brick.
+static func wall_material(key: String, opts: Dictionary) -> ShaderMaterial:
+	if opts.has("scan"):
+		var params := {foot = 0.45}
+		if opts.has("tone"):
+			params["tint"] = EnvMesh.toward(opts.scan, opts.tone, 0.8)
+		return EnvMesh.scan("town_wall_" + key, opts.scan, params)
+	if opts.has("plaster"):
+		# A shade under the wanted colour: in full sun a pale render would burn out to white.
+		return EnvMesh.scan("town_wall_" + key, "beige_wall_001", {tint = EnvMesh.toward("beige_wall_001", (opts.plaster as Color).darkened(0.3)), foot = 0.5})
+	return EnvMesh.scan("town_wall_" + key, "red_brick_03", {foot = 0.45})
+
+
+## The top of a house `h` high: the walls run on as a parapet (added to `walls`), with a concrete coping
+## on it and roofing felt behind.
+static func _crown(set: Node3D, base: Vector3, w: float, d: float, h: float, walls: Array) -> void:
+	var rise := 0.32
+	var coping := []
+	for z: float in [WALL * 0.5, d - WALL * 0.5]:
+		walls.append(EnvMesh.piece(EnvMesh.box(Vector3(w, rise, WALL)), Transform3D(Basis(), base + Vector3(0, h + rise * 0.5, z))))
+		coping.append(EnvMesh.piece(EnvMesh.box(Vector3(w + 0.12, 0.07, WALL + 0.12)), Transform3D(Basis(), base + Vector3(0, h + rise + 0.035, z))))
+	for s: float in [-1.0, 1.0]:
+		walls.append(EnvMesh.piece(EnvMesh.box(Vector3(WALL, rise, d - WALL * 2.0)), Transform3D(Basis(), base + Vector3(s * (w - WALL) * 0.5, h + rise * 0.5, d * 0.5))))
+		coping.append(EnvMesh.piece(EnvMesh.box(Vector3(WALL + 0.12, 0.07, d - WALL * 2.0)), Transform3D(Basis(), base + Vector3(s * (w - WALL) * 0.5, h + rise + 0.035, d * 0.5))))
+	EnvMesh.add(set, EnvMesh.merge(coping), stone())
+	EnvMesh.add(set, EnvMesh.box(Vector3(w - WALL, 0.1, d - WALL), 0.0), EnvMesh.scan("town_roof", "bitumen", {drift = 0.3}),
+		Transform3D(Basis(), base + Vector3(0, h + 0.05, d * 0.5)))
+
+
+## Cast stone on a front: a plinth along the foot, broken at `gaps` ([x0, x1] from the middle), and a
+## string course under the top.
+static func _stonework(set: Node3D, base: Vector3, w: float, gaps: Array) -> void:
+	var pieces := []
+	var x := -w * 0.5
+	var runs := gaps.duplicate()
+	runs.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
+	runs.append([w * 0.5, w * 0.5])
+	for gap: Array in runs:
+		if gap[0] - x > 0.05:
+			pieces.append(EnvMesh.piece(EnvMesh.box(Vector3(gap[0] - x, 0.55, 0.06)), Transform3D(Basis(), base + Vector3((x + gap[0]) * 0.5, 0.275, -0.03))))
+		x = maxf(x, gap[1])
+	pieces.append(EnvMesh.piece(EnvMesh.box(Vector3(w + 0.08, 0.11, 0.07)), Transform3D(Basis(), base + Vector3(0, HEIGHT - 0.42, -0.035))))
+	EnvMesh.add(set, EnvMesh.merge(pieces), stone())
+
+
+## Grey cast stone: plinths, copings, sills and lintels.
+static func stone() -> ShaderMaterial:
+	return EnvMesh.scan("town_stone", "dirty_concrete", {tile = 1.6, tint = Vector3(0.78, 0.78, 0.78), drift = 0.1})
+
+
+## A house of the town beyond: storeys of brick or render with rows of windows on every side, a door,
+## a plinth, a string course and a flat roof behind a parapet. Seen from the street and over the yard
+## walls only: there is no way in and nothing solid. `base` is the middle of the front at ground level.
+## opts: key, scan / tone / plaster (see wall_material), storeys (3).
+static func block(set: Node3D, base: Vector3, w: float, d: float, opts := {}) -> void:
+	if not EnvMesh.visual():
+		return
+	var key: String = opts.get("key", "block")
+	var storeys: int = opts.get("storeys", 3)
+	var foot := 0.6
+	var floor_h := 3.0
+	var h := foot + storeys * floor_h
+	var walls := [EnvMesh.piece(EnvMesh.box(Vector3(w, h, d)), Transform3D(Basis(), base + Vector3(0, h * 0.5, d * 0.5)))]
+	_crown(set, base, w, d, h, walls)
+	EnvMesh.add(set, EnvMesh.merge(walls), wall_material(key, opts))
+	var glass := StandardMaterial3D.new()
+	glass.albedo_color = Color("#18222b")
+	glass.roughness = 0.05
+	glass.metallic_specular = 0.9
+	var drawn := StandardMaterial3D.new()
+	drawn.albedo_color = Color("#8d8a80")
+	drawn.roughness = 0.9
+	var frame := StandardMaterial3D.new()
+	frame.albedo_color = Color("#d8d4c9")
+	frame.roughness = 0.55
+	var door := EnvMesh.wood("town_block_door", {base_color = Color("#3a2d24"), grain_color = Color("#221a14"), weathering = 0.3, roughness_base = 0.6})
+	var panes := []
+	var curtains := []
+	var frames := []
+	var stones := []
+	var doors := []
+	# Each face: its middle at the ground, the way it looks and the way its width runs.
+	var faces := [
+		[Vector3(0, 0, 0), Vector3.FORWARD, Vector3.LEFT, w],
+		[Vector3(0, 0, d), Vector3.BACK, Vector3.RIGHT, w],
+		[Vector3(-w * 0.5, 0, d * 0.5), Vector3.LEFT, Vector3.BACK, d],
+		[Vector3(w * 0.5, 0, d * 0.5), Vector3.RIGHT, Vector3.FORWARD, d],
+	]
+	var pick := hash(key)
+	for f in faces.size():
+		var face: Array = faces[f]
+		var out: Vector3 = face[1]
+		var along: Vector3 = face[2]
+		var width: float = face[3]
+		var turn := Basis(along, Vector3.UP, out)
+		var origin: Vector3 = base + face[0]
+		var bays := maxi(int(width / 2.7), 1)
+		var pitch := width / bays
+		var front_door := f == 0
+		for s in storeys:
+			for b in bays:
+				var u := (b + 0.5 - bays * 0.5) * pitch
+				var sill := foot + s * floor_h + 0.95
+				if front_door and s == 0 and b == bays / 2:
+					# The house door instead of a window.
+					doors.append(EnvMesh.piece(EnvMesh.box(Vector3(1.05, 2.15, 0.06)), Transform3D(turn, origin + along * u + Vector3.UP * (foot * 0.3 + 1.075) + out * 0.01)))
+					frames.append(EnvMesh.piece(EnvMesh.box(Vector3(1.25, 0.1, 0.09)), Transform3D(turn, origin + along * u + Vector3.UP * (foot * 0.3 + 2.2) + out * 0.03)))
+					for side: float in [-1.0, 1.0]:
+						frames.append(EnvMesh.piece(EnvMesh.box(Vector3(0.1, 2.15, 0.09)), Transform3D(turn, origin + along * (u + side * 0.575) + Vector3.UP * (foot * 0.3 + 1.075) + out * 0.03)))
+					stones.append(EnvMesh.piece(EnvMesh.box(Vector3(1.6, foot * 0.3, 0.5)), Transform3D(turn, origin + along * u + Vector3.UP * foot * 0.15 + out * 0.25)))
+					continue
+				var mid := origin + along * u + Vector3.UP * (sill + 0.75)
+				pick = (pick * 1103515245 + 12345) & 0x7fffffff
+				var target := curtains if pick % 10 < 3 else panes
+				target.append(EnvMesh.piece(EnvMesh.box(Vector3(1.1, 1.5, 0.03)), Transform3D(turn, mid + out * 0.005)))
+				for side: float in [-1.0, 1.0]:
+					frames.append(EnvMesh.piece(EnvMesh.box(Vector3(0.07, 1.5, 0.06)), Transform3D(turn, mid + along * side * 0.585 + out * 0.03)))
+					frames.append(EnvMesh.piece(EnvMesh.box(Vector3(1.24, 0.07, 0.06)), Transform3D(turn, mid + Vector3.UP * side * 0.785 + out * 0.03)))
+				frames.append(EnvMesh.piece(EnvMesh.box(Vector3(0.05, 1.5, 0.05)), Transform3D(turn, mid + out * 0.03)))
+				stones.append(EnvMesh.piece(EnvMesh.box(Vector3(1.4, 0.07, 0.16)), Transform3D(turn, mid - Vector3.UP * 0.855 + out * 0.08)))
+				stones.append(EnvMesh.piece(EnvMesh.box(Vector3(1.4, 0.16, 0.05)), Transform3D(turn, mid + Vector3.UP * 0.9 + out * 0.025)))
+		# Plinth (on the front it stops either side of the door) and the string course over the ground floor.
+		var door_u := (bays / 2 + 0.5 - bays * 0.5) * pitch
+		var runs := [[-width * 0.5 - 0.05, door_u - 0.63], [door_u + 0.63, width * 0.5 + 0.05]] if front_door else [[-width * 0.5 - 0.05, width * 0.5 + 0.05]]
+		for run: Array in runs:
+			if run[1] - run[0] > 0.05:
+				stones.append(EnvMesh.piece(EnvMesh.box(Vector3(run[1] - run[0], foot, 0.06)), Transform3D(turn, origin + along * ((run[0] + run[1]) * 0.5) + Vector3.UP * foot * 0.5 + out * 0.03)))
+		stones.append(EnvMesh.piece(EnvMesh.box(Vector3(width + 0.12, 0.12, 0.08)), Transform3D(turn, origin + Vector3.UP * (foot + floor_h - 0.1) + out * 0.04)))
+	EnvMesh.add(set, EnvMesh.merge(panes), glass, Transform3D(), false)
+	if not curtains.is_empty():
+		EnvMesh.add(set, EnvMesh.merge(curtains), drawn, Transform3D(), false)
+	EnvMesh.add(set, EnvMesh.merge(frames), frame, Transform3D(), false)
+	EnvMesh.add(set, EnvMesh.merge(stones), stone())
+	if not doors.is_empty():
+		EnvMesh.add(set, EnvMesh.merge(doors), door, Transform3D(), false)
+
+
 ## A house that is shut: brick front, roller shutter down, a sign. Solid.
 static func closed(set: Node3D, base: Vector3, w: float, d: float, opts := {}) -> void:
 	WorldBuilder.add_collider(set, Vector3(w, HEIGHT, d), Transform3D(Basis(), base + Vector3(0, HEIGHT * 0.5, d * 0.5)))
 	if not EnvMesh.visual():
 		return
 	var key: String = opts.get("key", "closed")
-	var wall_mat := EnvMesh.material("town_wall_" + key, "res://shaders/env_plaster.gdshader", {
-		brick = opts.get("brick", Color("#8c5a44")), mortar = Color("#bfae96"), brickwork = 1.0})
+	var wall_mat := wall_material(key, opts)
 	var walls := []
 	walls.append(EnvMesh.piece(EnvMesh.box(Vector3(w, HEIGHT, d)), Transform3D(Basis(), base + Vector3(0, HEIGHT * 0.5, d * 0.5))))
-	walls.append(EnvMesh.piece(EnvMesh.box(Vector3(w + 0.3, 0.22, d + 0.3)), Transform3D(Basis(), base + Vector3(0, HEIGHT + 0.11, d * 0.5))))
+	_crown(set, base, w, d, HEIGHT, walls)
 	EnvMesh.add(set, EnvMesh.merge(walls), wall_mat)
 	var shutter := StationKit.metal("town_shutter", {steel_color = Color("#7c8286"), rust = 0.35, metallic_steel = 0.5, roughness_steel = 0.55})
 	var sw := minf(w - 1.2, 3.4)
+	_stonework(set, base, w, [[-sw * 0.5 - 0.2, sw * 0.5 + 0.2]])
 	var slats := []
 	for i in 13:
 		slats.append(EnvMesh.piece(EnvMesh.box(Vector3(sw, 0.17, 0.05)), Transform3D(Basis(Vector3.RIGHT, -0.18), base + Vector3(0, 0.1 + i * 0.19, -0.02))))

@@ -2,6 +2,8 @@
 // plaster, sky): cheap 2D value noise, fbm, Voronoi, a bump helper and the
 // lawn colour, so grass blades and the ground under them agree.
 
+// Hashes after "Hash without Sine" by Dave Hoskins (https://www.shadertoy.com/view/4djSRW), MIT License,
+// Copyright (c) 2014 David Hoskins.
 float env_hash12(vec2 p) {
 	vec3 p3 = fract(vec3(p.xyx) * 0.1031);
 	p3 += dot(p3, p3.yzx + 33.33);

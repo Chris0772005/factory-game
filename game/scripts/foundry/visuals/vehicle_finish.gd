@@ -4,6 +4,8 @@ class_name VehicleFinish
 ## you can look through and that reflects, lamps that glow, and a layer of mud and dust that is thickest
 ## near the ground (shaders/vehicle_dirt.gdshader as an overlay on every mesh).
 ## Works on imported models by the names of their materials: paint*, glass*, chrome*, lamp*/lens*, rubber*.
+## `apply` wants the model in the tree, standing on the ground in the pose it rests in: the mud is laid
+## out on the machine as it stands then.
 
 const DIRT := preload("res://shaders/vehicle_dirt.gdshader")
 const GLASS := Color(0.07, 0.09, 0.1, 0.3)
@@ -19,7 +21,8 @@ static func apply(root: Node3D, opts := {}) -> ShaderMaterial:
 	dirt.set_shader_parameter(&"amount", float(opts.get("mud", 0.75)))
 	dirt.set_shader_parameter(&"mud_height", float(opts.get("mud_height", 1.25)))
 	dirt.set_shader_parameter(&"dust", float(opts.get("dust", 0.35)))
-	dirt.set_shader_parameter(&"ground", root.global_position.y if root.is_inside_tree() else 0.0)
+	# The machine's own frame, upright and in metres: the dirt is laid out in it (see the shader).
+	var frame := Transform3D(root.global_basis.orthonormalized(), root.global_position).affine_inverse()
 	var gloss := float(opts.get("paint_gloss", 0.9))
 	var repaint: Dictionary = opts.get("repaint", {})
 	var glass: Color = opts.get("glass", GLASS)
@@ -77,6 +80,10 @@ static func apply(root: Node3D, opts := {}) -> ShaderMaterial:
 		var inside := only_inside or String(mi.name).contains("interior") or String(mi.name).contains("inside")
 		if not only_lamps and not only_glass and not inside:
 			mi.material_overlay = dirt
+			var rest := frame * mi.global_transform
+			mi.set_instance_shader_parameter(&"rest_x", Vector4(rest.basis.x.x, rest.basis.y.x, rest.basis.z.x, rest.origin.x))
+			mi.set_instance_shader_parameter(&"rest_y", Vector4(rest.basis.x.y, rest.basis.y.y, rest.basis.z.y, rest.origin.y))
+			mi.set_instance_shader_parameter(&"rest_z", Vector4(rest.basis.x.z, rest.basis.y.z, rest.basis.z.z, rest.origin.z))
 	return dirt
 
 

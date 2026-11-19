@@ -51,8 +51,7 @@ func _ready() -> void:
 		gm.roughness = 0.95
 		ground_mat = gm
 	else:
-		ground_mat = EnvMesh.surface("street_asphalt", {base_color = Color("#2f3033"), stain_color = Color("#1f2022"), stains = 0.5,
-			macro = 0.25, grain = 0.3, roughness_base = 0.92, noise_scale = 2.5, bump = 0.5})
+		ground_mat = EnvMesh.scan("street_asphalt", "asphalt_02", {drift = 0.22, tint = Vector3(0.7, 0.7, 0.72)})
 	EnvMesh.add(self, EnvMesh.box(Vector3(80.0, 0.04, 80.0), 0.0), ground_mat, Transform3D(Basis(), Vector3(0, -0.02, 0)), false)
 	if rig != "":
 		# --rig=swing_deg,boom,arm,bucket shows the excavator rig in that pose.

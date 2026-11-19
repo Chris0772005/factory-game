@@ -27,10 +27,16 @@ const TRUCK_DOCK := Vector3(-11.5, 0, 9.7)
 const SKIP_POS := Vector3(-10.4, 0, 6.3)
 const DIGGER_POS := Vector3(-6.0, 0, 5.4)
 const WORKBENCH_POS := Vector3(-12.2, 0, -9.3)
+## The hall's walls: brick up to here, profiled sheet above.
+const BRICK_TOP := 2.2
 ## Where the street is closed off, left and right.
 const TOWN_X := 27.0
 ## The pavement the patrol walks.
 const BEAT_Z := 18.6
+
+
+var _brick_mat: ShaderMaterial
+var _sheet_mat: ShaderMaterial
 
 
 static func build_hall(world: Node3D, level_stations: Array) -> ScrapHallSet:
@@ -55,6 +61,36 @@ func _materials() -> void:
 		plaster = Color("#9aa3a6"), grime = Color("#4c4a47"), brick = Color("#8a4632"), mortar = Color("#b3a592"),
 		chips = 0.55, streaks = 0.8, cutaway = true, brick_below = 2.2})
 	_trim_mat = StationKit.metal("scraphall_trim", {steel_color = Color("#3f474c"), rust = 0.4, metallic_steel = 0.4})
+	# Photographed surfaces (graphics standard, TECH_SPEC Modul Y): a brick plinth, profiled sheet above.
+	_brick_mat = EnvMesh.scan("scraphall_brick", "red_brick_03", {foot = 0.5, drift = 0.2, cutaway = true})
+	_sheet_mat = EnvMesh.repainted("scraphall_sheet", "box_profile_metal_sheet", Color("#7d8a8e"), {drift = 0.1, cutaway = true})
+
+
+## Brick below, sheeting above: every wall is two boxes, split at BRICK_TOP.
+func _wall_box(center: Vector3, size: Vector3) -> void:
+	var body := WorldBuilder.add_collider(self, size, Transform3D(Basis(), center))
+	body.add_to_group(CAMERA_PASSTHROUGH)
+	_passthrough.append(body.get_rid())
+	var bottom := center.y - size.y * 0.5
+	var top := center.y + size.y * 0.5
+	var split := clampf(BRICK_TOP, bottom, top)
+	if split - bottom > 0.01:
+		EnvMesh.add(self, EnvMesh.box(Vector3(size.x, split - bottom, size.z), 0.0), _brick_mat,
+			Transform3D(Basis(), Vector3(center.x, (bottom + split) * 0.5, center.z)))
+	if top - split > 0.01:
+		# The sheet stands a little back from the face of the brick (across the wall only: along it,
+		# the boxes of one wall must still meet).
+		var thin_x := size.x < size.z
+		EnvMesh.add(self, EnvMesh.box(Vector3(size.x - (0.04 if thin_x else 0.0), top - split, size.z - (0.0 if thin_x else 0.04)), 0.0), _sheet_mat,
+			Transform3D(Basis(), Vector3(center.x, (split + top) * 0.5, center.z)))
+
+
+func _pillar_material() -> ShaderMaterial:
+	return _brick_mat
+
+
+func _roof_material() -> ShaderMaterial:
+	return EnvMesh.repainted("scraphall_roof", "box_profile_metal_sheet", Color("#8f989a"), {drift = 0.08})
 
 
 ## Daylight in the window band instead of the dusk glow of the other halls.
@@ -107,6 +143,8 @@ func _reflection_probe() -> void:
 	if probe:
 		probe.ambient_color = Color("#77736c")
 		probe.ambient_color_energy = 0.55
+		# The front stands open to the day: paint and glass inside mirror the sky through it.
+		probe.interior = false
 
 
 ## The corner for the foundry stays clear until it is bought.
@@ -172,8 +210,7 @@ func _outside() -> void:
 	var road_z := zf + APRON + ROAD * 0.5
 	var shop_z := zf + SHOP_Z
 	if EnvMesh.visual():
-		var asphalt := EnvMesh.surface("street_asphalt", {base_color = Color("#2f3033"), stain_color = Color("#1f2022"), stains = 0.5,
-			macro = 0.25, grain = 0.3, roughness_base = 0.92, noise_scale = 2.5, bump = 0.5})
+		var asphalt := EnvMesh.scan("street_asphalt", "asphalt_02", {drift = 0.22, tint = Vector3(0.7, 0.7, 0.72)})
 		EnvMesh.add(self, EnvMesh.box(Vector3(80.0, 0.04, ROAD), 0.0), asphalt, Transform3D(Basis(), Vector3(0, 0.0, road_z)), false)
 		var paint := EnvMesh.surface("street_paint", {base_color = Color("#d9d4c4"), roughness_base = 0.8})
 		var marks := []
@@ -183,11 +220,12 @@ func _outside() -> void:
 		for i in 7:
 			marks.append(EnvMesh.piece(EnvMesh.box(Vector3(0.5, 0.012, ROAD - 0.6)), Transform3D(Basis(), Vector3(0.2 + i * 0.95, 0.026, road_z))))
 		EnvMesh.add(self, EnvMesh.merge(marks), paint, Transform3D(), false)
-		var kerb := EnvMesh.surface("street_kerb", {base_color = Color("#a39e94"), roughness_base = 0.85, contact_dark = 0.2})
+		var kerb := EnvMesh.scan("street_kerb", "dirty_concrete", {tile = 1.6, tint = Vector3(0.85, 0.85, 0.85)})
 		var kerbs := []
 		for z: float in [road_z - ROAD * 0.5 - 0.1, road_z + ROAD * 0.5 + 0.1]:
 			kerbs.append(EnvMesh.piece(EnvMesh.box(Vector3(80.0, 0.12, 0.2)), Transform3D(Basis(), Vector3(0, 0.06, z))))
 		EnvMesh.add(self, EnvMesh.merge(kerbs), kerb)
+		_paving(zf)
 		_shop(Vector3(3.0, 0, shop_z))
 	prop("kaykit_city/streetlight.gltf", Vector3(-4.5, 0, zf + APRON - 0.6), 0.0, {scale = 1.0, solid = PropKit.Solid.CYLINDER})
 	prop("kaykit_city/streetlight.gltf", Vector3(10.0, 0, zf + APRON + ROAD + 0.6), 180.0, {scale = 1.0, solid = PropKit.Solid.CYLINDER})
@@ -197,12 +235,33 @@ func _outside() -> void:
 	prop("kaykit_city/dumpster.gltf", Vector3(-4.6, 0, shop_z + 4.6), 90.0, {scale = 0.85})
 	_town()
 	# The rest of the town, beyond the barriers and behind the yard walls.
-	prop("kaykit_city/building_A_withoutBase.gltf", Vector3(-35.0, 0, FRONT_Z + 4.0), 180.0, {solid = PropKit.Solid.NONE, desaturate = 0.5})
-	prop("kaykit_city/building_F_withoutBase.gltf", Vector3(35.0, 0, FRONT_Z + 4.0), 180.0, {solid = PropKit.Solid.NONE, desaturate = 0.5})
-	prop("kaykit_city/building_C_withoutBase.gltf", Vector3(-20.0, 0, -16.0), 0.0, {solid = PropKit.Solid.NONE, desaturate = 0.5})
-	prop("kaykit_city/building_F_withoutBase.gltf", Vector3(20.0, 0, -15.5), 0.0, {solid = PropKit.Solid.NONE, desaturate = 0.5})
-	prop("kaykit_city/building_C_withoutBase.gltf", Vector3(-22.0, 0, 0.5), 0.0, {solid = PropKit.Solid.NONE, desaturate = 0.5})
-	prop("kaykit_city/building_A_withoutBase.gltf", Vector3(22.5, 0, 0.5), 0.0, {solid = PropKit.Solid.NONE, desaturate = 0.5})
+	TownBlock.block(self, Vector3(-36.0, 0, FRONT_Z), 12.0, 9.0, {key = "far_a", scan = "red_brick", storeys = 3})
+	TownBlock.block(self, Vector3(36.0, 0, FRONT_Z), 12.0, 9.0, {key = "far_b", scan = "yellow_plaster", storeys = 4})
+	TownBlock.block(self, Vector3(-21.0, 0, -22.0), 11.0, 8.0, {key = "far_c", scan = "painted_worn_brick", storeys = 3})
+	TownBlock.block(self, Vector3(20.0, 0, -22.0), 12.0, 8.0, {key = "far_d", scan = "red_brick_03", storeys = 4})
+	TownBlock.block(self, Vector3(-24.5, 0, -4.0), 9.0, 9.0, {key = "far_e", plaster = Color("#b9b2a2"), storeys = 3})
+	TownBlock.block(self, Vector3(25.0, 0, -4.0), 9.0, 9.0, {key = "far_f", scan = "red_brick", storeys = 3})
+
+
+## Photographed paving over the plain ground outside: pavers on the apron, slabs on the pavement across
+## the road, worn concrete in the yards beside and behind the hall.
+func _paving(zf: float) -> void:
+	var near := zf + APRON - 0.2
+	var far := zf + APRON + ROAD + 0.2
+	var half := ground_size.x * 0.5
+	var back := ground_z - ground_size.y * 0.5
+	var out_x := inner_max.x + WALL
+	var concrete := EnvMesh.scan("yard_concrete", "dirty_concrete", {drift = 0.2})
+	_slab(EnvMesh.scan("yard_pavers", "concrete_pavers", {drift = 0.18, tint = Vector3(0.84, 0.88, 0.94)}), -half, half, zf, near)
+	_slab(EnvMesh.scan("street_slabs", "concrete_tiles_02", {drift = 0.16}), -half, half, far, ground_z + ground_size.y * 0.5)
+	_slab(concrete, -half, -out_x, back, zf)
+	_slab(concrete, out_x, half, back, zf)
+	_slab(concrete, -out_x, out_x, back, inner_min.y - WALL)
+
+
+## A thin slab of ground from x0 to x1 and z0 to z1, a finger's breadth above the base ground.
+func _slab(mat: Material, x0: float, x1: float, z0: float, z1: float) -> void:
+	EnvMesh.add(self, EnvMesh.box(Vector3(x1 - x0, 0.03, z1 - z0), 0.0), mat, Transform3D(Basis(), Vector3((x0 + x1) * 0.5, -0.003, (z0 + z1) * 0.5)), false)
 
 
 ## The quarter around the hall: the pawnbroker and the police station, both
@@ -225,11 +284,11 @@ func _town() -> void:
 	TownBlock.shelves(self, POLICE + Vector3(1.6, 0, HOUSE_D - TownBlock.WALL - 0.24), 4.6, "police_shelf", 11)
 	WorldBuilder.add_collider(self, Vector3(0.5, 0.5, 2.0), Transform3D(Basis(), POLICE + Vector3(-3.9, 0.25, 1.7)))
 	# Shut for now: the houses that fill the row.
-	TownBlock.closed(self, Vector3(-21.0, 0, FRONT_Z), 10.0, HOUSE_D, {key = "let", brick = Color("#8c5a44"), sign = "FOR RENT"})
-	TownBlock.closed(self, Vector3(24.3, 0, FRONT_Z), 4.6, HOUSE_D, {key = "kiosk", brick = Color("#6f6a62"), sign = "KIOSK"})
+	TownBlock.closed(self, Vector3(-21.0, 0, FRONT_Z), 10.0, HOUSE_D, {key = "let", scan = "painted_worn_brick", sign = "FOR RENT"})
+	TownBlock.closed(self, Vector3(24.3, 0, FRONT_Z), 4.6, HOUSE_D, {key = "kiosk", scan = "yellow_plaster", sign = "KIOSK"})
 	# The yard wall behind the row and the walls beside the hall.
-	var brick := EnvMesh.material("town_yardwall", "res://shaders/env_plaster.gdshader", {
-		brick = Color("#84503c"), mortar = Color("#b6a58d"), brickwork = 1.0})
+	var brick := EnvMesh.scan("town_yardwall", "red_brick_03", {foot = 0.6, drift = 0.22})
+	var caps := []
 	var runs := [[Vector3(0, 1.5, back_z + 0.15), Vector3(TOWN_X * 2.0, 3.0, 0.3)]]
 	for s: float in [-1.0, 1.0]:
 		var from := inner_max.x + WALL
@@ -238,8 +297,11 @@ func _town() -> void:
 	for r: Array in runs:
 		WorldBuilder.add_collider(self, r[1], Transform3D(Basis(), r[0]))
 		walls.append(EnvMesh.piece(EnvMesh.box(r[1]), Transform3D(Basis(), r[0])))
+		# A concrete coping keeps the rain out of the brickwork.
+		caps.append(EnvMesh.piece(EnvMesh.box(Vector3(r[1].x + 0.06, 0.07, r[1].z + 0.1)), Transform3D(Basis(), r[0] + Vector3(0, r[1].y * 0.5 + 0.035, 0))))
 	if EnvMesh.visual():
 		EnvMesh.add(self, EnvMesh.merge(walls), brick)
+		EnvMesh.add(self, EnvMesh.merge(caps), EnvMesh.scan("town_coping", "dirty_concrete", {tile = 1.6, tint = Vector3(0.8, 0.8, 0.8)}))
 	# Barriers on the pavements, a boom across the road: it lifts for the truck.
 	var road_from := zf + APRON
 	for s: float in [-1.0, 1.0]:
@@ -283,8 +345,7 @@ func _town() -> void:
 ## The dealer's shop: a small brick building with an open counter, an awning
 ## and a painted sign. The ScrapShop station (the bin) stands in front of it.
 func _shop(base: Vector3) -> void:
-	var brick := EnvMesh.material("shop_brick", "res://shaders/env_plaster.gdshader", {
-		brick = Color("#9a5038"), mortar = Color("#c4b49c"), brickwork = 1.0})
+	var brick := EnvMesh.scan("shop_brick", "red_brick", {foot = 0.5})
 	var wood := EnvMesh.wood("shop_wood", {base_color = Color("#6b4a32"), grain_color = Color("#3e2a1c"), weathering = 0.4, roughness_base = 0.75})
 	var w := 9.0
 	var h := 4.2

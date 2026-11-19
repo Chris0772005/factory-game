@@ -39,9 +39,11 @@ vec3 env_photo(sampler2D d, sampler2D nm, sampler2D arm, vec3 p, vec3 n, float t
 	}
 	vec3 w = pow(abs(n), vec3(6.0));
 	w /= w.x + w.y + w.z;
-	vec2 ux = p.zy * tiles;
-	vec2 uy = p.xz * tiles;
-	vec2 uz = p.xy * tiles;
+	// V runs down the image: turned over, the scan stands upright and its normal map's green (up in the
+	// image) points up the wall, as the blend below takes it.
+	vec2 ux = vec2(p.z, -p.y) * tiles;
+	vec2 uy = vec2(p.x, -p.z) * tiles;
+	vec2 uz = vec2(p.x, -p.y) * tiles;
 	vec3 col = texture(d, ux).rgb * w.x + texture(d, uy).rgb * w.y + texture(d, uz).rgb * w.z;
 	vec3 mean = textureLod(d, vec2(0.5), 10.0).rgb + 0.02;
 	vec3 orm = texture(arm, ux).rgb * w.x + texture(arm, uy).rgb * w.y + texture(arm, uz).rgb * w.z;

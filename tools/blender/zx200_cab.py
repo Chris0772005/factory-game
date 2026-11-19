@@ -161,5 +161,8 @@ for ob in list(bpy.data.objects):
     if ob is not shell and ob is not inside:
         bpy.data.objects.remove(ob)
 shell.name = "cab_shell"
-K.export_glb(OUT)
+K.export_glb(OUT, 'Derived from the part "cab_shell" of zx200_hd.glb: 20 t class hydraulic excavator, modelled procedurally '
+    "in Blender by the construction-site-simulation project (https://github.com/dtt-github/construction-site-simulation) to "
+    "the dimensions and pin geometry of PWRI's OPERA ZX200 model (https://github.com/pwri-opera/zx200_ros2, Apache-2.0). "
+    "Apache-2.0. Changed for MOLTEN MATES: hollowed out, window openings cut.")
 print("WROTE", OUT, OUT.stat().st_size)

@@ -90,7 +90,6 @@ static func daylight(parent: Node3D) -> void:
 		env.ssao_intensity = 2.2
 		env.ssao_power = 1.6
 		env.ssao_light_affect = 0.0
-		env.ssil_enabled = not low and not EnvQuality.disabled("ssil")
 		env.glow_intensity = 0.5
 		env.glow_hdr_threshold = 1.6
 	var sun := parent.get_node_or_null(^"Sun") as DirectionalLight3D

@@ -1,6 +1,6 @@
 # Credits
 
-Third-party content shipped with Molten Mates. Every pack's license file sits next to the files in `game/assets/`.
+Third-party content shipped with Molten Mates. Where a pack came with a license file, it sits next to the files in `game/assets/`. Poly Haven content (CC0: `textures/`, `sky/`, `models/polyhaven/`) came without one, and the dump truck's `license.txt` (CC BY 4.0) is kept with its source in `tools/blender/sources/dump_truck_electronick/`; `game/assets/models/machinery/NOTICE.txt` says which file there is under which license.
 Details on what was taken from each pack: `docs/ASSETS.md`.
 
 ## 3D models
@@ -27,6 +27,8 @@ courtesy. The Kenney MIT notice
 |---|---|---|---|
 | Fredoka | The Fredoka Project Authors | SIL Open Font License 1.1 | `game/assets/fonts/Fredoka.ttf` (`OFL.txt` next to it) |
 | Barlow Condensed | The Barlow Project Authors (github.com/jpt/barlow) | SIL Open Font License 1.1 (github.com/google/fonts, `ofl/barlowcondensed`) | `game/assets/fonts/BarlowCondensed-*.ttf` (`BarlowCondensed-OFL.txt` next to them) – all game text |
+| Patrick Hand | Patrick Wagesreiter | SIL Open Font License 1.1 | `game/assets/models/props/fonts/PatrickHand-Regular.ttf` (`OFL_PatrickHand.txt` next to it) – handwriting on notes |
+| Cabin Sketch | The Cabin Project Authors | SIL Open Font License 1.1 | `game/assets/models/props/fonts/CabinSketch-Bold.ttf` (`OFL_CabinSketch.txt` next to it) – chalk lettering |
 | Lilita One | Juan Montoreano | SIL Open Font License 1.1 (github.com/google/fonts, `ofl/lilitaone`) | `game/assets/ui/fonts/LilitaOne-Regular.ttf` (`OFL.txt` next to it) – logo, banners, money counter |
 
 ## Sound
@@ -45,13 +47,15 @@ Fünf Textursätze von [Poly Haven](https://polyhaven.com) (CC0, 1k): `concrete_
 
 Dazu `bark_brown_02` (Rinde) und `leafy_grass` (Laub).
 
+Elf weitere Sätze von Poly Haven (CC0) in `game/assets/textures/scan/`, die als ganze Oberfläche dienen (`shaders/env_scan.gdshader`, `EnvMesh.scan`): `asphalt_02` und `concrete_pavers` (2k), `concrete_tiles_02`, `dirty_concrete`, `red_brick_03`, `red_brick`, `painted_worn_brick`, `beige_wall_001`, `yellow_plaster`, `box_profile_metal_sheet`, `bitumen` (1k). Straße, Gehwege, Hof, Mauern, Hallenwände und die Häuser der Schrotthalle bestehen daraus.
+
 ## Foto-Himmel (CC0)
 
 „Kloofendal 48d Partly Cloudy (Pure Sky)“ von Greg Zaal und Jarod Guest, [Poly Haven](https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky) (CC0). In `game/assets/sky/`: `day_sky_view.jpg` (oberer Teil des 8k-Bilds, das man sieht) und `day_sky_light.hdr` (2k, beleuchtet die Szene und spiegelt sich in Lack und Glas). Shader: `shaders/env_sky_photo.gdshader`.
 
 ## Gescannte Requisiten (CC0)
 
-3D-Modelle von [Poly Haven](https://polyhaven.com) (CC0, 1k-Texturen) in `game/assets/models/polyhaven/`: Barrel_01, Barrel_02, barrel_03, wine_barrel_01, wooden_crate_01, wooden_crate_02, cardboard_box_01, wooden_bucket_01, cement_bag, shrub_02, shrub_03, old_tyre, metal_toolbox, painted_wooden_chair_01, propane_tank, wooden_ladder. `PhotoProp` tauscht sie gegen die Bausatz-Requisiten.
+3D-Modelle von [Poly Haven](https://polyhaven.com) (CC0, 1k-Texturen) in `game/assets/models/polyhaven/`: Barrel_01, Barrel_02, barrel_03, wine_barrel_01, wooden_crate_01, wooden_crate_02, cardboard_box_01, wooden_bucket_01, cement_bag, shrub_02, shrub_03, old_tyre, metal_toolbox, painted_wooden_chair_01, propane_tank, wooden_ladder, street_lamp_01 (Straßenlaterne), fire_hydrant (Hydrant). `PhotoProp` tauscht sie gegen die Bausatz-Requisiten.
 
 Werkstatt-Geräte (ebenfalls Poly Haven, CC0): tool_cart, metal_tool_chest, old_drill_press, bench_vice_01, hand_truck, industrial_storage_cart, old_military_compressor, power_box_01, steel_frame_shelves_01, cross_pein_hammer, pipe_wrench, WetFloorSign_01.
 
@@ -61,6 +65,11 @@ Werkstatt-Geräte (ebenfalls Poly Haven, CC0): tool_cart, metal_tool_chest, old_
 
 ## Maschinen
 
-- Hydraulikbagger (`game/assets/models/machinery/zx200_hd.glb`): „20 t class hydraulic excavator“, prozedural modelliert von den Mitwirkenden des Projekts „Construction Site Simulation“ (https://github.com/dtt-github/construction-site-simulation) nach den Maßen des OPERA-ZX200-Modells des Public Works Research Institute, Japan. Apache License 2.0 (`game/assets/models/machinery/LICENSE-Apache-2.0.txt`, `NOTICE.txt`). Unverändert übernommen; das Spiel bewegt die Teile.
-- Kipper-LKW (`game/assets/models/machinery/dump_truck.glb`): nach „Dump Truck“ von ElectroNick, https://sketchfab.com/3d-models/dump-truck-781c616da8f44982a59cb3fc3fa67f98, Lizenz CC BY 4.0 (http://creativecommons.org/licenses/by/4.0/). Die unveränderte Vorlage mit ihrer Lizenzdatei liegt in `tools/blender/sources/dump_truck_electronick/`. Änderungen (`tools/blender/dump_truck.py`): auf echte Größe gebracht, sechs Räder als eigene Teile abgetrennt, neue Materialien und Farben (roter Lack, graue Mulde), klare Scheiben, Kabine innen ausgekleidet, Rücklichter und Rundumleuchten ergänzt. Die Namensnennung steht auch im Spiel unter „Lizenzen“. Herkunft: Die Lizenz stammt aus der Datei, die Sketchfab dem Download beilegt; die Sketchfab-Seite selbst war von der Arbeitsumgebung aus nicht erreichbar und sollte vor der Veröffentlichung einmal gegengeprüft werden.
+- Hydraulikbagger (`game/assets/models/machinery/zx200_hd.glb`): „20 t class hydraulic excavator“, prozedural modelliert von den Mitwirkenden des Projekts „Construction Site Simulation“ (https://github.com/dtt-github/construction-site-simulation) nach den Maßen des OPERA-ZX200-Modells des Public Works Research Institute, Japan. Copyright 2026 DigitalTwin Technology GmbH and the Construction Site Simulation contributors. Apache License 2.0 (`game/assets/models/machinery/LICENSE-Apache-2.0.txt`; `NOTICE.txt` gibt die zugehörigen Hinweise aus der NOTICE-Datei des Projekts wieder). Datei unverändert übernommen; das Spiel bewegt die Teile, lackiert sie um und zeigt die Kabine aus `zx200_cab_open.glb`.
+- Kipper-LKW (`game/assets/models/machinery/dump_truck.glb`): nach „Dump Truck“ von ElectroNick, https://sketchfab.com/3d-models/dump-truck-781c616da8f44982a59cb3fc3fa67f98, Lizenz CC BY 4.0 (http://creativecommons.org/licenses/by/4.0/). Die Vorlage liegt so, wie sie geholt wurde, mit ihrer Lizenzdatei in `tools/blender/sources/dump_truck_electronick/`. Änderungen (`tools/blender/dump_truck.py`): auf echte Größe gebracht, sechs Räder als eigene Teile abgetrennt, neue Materialien und Farben (roter Lack, graue Mulde; die Räder behalten die Reifen-und-Felgen-Textur der Vorlage), klare Scheiben, Kabine innen ausgekleidet, Rücklichter und Rundumleuchten ergänzt. Die Namensnennung steht auch im Spiel unter „Lizenzen“. Herkunft: Die Dateien stammen nicht direkt von Sketchfab, sondern aus einer Kopie des Sketchfab-Downloads im GitHub-Repository `Karanlashkari/Automotive-E-commerce-Website` (Commit `4e087f07e9db887810444e59ce830f9050c958fa`, Ordner `public/`; alle neun Dateien sind bytegleich mit dieser Kopie). Die Lizenzangabe steht in der `license.txt`, die Sketchfab jedem Download beilegt, und in der Modelldatei selbst. Die Sketchfab-Seite war von der Arbeitsumgebung aus nicht erreichbar: Vor einer Veröffentlichung dort prüfen, ob das Modell noch unter CC BY 4.0 steht und vom Urheber selbst stammt (die Materialnamen sehen nach einem Unreal-Engine-Projekt aus).
+- Blender-Werkzeug `tools/blender/mm_kit.py`: in Teilen aus `assets/blender/blendkit.py` desselben Projekts übernommen (Copyright 2026 DigitalTwin Technology GmbH and the Construction Site Simulation contributors, Apache License 2.0), für dieses Spiel angepasst und erweitert. Wird nicht mit dem Spiel ausgeliefert.
 - Bagger-Kabine (`zx200_cab_open.glb`): aus dem Kabinenteil des Baggers oben abgeleitet (Apache 2.0); `tools/blender/zx200_cab.py` höhlt den Block aus und schneidet die Fensteröffnungen.
+
+## Code
+
+Shader hash functions (`game/shaders/env_common.gdshaderinc`, `fx_common.gdshaderinc`, `vehicle_dirt.gdshader`) follow „Hash without Sine“ by Dave Hoskins (https://www.shadertoy.com/view/4djSRW), MIT License, Copyright (c) 2014 David Hoskins.

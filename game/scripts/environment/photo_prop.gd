@@ -23,6 +23,8 @@ const SWAPS := {
 	"kaykit_hexagon/sack.gltf": ["cement_bag"],
 	"kaykit_city/bush.gltf": ["shrub_02:0", "shrub_02:1", "shrub_02:3"],
 	"kaykit_furniture/chair_A_wood.gltf": ["painted_wooden_chair_01"],
+	"kaykit_city/streetlight.gltf": ["street_lamp_01"],
+	"kaykit_city/firehydrant.gltf": ["fire_hydrant:_aged"],
 }
 
 static var _scenes := {}
@@ -38,10 +40,11 @@ static func has(model: String) -> bool:
 static func build(parent: Node3D, model: String, xform: Transform3D, size: Vector3, base: float) -> Node3D:
 	var options: Array = SWAPS[model]
 	var pick: String = options[absi(int(xform.origin.x * 7.0) + int(xform.origin.z * 13.0)) % options.size()]
-	# "name:2" picks the third variant of a model that ships several in a row.
-	var variant := -1
+	# A model may ship several variants in one file: "name:2" shows only its third part, "name:_aged"
+	# only the parts whose names end that way.
+	var variant := ""
 	if ":" in pick:
-		variant = int(pick.get_slice(":", 1))
+		variant = pick.get_slice(":", 1)
 		pick = pick.get_slice(":", 0)
 	var scene := _scene(pick)
 	var box := _box(pick, variant)
@@ -52,10 +55,10 @@ static func build(parent: Node3D, model: String, xform: Transform3D, size: Vecto
 	if wide > room:
 		s *= room / wide
 	var node: Node3D = scene.instantiate()
-	if variant >= 0:
+	if not variant.is_empty():
 		var parts := node.find_children("*", "MeshInstance3D", true, false)
 		for i in parts.size():
-			(parts[i] as Node3D).visible = i == variant
+			(parts[i] as Node3D).visible = _shown(variant, i, parts[i].name)
 	var centre := box.get_center()
 	node.transform = xform * Transform3D(Basis().scaled(Vector3.ONE * s), Vector3(-centre.x * s, base - box.position.y * s, -centre.z * s))
 	parent.add_child(node)
@@ -68,8 +71,17 @@ static func _scene(name: String) -> PackedScene:
 	return _scenes[name]
 
 
-static func _box(name: String, variant := -1) -> AABB:
-	var key := "%s:%d" % [name, variant]
+## Whether part `index`, called `part_name`, belongs to `variant` ("" = every part).
+static func _shown(variant: String, index: int, part_name: String) -> bool:
+	if variant.is_empty():
+		return true
+	if variant.is_valid_int():
+		return index == int(variant)
+	return part_name.ends_with(variant)
+
+
+static func _box(name: String, variant := "") -> AABB:
+	var key := "%s:%s" % [name, variant]
 	if _bounds.has(key):
 		return _bounds[key]
 	var node: Node3D = _scene(name).instantiate()
@@ -78,7 +90,7 @@ static func _box(name: String, variant := -1) -> AABB:
 	var parts := node.find_children("*", "MeshInstance3D", true, false)
 	for i in parts.size():
 		var m := parts[i] as MeshInstance3D
-		if m.mesh == null or (variant >= 0 and i != variant):
+		if m.mesh == null or not _shown(variant, i, m.name):
 			continue
 		var b := PropKit._relative(node, m) * m.mesh.get_aabb()
 		box = b if first else box.merge(b)
@@ -114,7 +126,7 @@ static func radius(name: String) -> float:
 ## One variant of a multi-variant scan, centred on its own box, scaled so its
 ## largest side is `size` metres. For foliage built from scanned shrubs.
 static func clump(name: String, variant: int, size: float, shadows := true) -> Node3D:
-	var box := _box(name, variant)
+	var box := _box(name, str(variant))
 	var node: Node3D = _scene(name).instantiate()
 	var parts := node.find_children("*", "MeshInstance3D", true, false)
 	for i in parts.size():

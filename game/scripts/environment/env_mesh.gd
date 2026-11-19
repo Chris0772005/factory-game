@@ -132,6 +132,59 @@ static func surface(key: String, params := {}) -> ShaderMaterial:
 	return material("surf_" + key, "res://shaders/env_surface.gdshader", params)
 
 
+## Photo scans in assets/textures/scan (Poly Haven, CC0): the edge length of one repeat in metres, as the
+## scan was shot, and the scan's mean colour (linear), which `toward` uses to tint one to a wanted colour.
+const SCAN_DIR := "res://assets/textures/scan/"
+const SCANS := {
+	"asphalt_02": [3.0, Color(0.104, 0.103, 0.091)],
+	"concrete_pavers": [1.9, Color(0.139, 0.114, 0.088)],
+	"concrete_tiles_02": [1.8, Color(0.137, 0.125, 0.108)],
+	"dirty_concrete": [3.0, Color(0.252, 0.23, 0.19)],
+	"red_brick_03": [1.0, Color(0.15, 0.095, 0.078)],
+	"red_brick": [1.4, Color(0.275, 0.137, 0.084)],
+	"painted_worn_brick": [1.8, Color(0.406, 0.338, 0.188)],
+	"beige_wall_001": [3.0, Color(0.34, 0.262, 0.188)],
+	"yellow_plaster": [2.0, Color(0.26, 0.188, 0.074)],
+	"box_profile_metal_sheet": [2.0, Color(0.145, 0.019, 0.009)],
+	"bitumen": [20.0, Color(0.043, 0.038, 0.035)],
+}
+
+
+## A surface straight from a photo scan (shaders/env_scan.gdshader): real colour, relief and roughness,
+## laid on in world space at the scan's true size. `scan_name` is a key of SCANS.
+## params: tint (factor), drift, foot, foot_height, normal_strength, roughness_scale, shift, tile.
+static func scan(key: String, scan_name: String, params := {}) -> ShaderMaterial:
+	if _materials.has("scan_" + key):
+		return _materials["scan_" + key]
+	var all := {
+		albedo_map = load(SCAN_DIR + scan_name + "_d.jpg"),
+		normal_map = load(SCAN_DIR + scan_name + "_n.jpg"),
+		arm_map = load(SCAN_DIR + scan_name + "_arm.jpg"),
+		tile = float(SCANS[scan_name][0]),
+	}
+	all.merge(params, true)
+	return material("scan_" + key, "res://shaders/env_scan.gdshader", all)
+
+
+## The tint that brings a scan's mean colour to `wanted` (`amount` 0..1: how far it goes there). For
+## scans whose own colour is near that already; see `repainted` for a different paint.
+static func toward(scan_name: String, wanted: Color, amount := 1.0) -> Vector3:
+	var mean: Color = SCANS[scan_name][1]
+	var lin := wanted.srgb_to_linear()
+	return Vector3.ONE.lerp(Vector3(lin.r / maxf(mean.r, 0.02), lin.g / maxf(mean.g, 0.02), lin.b / maxf(mean.b, 0.02)), amount)
+
+
+## The same scan in another paint: only its light and dark are kept and brought to `wanted`. For scans
+## with a strong colour of their own (painted sheet), where a tint would only amplify one channel's noise.
+static func repainted(key: String, scan_name: String, wanted: Color, params := {}) -> ShaderMaterial:
+	var mean: Color = SCANS[scan_name][1]
+	var light := maxf(mean.r * 0.2126 + mean.g * 0.7152 + mean.b * 0.0722, 0.005)
+	var lin := wanted.srgb_to_linear()
+	var all := {grey = 1.0, tint = Vector3(lin.r, lin.g, lin.b) / light}
+	all.merge(params, true)
+	return scan(key, scan_name, all)
+
+
 static func foliage(key: String, params := {}) -> ShaderMaterial:
 	return material("fol_" + key, "res://shaders/env_foliage.gdshader", params)
 

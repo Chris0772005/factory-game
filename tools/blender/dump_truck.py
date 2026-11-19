@@ -289,5 +289,8 @@ K.make("beacon_feet", body, M["black"], beacon_feet, bevel=0.004)
 for ob in list(bpy.data.objects):
     if ob.name.startswith("dump_truck_01") or ob.name in ("Sketchfab_model", "RootNode") or ob.name.endswith(".fbx"):
         bpy.data.objects.remove(ob)
-K.export_glb(OUT)
+K.export_glb(OUT, 'Based on "Dump Truck" (https://sketchfab.com/3d-models/dump-truck-781c616da8f44982a59cb3fc3fa67f98) by '
+    "ElectroNick (https://sketchfab.com/ElectroNick), licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/). "
+    "Changed for MOLTEN MATES: resized, taken apart, wheels separated, new materials except on the wheels, clear panes, "
+    "cab lining, tail lamps and beacons added.")
 print("WROTE", OUT, OUT.stat().st_size)

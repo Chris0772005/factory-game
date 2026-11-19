@@ -1,6 +1,8 @@
 // Shared helpers for the foundry shaders: cheap 3D value noise and the
 // blackbody ramp used for glowing metal, streams, flames and sparks.
 
+// Hashes after "Hash without Sine" by Dave Hoskins (https://www.shadertoy.com/view/4djSRW), MIT License,
+// Copyright (c) 2014 David Hoskins.
 float fx_hash(vec3 p) {
 	p = fract(p * 0.1031);
 	p += dot(p, p.zyx + 31.32);

@@ -181,8 +181,7 @@ func _window(center: Vector3, size: Vector2) -> void:
 func _front() -> void:
 	var zf := inner_max.y + WALL * 0.5
 	# Brick pillars finish the side walls at the door line.
-	var brick := EnvMesh.material("garage_brick", "res://shaders/env_plaster.gdshader", {
-		brick = Color("#a65a42"), mortar = Color("#c9b9a2"), brickwork = 1.0, cutaway = true})
+	var brick := _pillar_material()
 	for x: float in [inner_min.x - WALL * 0.5, inner_max.x + WALL * 0.5]:
 		var size := Vector3(0.42, height, 0.42)
 		var c := Vector3(x, height * 0.5, zf)
@@ -202,6 +201,12 @@ func _front() -> void:
 		_sign()
 
 
+## The brick of the door pillars and the lintel.
+func _pillar_material() -> ShaderMaterial:
+	return EnvMesh.material("garage_brick", "res://shaders/env_plaster.gdshader", {
+		brick = Color("#a65a42"), mortar = Color("#c9b9a2"), brickwork = 1.0, cutaway = true})
+
+
 ## Hand-painted shop sign on the back wall, over the pegboard.
 func _sign() -> void:
 	StationKit.label(self, "GIESSEREI", Transform3D(Basis(), Vector3(-1.6, 2.3, inner_min.y + 0.012)), 120, Color("#5b2f22"), 800, 0.0016)
@@ -210,12 +215,17 @@ func _sign() -> void:
 ## Shadows only: the interior is shaded from the low sun without hiding it from the camera.
 func _roof() -> void:
 	var size := Vector3(inner_max.x - inner_min.x + WALL * 2.0 + 0.6, 0.2, inner_max.y - inner_min.y + WALL * 2.0 + 0.5)
-	var mi := EnvMesh.add(self, EnvMesh.box(size, 0.0), _wall_mat, Transform3D(Basis(), Vector3(0, height + 0.1, (inner_min.y + inner_max.y) * 0.5 + 0.1)))
+	var mi := EnvMesh.add(self, EnvMesh.box(size, 0.0), _roof_material(), Transform3D(Basis(), Vector3(0, height + 0.1, (inner_min.y + inner_max.y) * 0.5 + 0.1)))
 	if mi:
 		mi.name = "RoofShadow"
 		# First person: a real ceiling overhead. Orbit view: only its shadow.
 		if not CameraRig.first_person_default:
 			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
+
+
+## What the roof is made of (seen from below in first person).
+func _roof_material() -> ShaderMaterial:
+	return _wall_mat
 
 
 # --- Dressing --------------------------------------------------------------------
