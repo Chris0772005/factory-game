@@ -24,7 +24,7 @@ var skip: ScrapSkip
 var trip := -1.0
 var loaded := false
 var _path: Array[Vector3] = []
-var _load_mesh: MeshInstance3D
+var _load: Node3D
 var _wheels: Array = []
 var _roll := 0.0
 var _last_pos := Vector3.ZERO
@@ -113,8 +113,8 @@ func _physics_process(delta: float) -> void:
 		trip = -1.0
 		global_position = park
 		rotation.y = PI * 0.5
-	if _load_mesh:
-		_load_mesh.visible = loaded
+	if _load:
+		_load.visible = loaded
 	_light(busy())
 	_roll_wheels()
 
@@ -173,12 +173,12 @@ func _build_art() -> void:
 			continue
 		# The file's wheel nodes all stand the same way: their local Z points to the truck's right.
 		_wheels.append([wheel, wheel.transform, -1.0])
-	_load_mesh = MeshInstance3D.new()
-	_load_mesh.mesh = EnvMesh.box(Vector3(1.8, 0.9, 4.6), 0.3, 2)
-	_load_mesh.material_override = StationKit.metal("skip_load", {steel_color = Color("#6f6a66"), rust = 0.75, dents = 1.0, metallic_steel = 0.6, roughness_steel = 0.65})
-	_load_mesh.position = Vector3(0, 2.05, -0.95)
-	_load_mesh.visible = false
-	add_child(_load_mesh)
+	# The load: scrap heaped on the bed and over its walls. The bed's floor lies 1.58 m up and is
+	# 1.74 x 4.42 m; its walls stand 0.8 m high and lean out a little. Only the top of the load shows.
+	_load = ScrapLoadArt.pile(Vector2(1.74, 4.42), Vector2(1.86, 4.6), 0.8, 0.7, 11, 0.5)
+	_load.position = Vector3(-0.045, 1.58, -0.955)
+	_load.visible = false
+	add_child(_load)
 
 
 ## Lamps and beams: on while the truck is on its trip.

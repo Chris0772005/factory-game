@@ -56,6 +56,10 @@ static func build_hall(world: Node3D, level_stations: Array) -> ScrapHallSet:
 	return set
 
 
+func _exit_tree() -> void:
+	EnvMesh.release_scans()
+
+
 func _materials() -> void:
 	_wall_mat = EnvMesh.material("scraphall_wall", "res://shaders/env_plaster.gdshader", {
 		plaster = Color("#9aa3a6"), grime = Color("#4c4a47"), brick = Color("#8a4632"), mortar = Color("#b3a592"),
@@ -232,7 +236,7 @@ func _outside() -> void:
 	prop("kaykit_city/streetlight.gltf", Vector3(-19.0, 0, zf + APRON + ROAD + 0.6), 180.0, {scale = 1.0, solid = PropKit.Solid.CYLINDER})
 	prop("kaykit_city/streetlight.gltf", Vector3(21.0, 0, zf + APRON - 0.6), 0.0, {scale = 1.0, solid = PropKit.Solid.CYLINDER})
 	prop("kaykit_city/firehydrant.gltf", Vector3(-4.0, 0, zf + APRON + ROAD + 0.7), 0.0, {scale = 0.9, solid = PropKit.Solid.CYLINDER})
-	prop("kaykit_city/dumpster.gltf", Vector3(-4.6, 0, shop_z + 4.6), 90.0, {scale = 0.85})
+	TownBlock.dumpster(self, Vector3(-4.6, 0, shop_z + 4.6), 90.0)
 	_town()
 	# The rest of the town, beyond the barriers and behind the yard walls.
 	TownBlock.block(self, Vector3(-36.0, 0, FRONT_Z), 12.0, 9.0, {key = "far_a", scan = "red_brick", storeys = 3})
@@ -284,7 +288,7 @@ func _town() -> void:
 	TownBlock.shelves(self, POLICE + Vector3(1.6, 0, HOUSE_D - TownBlock.WALL - 0.24), 4.6, "police_shelf", 11)
 	WorldBuilder.add_collider(self, Vector3(0.5, 0.5, 2.0), Transform3D(Basis(), POLICE + Vector3(-3.9, 0.25, 1.7)))
 	# Shut for now: the houses that fill the row.
-	TownBlock.closed(self, Vector3(-21.0, 0, FRONT_Z), 10.0, HOUSE_D, {key = "let", scan = "painted_worn_brick", sign = "FOR RENT"})
+	TownBlock.closed(self, Vector3(-21.0, 0, FRONT_Z), 10.0, HOUSE_D, {key = "let", scan = "painted_worn_brick", sign = "FOR RENT", graffiti = true})
 	TownBlock.closed(self, Vector3(24.3, 0, FRONT_Z), 4.6, HOUSE_D, {key = "kiosk", scan = "yellow_plaster", sign = "KIOSK"})
 	# The yard wall behind the row and the walls beside the hall.
 	var brick := EnvMesh.scan("town_yardwall", "red_brick_03", {foot = 0.6, drift = 0.22})
@@ -312,6 +316,7 @@ func _town() -> void:
 		gate.length = ROAD
 		gate.position = Vector3(s * TOWN_X, 0, road_from + ROAD * 0.5)
 		add_child(gate)
+	_street_dressing(zf)
 	if not EnvMesh.visual():
 		return
 	# Who stands behind the counters.
@@ -334,12 +339,33 @@ func _town() -> void:
 	blue.emission = Color("#3f7bff")
 	blue.emission_energy_multiplier = 2.5
 	EnvMesh.add(self, EnvMesh.box(Vector3(0.24, 0.34, 0.24), 0.04), blue, Transform3D(Basis(), POLICE + Vector3(-1.25, 2.75, -0.2)), false)
-	var bench := EnvMesh.wood("town_bench", {base_color = Color("#6f563c"), grain_color = Color("#3d2c1d"), weathering = 0.4, roughness_base = 0.6})
-	var seat := []
-	seat.append(EnvMesh.piece(EnvMesh.box(Vector3(0.45, 0.06, 2.0)), Transform3D(Basis(), POLICE + Vector3(-3.9, 0.46, 1.7))))
-	for z: float in [-0.85, 0.85]:
-		seat.append(EnvMesh.piece(EnvMesh.box(Vector3(0.4, 0.44, 0.06)), Transform3D(Basis(), POLICE + Vector3(-3.9, 0.22, 1.7 + z))))
-	EnvMesh.add(self, EnvMesh.merge(seat), bench)
+	for z: float in [1.1, 2.3]:
+		PhotoProp.place(self, "painted_wooden_bench", POLICE + Vector3(-3.9, 0, z), 90.0, false)
+
+
+## What stands and hangs about the street, all scanned (Poly Haven, CC0): bins and bags, a switch box,
+## a bench, a car under a tarpaulin, concrete blocks where the street ends, manhole covers, a lamp over
+## the pawnbroker's door and air conditioners on the fronts.
+func _street_dressing(zf: float) -> void:
+	var road_z := zf + APRON + ROAD * 0.5
+	# What is solid comes first: its colliders are wanted on a headless host too.
+	PhotoProp.place(self, "metal_trash_can", Vector3(-6.2, 0, FRONT_Z - 0.55), 180.0)
+	PhotoProp.place(self, "utility_box_01", Vector3(11.9, 0, FRONT_Z - 0.4), 180.0)
+	PhotoProp.place(self, "painted_wooden_bench", Vector3(14.0, 0, FRONT_Z - 0.4), 180.0)
+	PhotoProp.place(self, "covered_car", Vector3(18.4, 0, zf + 1.3), 90.0)
+	if not EnvMesh.visual():
+		return
+	for s: float in [-1.0, 1.0]:
+		PhotoProp.place(self, "concrete_road_barrier", Vector3(s * (TOWN_X + 0.9), 0, zf + 1.5), 90.0, false)
+		PhotoProp.place(self, "concrete_road_barrier", Vector3(s * (TOWN_X + 0.9), 0, FRONT_Z - 2.0), 90.0, false)
+	PhotoProp.place(self, "trashbag", Vector3(-5.2, 0, FRONT_Z - 0.4), 40.0, false)
+	PhotoProp.place(self, "trashbag", Vector3(-16.4, 0, FRONT_Z - 0.4), 200.0, false)
+	PhotoProp.place(self, "trashbag", Vector3(-16.95, 0, FRONT_Z - 0.55), 75.0, false)
+	PhotoProp.place(self, "water_manhole_cover", Vector3(-7.5, 0.021, road_z + 0.9), 0.0, false)
+	PhotoProp.place(self, "water_manhole_cover", Vector3(11.0, 0.021, road_z - 1.1), 30.0, false)
+	PhotoProp.mount(self, "industrial_wall_lamp", Vector3(PAWN.x - 2.6, TownBlock.DOOR_H + 0.1, FRONT_Z), Vector3.FORWARD)
+	PhotoProp.mount(self, "exterior_aircon_unit:0", Vector3(PAWN.x + 3.0, 2.75, FRONT_Z), Vector3.FORWARD)
+	PhotoProp.mount(self, "exterior_aircon_unit:1", Vector3(-24.6, 2.45, FRONT_Z), Vector3.FORWARD)
 
 
 ## The dealer's shop: a small brick building with an open counter, an awning

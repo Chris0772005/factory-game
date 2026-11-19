@@ -39,13 +39,13 @@ func _ready() -> void:
 	if DisplayServer.get_name() != "headless":
 		add_child(LawHud.new())
 	for arg in OS.get_cmdline_user_args():
-		if arg == "--hot" or arg == "--pad" or arg == "--machines" or arg == "--shop":
+		if arg == "--hot" or arg == "--pad" or arg == "--machines" or arg == "--shop" or arg == "--skip":
 			_debug(arg)
 
 
 ## Art checks: `--hot` puts a hot pistol into the player's hands and raises
 ## the heat; `--pad` buys the foundry corner and opens the drawing pad;
-## `--machines` buys workbench, excavator and truck.
+## `--machines` buys workbench, excavator and truck; `--skip` (with `--machines`) shows the skip nearly full and the truck loaded.
 func _debug(arg: String) -> void:
 	await get_tree().create_timer(1.2).timeout
 	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
@@ -58,6 +58,17 @@ func _debug(arg: String) -> void:
 		for node in world.get_children():
 			if node is UpgradeBoard:
 				(node as UpgradeBoard).interact(me)
+		return
+	if arg == "--skip":
+		# After `--machines` has bought them: the skip nearly full, the truck with its load on.
+		await get_tree().create_timer(0.6).timeout
+		var skip := get_tree().get_first_node_in_group(ScrapSkip.GROUP) as ScrapSkip
+		if skip:
+			skip.count = ScrapSkip.CAPACITY - 4
+			skip._update_look()
+		var truck := get_tree().get_first_node_in_group(ScrapTruck.GROUP) as ScrapTruck
+		if truck and truck._load:
+			truck._load.visible = true
 		return
 	if arg == "--machines":
 		world.add_money(5000)

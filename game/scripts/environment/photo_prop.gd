@@ -117,6 +117,30 @@ static func place(parent: Node3D, name: String, pos: Vector3, yaw := 0.0, solid 
 	return node
 
 
+## Hangs scan `pick` ("name" or "name:variant") on a wall. `at` is the point on the wall under the middle
+## of its foot, `out` the way the wall faces (the scan's own +z looks out, its back lies on the wall).
+## `fit` stretches it to that width and height (0 = as it is). Looks only; null when headless.
+static func mount(parent: Node3D, pick: String, at: Vector3, out: Vector3, fit := Vector2.ZERO) -> Node3D:
+	if not EnvMesh.visual():
+		return null
+	var variant := ""
+	if ":" in pick:
+		variant = pick.get_slice(":", 1)
+		pick = pick.get_slice(":", 0)
+	var box := _box(pick, variant)
+	var node: Node3D = _scene(pick).instantiate()
+	if not variant.is_empty():
+		var parts := node.find_children("*", "MeshInstance3D", true, false)
+		for i in parts.size():
+			(parts[i] as Node3D).visible = _shown(variant, i, parts[i].name)
+	var sx := fit.x / maxf(box.size.x, 0.001) if fit.x > 0.0 else 1.0
+	var sy := fit.y / maxf(box.size.y, 0.001) if fit.y > 0.0 else 1.0
+	var local := Transform3D(Basis().scaled(Vector3(sx, sy, 1.0)), Vector3(-box.get_center().x * sx, -box.position.y * sy, -box.position.z))
+	node.transform = Transform3D(Basis.looking_at(-out, Vector3.UP), at) * local
+	parent.add_child(node)
+	return node
+
+
 ## Footprint radius of scan `name` (metres).
 static func radius(name: String) -> float:
 	var box := _box(name)

@@ -10,12 +10,13 @@ const SIZE := Vector3(3.2, 1.25, 1.9)
 const CAPACITY := 60
 const CART_SHARE := 0.8
 const TRUCK_SHARE := 1.2
+const MODEL := "res://assets/models/machinery/skip.glb"
 
 signal emptied(pieces: int, pay: int)
 
 var count := 0
 var worth := 0
-var _fill: MeshInstance3D
+var _fill: Node3D
 var _label: Label3D
 
 
@@ -114,33 +115,24 @@ func interact(_player: Node) -> void:
 func _build_art() -> void:
 	if not StationKit.visual():
 		return
-	var steel := StationKit.metal("skip_body", {steel_color = Color("#4a5a52"), paint = 0.92, paint_color = Color("#3f6a54"), rust = 0.5,
-		dents = 0.6, metallic_steel = 0.5})
-	var pieces := []
-	var hx := SIZE.x * 0.5
-	var hz := SIZE.z * 0.5
-	pieces.append(EnvMesh.piece(EnvMesh.box(Vector3(SIZE.x - 0.5, 0.08, SIZE.z)), Transform3D(Basis(), Vector3(0, 0.12, 0))))
-	for s: float in [-1.0, 1.0]:
-		pieces.append(EnvMesh.piece(EnvMesh.box(Vector3(SIZE.x, SIZE.y - 0.1, 0.07)), Transform3D(Basis(), Vector3(0, SIZE.y * 0.5 + 0.05, s * hz))))
-		# Sloped ends like a builder's skip.
-		pieces.append(EnvMesh.piece(EnvMesh.box(Vector3(0.07, SIZE.y + 0.12, SIZE.z)), Transform3D(Basis(Vector3.BACK, s * 0.32), Vector3(s * (hx - 0.2), SIZE.y * 0.5 + 0.05, 0))))
-		pieces.append(EnvMesh.piece(EnvMesh.box(Vector3(SIZE.x + 0.1, 0.09, 0.12)), Transform3D(Basis(), Vector3(0, SIZE.y + 0.03, s * hz))))
-		for x: float in [-0.9, 0.0, 0.9]:
-			pieces.append(EnvMesh.piece(EnvMesh.box(Vector3(0.09, SIZE.y - 0.2, 0.05)), Transform3D(Basis(), Vector3(x, SIZE.y * 0.5 + 0.05, s * (hz + 0.05)))))
-	for x: float in [-1.0, 1.0]:
-		pieces.append(EnvMesh.piece(EnvMesh.box(Vector3(0.14, 0.1, SIZE.z + 0.1)), Transform3D(Basis(), Vector3(x, 0.05, 0))))
-	StationKit.add_merged(self, pieces, steel)
-	_fill = MeshInstance3D.new()
-	_fill.mesh = EnvMesh.box(Vector3(SIZE.x - 0.7, 0.3, SIZE.z - 0.16), 0.08)
-	_fill.material_override = StationKit.metal("skip_load", {steel_color = Color("#6f6a66"), rust = 0.75, dents = 1.0, metallic_steel = 0.6, roughness_steel = 0.65})
+	# The skip itself: a chain-lift skip, yellow paint gone to rust (tools/blender/skip.py -> skip.glb,
+	# from a CC-BY model, see CREDITS.md), 3.2 m long along X and standing on the ground. Mud round its foot.
+	var packed := load(MODEL) as PackedScene
+	if packed:
+		var model := packed.instantiate() as Node3D
+		add_child(model)
+		VehicleFinish.apply(model, {mud = 0.45, mud_height = 0.2, dust = 0.25})
+	# The scrap in it: the skip is 2.5 x 1.1 m at its floor and 3.0 x 1.76 m a metre up, under the rim.
+	_fill = ScrapLoadArt.pile(Vector2(2.5, 1.1), Vector2(3.0, 1.76), 1.0, 0.42, 23)
 	add_child(_fill)
-	_label = StationKit.label(self, "", Transform3D(Basis(), Vector3(0, SIZE.y * 0.62, SIZE.z * 0.5 + 0.045)), 96, Color("#e8e2d0"), 800, 0.003)
+	# Chalked on the long side, which leans out a little.
+	_label = StationKit.label(self, "", Transform3D(Basis(Vector3.RIGHT, 0.134), Vector3(0, 0.66, 0.875)), 96, Color("#e8e2d0"), 800, 0.003)
 
 
 func _update_look() -> void:
 	if _fill:
-		var k := clampf(float(count) / CAPACITY, 0.0, 1.0)
 		_fill.visible = count > 0
-		_fill.position.y = lerpf(0.25, SIZE.y - 0.1, k)
+		# The pieces lie where they are; the pile shows from the floor up as the skip fills.
+		ScrapLoadArt.reveal(_fill, clampf(float(count) / CAPACITY, 0.0, 1.0))
 	if _label:
 		_label.text = "%d / %d" % [count, CAPACITY]

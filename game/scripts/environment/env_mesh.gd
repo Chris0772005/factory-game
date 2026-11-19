@@ -147,6 +147,7 @@ const SCANS := {
 	"yellow_plaster": [2.0, Color(0.26, 0.188, 0.074)],
 	"box_profile_metal_sheet": [2.0, Color(0.145, 0.019, 0.009)],
 	"bitumen": [20.0, Color(0.043, 0.038, 0.035)],
+	"green_metal_rust": [1.0, Color(0.05, 0.074, 0.034)],
 }
 
 
@@ -164,6 +165,14 @@ static func scan(key: String, scan_name: String, params := {}) -> ShaderMaterial
 	}
 	all.merge(params, true)
 	return material("scan_" + key, "res://shaders/env_scan.gdshader", all)
+
+
+## Lets go of the scan materials (and with them their textures) once a level that used them is gone:
+## the next level that asks for one builds it afresh.
+static func release_scans() -> void:
+	for key: String in _materials.keys():
+		if key.begins_with("scan_"):
+			_materials.erase(key)
 
 
 ## The tint that brings a scan's mean colour to `wanted` (`amount` 0..1: how far it goes there). For

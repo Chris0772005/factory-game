@@ -1,7 +1,7 @@
 extends Node3D
 ## Art check: shows one model on the street's asphalt in the light of the first level (--plain: a plain sky and sun instead).
 ##   godot-render --path . res://tools/model_view.tscn -- --shot=out.png --model=res://... [--yaw=35] [--pitch=12] [--dist=9] [--h=1.4] [--dump]
-##   ... --finish applies VehicleFinish (gloss, glass, lamps, dust and mud); --rig=0,-30,90,60 instead of --model shows the excavator rig posed (swing, boom, stick, bucket in degrees), --lamps with its lamps on. --hide=a,b hides the nodes of those names.
+##   ... --finish applies VehicleFinish (gloss, glass, lamps, dust and mud); --rig=0,-30,90,60 instead of --model shows the excavator rig posed (swing, boom, stick, bucket in degrees), --lamps with its lamps on. --hide=a,b hides the nodes of those names. --heap=2.5,1.1,3.0,1.76,1.0,0.42,0.9 shows a load of scrap (floor, rim, height, crown, fill). --row=a,b,c stands those Poly Haven scans side by side at their real size.
 
 func _ready() -> void:
 	var model := ""
@@ -15,6 +15,8 @@ func _ready() -> void:
 	var plain := false
 	var lamps := false
 	var hide := PackedStringArray()
+	var heap := ""
+	var row := PackedStringArray()
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--model="):
 			model = arg.trim_prefix("--model=")
@@ -38,6 +40,10 @@ func _ready() -> void:
 			lamps = true
 		elif arg.begins_with("--hide="):
 			hide = arg.trim_prefix("--hide=").split(",")
+		elif arg.begins_with("--heap="):
+			heap = arg.trim_prefix("--heap=")
+		elif arg.begins_with("--row="):
+			row = arg.trim_prefix("--row=").split(",")
 	if plain:
 		_plain_light()
 	else:
@@ -69,6 +75,23 @@ func _ready() -> void:
 				VehicleFinish.apply(node as Node3D)
 			if dump:
 				_dump(node, 0)
+	if heap != "":
+		# --heap=2.5,1.1,3.0,1.76,1.0,0.42,0.9: a load of scrap (ScrapLoadArt.pile: floor x and z, rim x and z,
+		# height, crown) filled to the last number.
+		var dims := heap.split_floats(",")
+		var load_art := ScrapLoadArt.pile(Vector2(dims[0], dims[1]), Vector2(dims[2], dims[3]), dims[4], dims[5])
+		ScrapLoadArt.reveal(load_art, dims[6] if dims.size() > 6 else 1.0)
+		add_child(load_art)
+	if not row.is_empty():
+		# --row=a,b,c: scans side by side, 15 cm apart, the row centred.
+		var total := -0.15
+		for scan_name in row:
+			total += PhotoProp._box(scan_name).size.x + 0.15
+		var x := -total * 0.5
+		for scan_name in row:
+			var wide := PhotoProp._box(scan_name).size.x
+			PhotoProp.place(self, scan_name, Vector3(x + wide * 0.5, 0, 0), 0.0, false)
+			x += wide + 0.15
 	for part_name in hide:
 		for part in find_children(part_name, "Node3D", true, false):
 			(part as Node3D).visible = false

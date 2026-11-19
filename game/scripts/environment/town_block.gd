@@ -271,14 +271,10 @@ static func closed(set: Node3D, base: Vector3, w: float, d: float, opts := {}) -
 	walls.append(EnvMesh.piece(EnvMesh.box(Vector3(w, HEIGHT, d)), Transform3D(Basis(), base + Vector3(0, HEIGHT * 0.5, d * 0.5))))
 	_crown(set, base, w, d, HEIGHT, walls)
 	EnvMesh.add(set, EnvMesh.merge(walls), wall_mat)
-	var shutter := StationKit.metal("town_shutter", {steel_color = Color("#7c8286"), rust = 0.35, metallic_steel = 0.5, roughness_steel = 0.55})
+	# The roller shutter is down: a scanned one, stretched to the width of the shop front.
 	var sw := minf(w - 1.2, 3.4)
 	_stonework(set, base, w, [[-sw * 0.5 - 0.2, sw * 0.5 + 0.2]])
-	var slats := []
-	for i in 13:
-		slats.append(EnvMesh.piece(EnvMesh.box(Vector3(sw, 0.17, 0.05)), Transform3D(Basis(Vector3.RIGHT, -0.18), base + Vector3(0, 0.1 + i * 0.19, -0.02))))
-	slats.append(EnvMesh.piece(EnvMesh.box(Vector3(sw + 0.2, 0.2, 0.14)), Transform3D(Basis(), base + Vector3(0, 2.62, -0.05))))
-	EnvMesh.add(set, EnvMesh.merge(slats), shutter)
+	PhotoProp.mount(set, "rollershutter_door:" + ("1" if opts.get("graffiti", false) else "0"), base, Vector3.FORWARD, Vector2(sw, 2.7))
 	if opts.has("sign"):
 		var board := StandardMaterial3D.new()
 		board.albedo_color = opts.get("sign_back", Color("#d8d2c2"))
@@ -287,6 +283,34 @@ static func closed(set: Node3D, base: Vector3, w: float, d: float, opts := {}) -
 		EnvMesh.add(set, EnvMesh.box(Vector3(bw, 0.62, 0.05), 0.02), board, Transform3D(Basis(), base + Vector3(0, 3.3, -0.03)))
 		StationKit.label(set, opts.sign, Transform3D(Basis(Vector3.UP, PI), base + Vector3(0, 3.3, -0.065)), 120,
 			opts.get("sign_color", Color("#3a3530")), 800, 0.0036)
+
+
+## A wheeled refuse container of painted steel (a photographed plate): body, two lids, rim and castors.
+## `at` is the middle of its foot, `yaw` in degrees turns its long side. Solid.
+static func dumpster(set: Node3D, at: Vector3, yaw := 0.0) -> void:
+	var turn := Basis(Vector3.UP, deg_to_rad(yaw))
+	WorldBuilder.add_collider(set, Vector3(1.9, 1.25, 1.05), Transform3D(turn, at + Vector3(0, 0.625, 0)))
+	if not EnvMesh.visual():
+		return
+	var steel := EnvMesh.scan("town_dumpster", "green_metal_rust", {drift = 0.12})
+	var dark := StandardMaterial3D.new()
+	dark.albedo_color = Color("#1b1c1d")
+	dark.roughness = 0.85
+	var body := []
+	var black := []
+	body.append(EnvMesh.piece(EnvMesh.box(Vector3(1.8, 0.95, 0.95), 0.03), Transform3D(turn, at + turn * Vector3(0, 0.64, 0))))
+	body.append(EnvMesh.piece(EnvMesh.box(Vector3(1.9, 0.07, 1.05), 0.02), Transform3D(turn, at + turn * Vector3(0, 1.12, 0))))
+	for side: float in [-1.0, 1.0]:
+		# Lids, one a little open; a rib down each end; a lifting pocket.
+		var lift := 0.12 if side > 0.0 else 0.0
+		body.append(EnvMesh.piece(EnvMesh.box(Vector3(0.9, 0.035, 1.02), 0.01), Transform3D(turn * Basis(Vector3.RIGHT, -lift), at + turn * Vector3(side * 0.47, 1.18 + lift * 0.45, 0.0))))
+		body.append(EnvMesh.piece(EnvMesh.box(Vector3(0.06, 0.8, 1.0), 0.01), Transform3D(turn, at + turn * Vector3(side * 0.93, 0.66, 0))))
+		body.append(EnvMesh.piece(EnvMesh.box(Vector3(0.1, 0.12, 0.5), 0.01), Transform3D(turn, at + turn * Vector3(side * 0.97, 0.9, 0))))
+		for z: float in [-0.36, 0.36]:
+			black.append(EnvMesh.piece(EnvMesh.cylinder(0.08, 0.08, 0.05, 12), Transform3D(turn * Basis(Vector3.BACK, PI * 0.5), at + turn * Vector3(side * 0.74, 0.085, z))))
+			body.append(EnvMesh.piece(EnvMesh.box(Vector3(0.07, 0.1, 0.07)), Transform3D(turn, at + turn * Vector3(side * 0.74, 0.15, z))))
+	EnvMesh.add(set, EnvMesh.merge(body), steel)
+	EnvMesh.add(set, EnvMesh.merge(black), dark)
 
 
 ## A shop counter across the room: panelled front, worn top. Blocks the way.
