@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bqv5ih66ugtgb"
-path="res://.godot/imported/zx200_hd_track_steel_albedo.jpg-542c738a0a8848f7ef46d8145a5b4a4a.ctex"
+path.s3tc="res://.godot/imported/zx200_hd_track_steel_albedo.jpg-542c738a0a8848f7ef46d8145a5b4a4a.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "c07d98603306643760b98a9ada62fdc4"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/machinery/zx200_hd_track_steel_albedo.jpg"
-dest_files=["res://.godot/imported/zx200_hd_track_steel_albedo.jpg-542c738a0a8848f7ef46d8145a5b4a4a.ctex"]
+dest_files=["res://.godot/imported/zx200_hd_track_steel_albedo.jpg-542c738a0a8848f7ef46d8145a5b4a4a.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

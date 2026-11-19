@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://d151cn77gdhws"
-path="res://.godot/imported/zx200_hd_paint_graphite_normal.jpg-aa6b7138bd3c06c0a8c6fc40c2537ae9.ctex"
+path.bptc="res://.godot/imported/zx200_hd_paint_graphite_normal.jpg-aa6b7138bd3c06c0a8c6fc40c2537ae9.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "6e93c6dabd2bd9aafbd702b59bdd32b7"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/machinery/zx200_hd_paint_graphite_normal.jpg"
-dest_files=["res://.godot/imported/zx200_hd_paint_graphite_normal.jpg-aa6b7138bd3c06c0a8c6fc40c2537ae9.ctex"]
+dest_files=["res://.godot/imported/zx200_hd_paint_graphite_normal.jpg-aa6b7138bd3c06c0a8c6fc40c2537ae9.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cogyp7jja2sel"
-path="res://.godot/imported/zx200_hd_steel_frame_orm.jpg-786b263e71b3cb88b0f440f15ea93491.ctex"
+path.s3tc="res://.godot/imported/zx200_hd_steel_frame_orm.jpg-786b263e71b3cb88b0f440f15ea93491.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "a96a2ddfd37301939bc6e467c69e46b4"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/machinery/zx200_hd_steel_frame_orm.jpg"
-dest_files=["res://.godot/imported/zx200_hd_steel_frame_orm.jpg-786b263e71b3cb88b0f440f15ea93491.ctex"]
+dest_files=["res://.godot/imported/zx200_hd_steel_frame_orm.jpg-786b263e71b3cb88b0f440f15ea93491.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

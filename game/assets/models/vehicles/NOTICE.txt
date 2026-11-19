@@ -1,0 +1,10 @@
+delivery_van.glb: based on "European Delivery Van"
+(https://sketchfab.com/3d-models/european-delivery-van-0b2f1ad95a79419f9a092420024d329c) by Evan Hiltz
+(https://sketchfab.com/evan.hiltz), licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/).
+The source, its licence file and a note on its origin are in tools/blender/sources/european_delivery_van_hiltz/.
+Changes (tools/blender/van.py): turned and centred, the 61 parts joined by material, the four wheels as parts of
+their own, the maps re-encoded as JPEG and three of them reduced from 4096 to 2048 pixels. Shapes and painting are
+the author's. In the game the panes are made clear, road dirt is laid over the body and the lamps are switched off.
+
+The delivery_van_van_european_delivery_*.jpg files are that model's maps, extracted from delivery_van.glb by
+Godot's importer: same author and licence as delivery_van.glb.

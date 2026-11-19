@@ -3,27 +3,28 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c0mg0ebmsong2"
-path="res://.godot/imported/wooden_crate_02_nor_gl_1k.jpg-87cef75b786db11bb2b8da239b491356.ctex"
+path.bptc="res://.godot/imported/wooden_crate_02_nor_gl_1k.jpg-87cef75b786db11bb2b8da239b491356.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/models/polyhaven/wooden_crate_02/textures/wooden_crate_02_nor_gl_1k.jpg"
-dest_files=["res://.godot/imported/wooden_crate_02_nor_gl_1k.jpg-87cef75b786db11bb2b8da239b491356.ctex"]
+dest_files=["res://.godot/imported/wooden_crate_02_nor_gl_1k.jpg-87cef75b786db11bb2b8da239b491356.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=false
+mipmaps/generate=true
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

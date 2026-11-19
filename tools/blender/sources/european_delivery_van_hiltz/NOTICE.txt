@@ -1,0 +1,17 @@
+"European Delivery Van" by Evan Hiltz (https://sketchfab.com/evan.hiltz),
+https://sketchfab.com/3d-models/european-delivery-van-0b2f1ad95a79419f9a092420024d329c,
+licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/). See license.txt (the file Sketchfab adds to
+every download) and the "asset.extras" block of scene.gltf.
+
+Where these files come from: not from Sketchfab directly, but from a copy of the Sketchfab download in the GitHub
+repository manojtharindu11/Truck-drive, folder models/van/, at commit
+9a8757aee493298f3e9cef7f926065dd45d29a39 (license.txt, scene.gltf and scene.bin there are byte-identical to the
+files fetched; checked 2026-11-19).
+
+Changed here, to keep the repository small:
+- the thirteen maps were saved as JPEG (the source has PNG files); the three maps of the body that were 4096
+  pixels wide (metallic-roughness, emissive, normal) were reduced to 2048 pixels;
+- scene.gltf: the image entries point to those files (uri, mimeType); the file was re-written with indents.
+scene.bin and license.txt are unchanged.
+
+tools/blender/van.py makes game/assets/models/vehicles/delivery_van.glb from this folder.

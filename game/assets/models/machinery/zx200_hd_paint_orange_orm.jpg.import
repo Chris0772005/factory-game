@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://coocp8gtx1eyc"
-path="res://.godot/imported/zx200_hd_paint_orange_orm.jpg-54e29901bd0fd1574aebea723f027e5e.ctex"
+path.s3tc="res://.godot/imported/zx200_hd_paint_orange_orm.jpg-54e29901bd0fd1574aebea723f027e5e.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "1c13c5de79f35d24bc31e1802c5581cf"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/machinery/zx200_hd_paint_orange_orm.jpg"
-dest_files=["res://.godot/imported/zx200_hd_paint_orange_orm.jpg-54e29901bd0fd1574aebea723f027e5e.ctex"]
+dest_files=["res://.godot/imported/zx200_hd_paint_orange_orm.jpg-54e29901bd0fd1574aebea723f027e5e.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

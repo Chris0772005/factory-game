@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cherm745cjgya"
-path="res://.godot/imported/dump_truck_frame_graphite_orm.jpg-bb0a78de53eae84774ce8fe04ee1a14f.ctex"
+path.s3tc="res://.godot/imported/dump_truck_frame_graphite_orm.jpg-bb0a78de53eae84774ce8fe04ee1a14f.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "f1b4501bd7520b7e847d9c190ddcf19d"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/machinery/dump_truck_frame_graphite_orm.jpg"
-dest_files=["res://.godot/imported/dump_truck_frame_graphite_orm.jpg-bb0a78de53eae84774ce8fe04ee1a14f.ctex"]
+dest_files=["res://.godot/imported/dump_truck_frame_graphite_orm.jpg-bb0a78de53eae84774ce8fe04ee1a14f.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

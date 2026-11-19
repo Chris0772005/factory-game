@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://m0co7pi5u8aw"
-path="res://.godot/imported/dump_truck_M_dump_truck_E_01_baseColor.jpg-f8ae7f95d2de1a01426bab9099721f6c.ctex"
+path.s3tc="res://.godot/imported/dump_truck_M_dump_truck_E_01_baseColor.jpg-f8ae7f95d2de1a01426bab9099721f6c.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "1f80f9747502dbea9938684dcad8fb11"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/machinery/dump_truck_M_dump_truck_E_01_baseColor.jpg"
-dest_files=["res://.godot/imported/dump_truck_M_dump_truck_E_01_baseColor.jpg-f8ae7f95d2de1a01426bab9099721f6c.ctex"]
+dest_files=["res://.godot/imported/dump_truck_M_dump_truck_E_01_baseColor.jpg-f8ae7f95d2de1a01426bab9099721f6c.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://888q56yd4tms"
-path="res://.godot/imported/dump_truck_bed_paint_albedo.jpg-7cbce042c59bc3ce8f70c185091a1a3f.ctex"
+path.s3tc="res://.godot/imported/dump_truck_bed_paint_albedo.jpg-7cbce042c59bc3ce8f70c185091a1a3f.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "df94bc39aa14e344be7ce2941636aae5"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/machinery/dump_truck_bed_paint_albedo.jpg"
-dest_files=["res://.godot/imported/dump_truck_bed_paint_albedo.jpg-7cbce042c59bc3ce8f70c185091a1a3f.ctex"]
+dest_files=["res://.godot/imported/dump_truck_bed_paint_albedo.jpg-7cbce042c59bc3ce8f70c185091a1a3f.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

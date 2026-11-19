@@ -29,6 +29,11 @@ const DIGGER_POS := Vector3(-6.0, 0, 5.4)
 const WORKBENCH_POS := Vector3(-12.2, 0, -9.3)
 ## The hall's walls: brick up to here, profiled sheet above.
 const BRICK_TOP := 2.2
+## What stands on the shelves of the two open houses (scans from Poly Haven; TownBlock.shelves).
+const PAWN_GOODS := ["boombox", "brass_vase_02", "television_02", "american_football", "alarm_clock_01", "vintage_electric_kettle",
+	"marble_bust_01", "Megaphone_01", "metal_toolbox", "Ukulele_01", "horse_statue_01", "Drill_01", "small_oil_can_01", "oil_tin"]
+const POLICE_FILES := ["book_encyclopedia_set_01", "cardboard_box_01@90", "clipboard@90", "book_encyclopedia_set_01", "metal_toolbox",
+	"cardboard_box_01@90", "book_encyclopedia_set_01"]
 ## Where the street is closed off, left and right.
 const TOWN_X := 27.0
 ## The pavement the patrol walks.
@@ -279,13 +284,13 @@ func _town() -> void:
 		windows = [[-0.4, 3.2]], sign = "PAWN SHOP", sign_back = Color("#3a2a20"), sign_color = Color("#e8c66a"),
 		floor = Color("#6a4a30"), lining = Color("#b8ab8f"), trim = Color("#3a2a20"), lamp = Color("#ffd49a")})
 	TownBlock.counter(self, PAWN + Vector3(0, 0, COUNTER_Z), 7.4, "pawn_counter", Color("#4f3a28"))
-	TownBlock.shelves(self, PAWN + Vector3(0, 0, HOUSE_D - TownBlock.WALL - 0.24), 6.8, "pawn_shelf", 7)
+	TownBlock.shelves(self, PAWN + Vector3(0, 0, HOUSE_D - TownBlock.WALL - 0.24), 6.8, "pawn_shelf", 7, PAWN_GOODS)
 	# Polizeiwache: plastered, blue sign, the desk across the room.
 	TownBlock.house(self, POLICE, 9.0, HOUSE_D, {key = "police", plaster = Color("#c9cdc6"), brick = Color("#6d7377"), door_x = 0.0,
 		windows = [[-3.8, -2.2], [2.3, 3.8]], sign = "POLICE", sign_back = Color("#1f3f7a"), sign_color = Color("#f4f4f0"),
 		floor = Color("#7a7468"), lining = Color("#d2d6cf"), trim = Color("#1f3f7a"), lamp = Color("#eef2ff")})
 	TownBlock.counter(self, POLICE + Vector3(0, 0, COUNTER_Z), 8.4, "police_desk", Color("#5a5348"))
-	TownBlock.shelves(self, POLICE + Vector3(1.6, 0, HOUSE_D - TownBlock.WALL - 0.24), 4.6, "police_shelf", 11)
+	TownBlock.shelves(self, POLICE + Vector3(1.6, 0, HOUSE_D - TownBlock.WALL - 0.24), 4.6, "police_shelf", 11, POLICE_FILES)
 	WorldBuilder.add_collider(self, Vector3(0.5, 0.5, 2.0), Transform3D(Basis(), POLICE + Vector3(-3.9, 0.25, 1.7)))
 	# Shut for now: the houses that fill the row.
 	TownBlock.closed(self, Vector3(-21.0, 0, FRONT_Z), 10.0, HOUSE_D, {key = "let", scan = "painted_worn_brick", sign = "FOR RENT", graffiti = true})
@@ -317,6 +322,10 @@ func _town() -> void:
 		gate.position = Vector3(s * TOWN_X, 0, road_from + ROAD * 0.5)
 		add_child(gate)
 	_street_dressing(zf)
+	# The station's desk against the back wall, a chair pushed up to it.
+	var desk := POLICE + Vector3(-2.9, 0, HOUSE_D - TownBlock.WALL - 0.52)
+	PhotoProp.place(self, "metal_office_desk", desk, 180.0)
+	PhotoProp.place(self, "plastic_monobloc_chair_01", desk + Vector3(0.2, 0, -0.75), 10.0, false)
 	if not EnvMesh.visual():
 		return
 	# Who stands behind the counters.
@@ -341,11 +350,19 @@ func _town() -> void:
 	EnvMesh.add(self, EnvMesh.box(Vector3(0.24, 0.34, 0.24), 0.04), blue, Transform3D(Basis(), POLICE + Vector3(-1.25, 2.75, -0.2)), false)
 	for z: float in [1.1, 2.3]:
 		PhotoProp.place(self, "painted_wooden_bench", POLICE + Vector3(-3.9, 0, z), 90.0, false)
+	# On the counters: the till and an oil lamp at the pawnbroker's, the day's paperwork at the station.
+	var top := 1.03
+	PhotoProp.stand(self, "CashRegister_01", PAWN + Vector3(2.5, top, COUNTER_Z + 0.05), 0.0)
+	PhotoProp.stand(self, "vintage_oil_lamp", PAWN + Vector3(-3.2, top, COUNTER_Z + 0.1), 25.0)
+	PhotoProp.stand(self, "clipboard", POLICE + Vector3(1.7, top, COUNTER_Z - 0.05), 200.0)
+	# (The scan of the laptop is twice life size.)
+	PhotoProp.stand(self, "classic_laptop", POLICE + Vector3(-2.9, top, COUNTER_Z + 0.05), 15.0, 0.5)
 
 
-## What stands and hangs about the street, all scanned (Poly Haven, CC0): bins and bags, a switch box,
-## a bench, a car under a tarpaulin, concrete blocks where the street ends, manhole covers, a lamp over
-## the pawnbroker's door and air conditioners on the fronts.
+## What stands and hangs about the street: a delivery van at the kerb (ParkedVehicle) and, all scanned
+## (Poly Haven, CC0), bins and bags, a switch box, a bench, a car under a tarpaulin, the dealer's
+## chalkboard, a barrel stove with cans, concrete blocks where the street ends, manhole covers, a lamp
+## over the pawnbroker's door and air conditioners on the fronts.
 func _street_dressing(zf: float) -> void:
 	var road_z := zf + APRON + ROAD * 0.5
 	# What is solid comes first: its colliders are wanted on a headless host too.
@@ -353,8 +370,25 @@ func _street_dressing(zf: float) -> void:
 	PhotoProp.place(self, "utility_box_01", Vector3(11.9, 0, FRONT_Z - 0.4), 180.0)
 	PhotoProp.place(self, "painted_wooden_bench", Vector3(14.0, 0, FRONT_Z - 0.4), 180.0)
 	PhotoProp.place(self, "covered_car", Vector3(18.4, 0, zf + 1.3), 90.0)
+	# A delivery van at the far kerb, nose the way the street runs (the truck's lane stays free).
+	ParkedVehicle.place(self, ParkedVehicle.VAN, Vector3(-20.6, 0, zf + APRON + ROAD - 1.3), 0.0)
+	# The dealer's board on the pavement, and what stands about on the yard side.
+	var board := Vector3(-2.5, 0, FRONT_Z - 0.8)
+	PhotoProp.place(self, "standing_chalkboard_01", board, 196.0)
+	PhotoProp.place(self, "barrel_stove", Vector3(15.1, 0, zf + 0.75), 40.0)
 	if not EnvMesh.visual():
 		return
+	var chalk := Color(0.93, 0.92, 0.87, 0.92)
+	# Chalk on the board's street side: its slate leans back by 12 degrees and is 0.77 m wide.
+	var face := Transform3D(Basis(Vector3.UP, deg_to_rad(196.0)), board) * Transform3D(Basis(Vector3.RIGHT, -0.21), Vector3(0.0, 0.88, 0.188))
+	StationKit.label(self, "WE BUY", face * Transform3D(Basis(), Vector3(0, 0.36, 0)), 84, chalk, 700, 0.0022, StationKit.chalk_font())
+	StationKit.label(self, "SCRAP", face * Transform3D(Basis(), Vector3(0, 0.14, 0)), 112, chalk, 700, 0.0022, StationKit.chalk_font())
+	StationKit.label(self, "copper & brass", face * Transform3D(Basis(), Vector3(0, -0.1, 0)), 44, chalk, 500, 0.0022, StationKit.hand_font())
+	StationKit.label(self, "cash paid", face * Transform3D(Basis(), Vector3(0, -0.3, 0)), 56, Color(0.95, 0.82, 0.4, 0.92), 500, 0.0022, StationKit.hand_font())
+	PhotoProp.place(self, "metal_jerrycan_green", Vector3(15.75, 0, zf + 0.5), 110.0, false)
+	PhotoProp.place(self, "plastic_crate_02", Vector3(14.75, 0, zf + 0.42), 8.0, false)
+	PhotoProp.stand(self, "oil_tin", Vector3(14.62, 0.03, zf + 0.42), 60.0)
+	PhotoProp.stand(self, "small_oil_can_01", Vector3(14.85, 0.03, zf + 0.42), 100.0)
 	for s: float in [-1.0, 1.0]:
 		PhotoProp.place(self, "concrete_road_barrier", Vector3(s * (TOWN_X + 0.9), 0, zf + 1.5), 90.0, false)
 		PhotoProp.place(self, "concrete_road_barrier", Vector3(s * (TOWN_X + 0.9), 0, FRONT_Z - 2.0), 90.0, false)

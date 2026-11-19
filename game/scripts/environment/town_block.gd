@@ -106,13 +106,9 @@ static func house(set: Node3D, base: Vector3, w: float, d: float, opts := {}) ->
 		EnvMesh.add(set, EnvMesh.box(Vector3(sw, 0.78, 0.07), 0.02), board, Transform3D(Basis(), base + Vector3(0, DOOR_H + 0.95, -0.035)))
 		StationKit.label(set, opts.sign, Transform3D(Basis(Vector3.UP, PI), base + Vector3(0, DOOR_H + 0.95, -0.08)), 150,
 			opts.get("sign_color", Color("#f2e6c8")), 800, 0.0038)
-	# Ceiling lamp.
-	var shade := StandardMaterial3D.new()
-	shade.albedo_color = Color("#f4ead2")
-	shade.emission_enabled = true
-	shade.emission = opts.get("lamp", Color("#ffdcae"))
-	shade.emission_energy_multiplier = 2.2
-	EnvMesh.add(set, EnvMesh.cylinder(0.2, 0.26, 0.1, 16), shade, Transform3D(Basis(), base + Vector3(0, ROOM_H - 0.06, d * 0.5)), false)
+	# Strip lights under the ceiling (scans), and the light they give.
+	for lamp_x: float in [-iw * 0.28, 0.0, iw * 0.28]:
+		strip_light(set, base + Vector3(lamp_x, ROOM_H, d * 0.5), opts.get("lamp", Color("#ffdcae")))
 	var lamp := OmniLight3D.new()
 	lamp.light_color = opts.get("lamp", Color("#ffdcae"))
 	lamp.light_energy = 2.4
@@ -330,8 +326,31 @@ static func counter(set: Node3D, at: Vector3, width: float, key := "counter", fr
 	EnvMesh.add(set, EnvMesh.box(Vector3(width + 0.06, 0.06, 0.78), 0.01), top, Transform3D(Basis(), at + Vector3(0, 1.0, 0)))
 
 
-## Shelves against the back wall with boxes, tins and odds and ends.
-static func shelves(set: Node3D, at: Vector3, width: float, key := "shelf", seed_value := 1) -> void:
+## A fluorescent strip (scan) under the ceiling at `at`, its tubes lit in `colour`.
+static func strip_light(set: Node3D, at: Vector3, colour := Color("#f4f6ff")) -> void:
+	var node := PhotoProp.hang(set, "mounted_fluorescent_lights:_f", at)
+	if node == null:
+		return
+	var tube := StandardMaterial3D.new()
+	tube.albedo_color = Color("#f2f2ee")
+	tube.emission_enabled = true
+	tube.emission = colour.lerp(Color.WHITE, 0.5)
+	tube.emission_energy_multiplier = 3.0
+	for part in node.find_children("*", "MeshInstance3D", true, false):
+		var mi := part as MeshInstance3D
+		if not mi.visible or mi.mesh == null:
+			continue
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		for i in mi.mesh.get_surface_count():
+			var mat := mi.mesh.surface_get_material(i)
+			if mat and mat.resource_name.to_lower().contains("glass"):
+				mi.set_surface_override_material(i, tube)
+
+
+## Shelves against the back wall. Without `goods`: boxes, tins and odds and ends. With `goods` (names of
+## Poly Haven scans, "name@90" turns one by that many degrees): those stand on the boards, in that
+## order and again from the start, each where it fits under the board above.
+static func shelves(set: Node3D, at: Vector3, width: float, key := "shelf", seed_value := 1, goods := []) -> void:
 	WorldBuilder.add_collider(set, Vector3(width, 2.2, 0.4), Transform3D(Basis(), at + Vector3(0, 1.1, 0)))
 	if not EnvMesh.visual():
 		return
@@ -344,6 +363,9 @@ static func shelves(set: Node3D, at: Vector3, width: float, key := "shelf", seed
 	EnvMesh.add(set, EnvMesh.merge(rack), wood)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
+	if not goods.is_empty():
+		_stock(set, at, width, goods, rng)
+		return
 	var tones := [Color("#7d6444"), Color("#5c5a50"), Color("#4c5546"), Color("#5a3d33"), Color("#3f4853"), Color("#8f8162")]
 	var by_tone := {}
 	for y: float in [0.37, 0.97, 1.57]:
@@ -361,6 +383,32 @@ static func shelves(set: Node3D, at: Vector3, width: float, key := "shelf", seed
 		m.roughness = 0.9
 		m.metallic_specular = 0.2
 		EnvMesh.add(set, EnvMesh.merge(by_tone[tone]), m, Transform3D(), false)
+
+
+## Scanned goods along the four boards of `shelves`: they face the room (-z) and stand at the back of
+## their board; what is deeper than the board sticks out in front.
+static func _stock(set: Node3D, at: Vector3, width: float, goods: Array, rng: RandomNumberGenerator) -> void:
+	var next := 0
+	for y: float in [0.37, 0.97, 1.57, 2.17]:
+		# Room under the next board; on the top one, under the writing on the wall.
+		var room := 0.54 if y < 2.0 else 0.4
+		var x := -width * 0.5 + 0.1 + rng.randf_range(0.0, 0.15)
+		var passed := 0
+		while x < width * 0.5 - 0.25 and passed < goods.size():
+			var entry: String = goods[next % goods.size()]
+			next += 1
+			var turn := float(entry.get_slice("@", 1)) if "@" in entry else 0.0
+			var pick := entry.get_slice("@", 0)
+			var size := PhotoProp.box(pick).size
+			if absf(fmod(turn, 180.0)) > 45.0:
+				size = Vector3(size.z, size.y, size.x)
+			if size.y > room or x + size.x > width * 0.5 - 0.08:
+				passed += 1
+				continue
+			passed = 0
+			var z := 0.17 - size.z * 0.5 - rng.randf_range(0.0, 0.04)
+			PhotoProp.stand(set, pick, at + Vector3(x + size.x * 0.5, y, z), 180.0 + turn + rng.randf_range(-7.0, 7.0))
+			x += size.x + rng.randf_range(0.07, 0.24)
 
 
 ## Red-and-white barrier across the street: this far and no further (yet).

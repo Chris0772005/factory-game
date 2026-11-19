@@ -3,19 +3,20 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bi6jgtle5ingu"
-path="res://.godot/imported/bench_vice_01_arm_1k.jpg-ce83cecaae45a1924cf6c3f02cfdd254.ctex"
+path.s3tc="res://.godot/imported/bench_vice_01_arm_1k.jpg-ce83cecaae45a1924cf6c3f02cfdd254.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/models/polyhaven/bench_vice_01/textures/bench_vice_01_arm_1k.jpg"
-dest_files=["res://.godot/imported/bench_vice_01_arm_1k.jpg-ce83cecaae45a1924cf6c3f02cfdd254.ctex"]
+dest_files=["res://.godot/imported/bench_vice_01_arm_1k.jpg-ce83cecaae45a1924cf6c3f02cfdd254.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -23,7 +24,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=false
+mipmaps/generate=true
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

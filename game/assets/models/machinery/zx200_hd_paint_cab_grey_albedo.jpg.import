@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://juxf0hpqmunl"
-path="res://.godot/imported/zx200_hd_paint_cab_grey_albedo.jpg-138b16d931c6fcfc52a3c7373887a162.ctex"
+path.s3tc="res://.godot/imported/zx200_hd_paint_cab_grey_albedo.jpg-138b16d931c6fcfc52a3c7373887a162.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "25dec7ee214c1ec0c191e43cb4825e79"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/machinery/zx200_hd_paint_cab_grey_albedo.jpg"
-dest_files=["res://.godot/imported/zx200_hd_paint_cab_grey_albedo.jpg-138b16d931c6fcfc52a3c7373887a162.ctex"]
+dest_files=["res://.godot/imported/zx200_hd_paint_cab_grey_albedo.jpg-138b16d931c6fcfc52a3c7373887a162.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

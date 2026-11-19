@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bgsq1x3pg8dyo"
-path="res://.godot/imported/zx200_hd_wear_steel_albedo.jpg-fe0dc604dcc1b6ee946711c9f66b33bf.ctex"
+path.s3tc="res://.godot/imported/zx200_hd_wear_steel_albedo.jpg-fe0dc604dcc1b6ee946711c9f66b33bf.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "a64e71351eb2c44b8014a24eab802a6e"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/machinery/zx200_hd_wear_steel_albedo.jpg"
-dest_files=["res://.godot/imported/zx200_hd_wear_steel_albedo.jpg-fe0dc604dcc1b6ee946711c9f66b33bf.ctex"]
+dest_files=["res://.godot/imported/zx200_hd_wear_steel_albedo.jpg-fe0dc604dcc1b6ee946711c9f66b33bf.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

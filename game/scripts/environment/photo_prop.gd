@@ -117,26 +117,69 @@ static func place(parent: Node3D, name: String, pos: Vector3, yaw := 0.0, solid 
 	return node
 
 
+## Scan `pick` ("name" or "name:variant") as a node of its own, only that variant showing, and the box
+## of what shows.
+static func _spawn(pick: String) -> Array:
+	var variant := ""
+	if ":" in pick:
+		variant = pick.get_slice(":", 1)
+		pick = pick.get_slice(":", 0)
+	var node: Node3D = _scene(pick).instantiate()
+	if not variant.is_empty():
+		var parts := node.find_children("*", "MeshInstance3D", true, false)
+		for i in parts.size():
+			(parts[i] as Node3D).visible = _shown(variant, i, parts[i].name)
+	return [node, _box(pick, variant)]
+
+
+## The box of scan `pick` ("name" or "name:variant") in metres.
+static func box(pick: String) -> AABB:
+	return _box(pick.get_slice(":", 0), pick.get_slice(":", 1) if ":" in pick else "")
+
+
 ## Hangs scan `pick` ("name" or "name:variant") on a wall. `at` is the point on the wall under the middle
 ## of its foot, `out` the way the wall faces (the scan's own +z looks out, its back lies on the wall).
 ## `fit` stretches it to that width and height (0 = as it is). Looks only; null when headless.
 static func mount(parent: Node3D, pick: String, at: Vector3, out: Vector3, fit := Vector2.ZERO) -> Node3D:
 	if not EnvMesh.visual():
 		return null
-	var variant := ""
-	if ":" in pick:
-		variant = pick.get_slice(":", 1)
-		pick = pick.get_slice(":", 0)
-	var box := _box(pick, variant)
-	var node: Node3D = _scene(pick).instantiate()
-	if not variant.is_empty():
-		var parts := node.find_children("*", "MeshInstance3D", true, false)
-		for i in parts.size():
-			(parts[i] as Node3D).visible = _shown(variant, i, parts[i].name)
-	var sx := fit.x / maxf(box.size.x, 0.001) if fit.x > 0.0 else 1.0
-	var sy := fit.y / maxf(box.size.y, 0.001) if fit.y > 0.0 else 1.0
-	var local := Transform3D(Basis().scaled(Vector3(sx, sy, 1.0)), Vector3(-box.get_center().x * sx, -box.position.y * sy, -box.position.z))
+	var made := _spawn(pick)
+	var node: Node3D = made[0]
+	var bounds: AABB = made[1]
+	var sx := fit.x / maxf(bounds.size.x, 0.001) if fit.x > 0.0 else 1.0
+	var sy := fit.y / maxf(bounds.size.y, 0.001) if fit.y > 0.0 else 1.0
+	var local := Transform3D(Basis().scaled(Vector3(sx, sy, 1.0)), Vector3(-bounds.get_center().x * sx, -bounds.position.y * sy, -bounds.position.z))
 	node.transform = Transform3D(Basis.looking_at(-out, Vector3.UP), at) * local
+	parent.add_child(node)
+	return node
+
+
+## Stands scan `pick` ("name" or "name:variant") with the middle of its foot at `at`: on a shelf, a
+## table, the floor. Turned by `yaw` degrees, `scale` times its own size. Looks only; null when headless.
+static func stand(parent: Node3D, pick: String, at: Vector3, yaw := 0.0, scale := 1.0) -> Node3D:
+	if not EnvMesh.visual():
+		return null
+	var made := _spawn(pick)
+	var node: Node3D = made[0]
+	var bounds: AABB = made[1]
+	var basis := Basis(Vector3.UP, deg_to_rad(yaw)).scaled(Vector3.ONE * scale)
+	var centre := bounds.get_center()
+	node.transform = Transform3D(basis, at - basis * Vector3(centre.x, bounds.position.y, centre.z))
+	parent.add_child(node)
+	return node
+
+
+## Hangs scan `pick` ("name" or "name:variant") under a ceiling: the middle of its top touches `at`.
+## Turned by `yaw` degrees. Looks only; null when headless.
+static func hang(parent: Node3D, pick: String, at: Vector3, yaw := 0.0) -> Node3D:
+	if not EnvMesh.visual():
+		return null
+	var made := _spawn(pick)
+	var node: Node3D = made[0]
+	var bounds: AABB = made[1]
+	var basis := Basis(Vector3.UP, deg_to_rad(yaw))
+	var centre := bounds.get_center()
+	node.transform = Transform3D(basis, at - basis * Vector3(centre.x, bounds.end.y, centre.z))
 	parent.add_child(node)
 	return node
 
