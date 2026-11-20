@@ -56,6 +56,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # Builds of several pushes run side by side. Only the newest commit on main may publish:
+          # an older build that happens to finish later must not put an old state behind the link.
+          newest=$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" -q .sha)
+          if [ "$newest" != "$GITHUB_SHA" ]; then
+            echo "A newer commit (${newest}) is on main; its build publishes the test version, this one does not."
+            exit 0
+          fi
           (cd build/windows && zip -q -r ../../MoltenMates-Windows.zip .)
           (cd build/linux && zip -q -r ../../MoltenMates-Linux.zip .)
           gh release view testversion >/dev/null 2>&1 || gh release create testversion \
