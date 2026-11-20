@@ -27,6 +27,8 @@ var window := Vector4(0.6, 4.2, 1.35, 2.3)
 var bay_line_x := CAR_POS.x + 1.45
 ## Extra env_concrete parameters (colours) for other halls.
 var floor_params := {}
+## A factor on the colours of the scanned floor inside (a dark scan may want lifting).
+var floor_tint := Vector3.ONE
 ## Ground slab and floor plane: size and where its middle lies along Z.
 var ground_size := Vector2(70.0, 70.0)
 var ground_z := 6.0
@@ -121,7 +123,7 @@ func _floor() -> void:
 	mi.name = "Floor"
 	# The photographed floor lies over it inside, with the same stains and the bay line.
 	if _floor_scan() != "":
-		var inside := EnvMesh.scan(key + "_floor", _floor_scan(), {drift = 0.12, stains = stains, stain_count = count, bay_line_x = bay_line_x})
+		var inside := EnvMesh.scan(key + "_floor", _floor_scan(), {drift = 0.12, tint = floor_tint, stains = stains, stain_count = count, bay_line_x = bay_line_x})
 		# (Barely above the base floor: lines painted on the floor lie a few millimetres up.)
 		_slab(inside, inner_min.x - WALL, inner_max.x + WALL, inner_min.y - WALL, inner_max.y + WALL * 0.5, 0.002)
 

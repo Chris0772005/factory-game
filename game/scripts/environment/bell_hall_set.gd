@@ -15,6 +15,8 @@ static func build_hall(world: Node3D, level_stations: Array) -> BellHallSet:
 	set.name = "BellHallSet"
 	set.key = "bellhall"
 	set.wall_split = 1.5
+	# (The brick of the floor is dark out of the sun: lifted a little, so small things on it show.)
+	set.floor_tint = Vector3(1.3, 1.3, 1.3)
 	set.ground_size = Vector2(90.0, 84.0)
 	set.ground_z = 12.0
 	set.stations = level_stations
