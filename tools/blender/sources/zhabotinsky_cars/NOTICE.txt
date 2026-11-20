@@ -1,0 +1,20 @@
+Three cars with invented makes by Daniel Zhabotinsky (https://sketchfab.com/DanielZhabotinsky), each licensed
+under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/); every folder keeps the license.txt that Sketchfab
+ships with the model:
+
+- kiri86: "Kiri '86 - Low poly model",
+  https://sketchfab.com/3d-models/kiri-86-low-poly-model-5c17c582ef9549798f694b660feea42a
+- fairheaven_lt80: "Fairheaven LT '80 - Low poly model",
+  https://sketchfab.com/3d-models/fairheaven-lt-80-low-poly-model-e2678da920cc4be68dbc193727919ffb
+- fairheaven_sw84: "Fairheaven SW '84 - Low poly model",
+  https://sketchfab.com/3d-models/fairheaven-sw-84-low-poly-model-aa0becb6e854422596cac6b21bf79787
+
+Where these files come from: not from Sketchfab directly, but from the prepared copies in the GitHub repository
+raisimTech/raisim2Lib, folder rsc/city/cars/, at commit d9df2c979c9ddc44ec6b6727ff72c660688fdb62 (license.txt,
+model.gltf, model.bin and model_paint1.gltf of each car are byte-identical to the files there; checked
+2026-11-19). The folders are unchanged copies. ATTRIBUTION_raisim_city.md is that repository's own notice
+(rsc/city/ATTRIBUTION.md): it says what its authors changed against the Sketchfab downloads (transforms baked into
+one mesh per car, maps reduced to 1K, the body paint replaced by a plain colour, two more paint colours added).
+
+tools/blender/cars.py makes game/assets/models/vehicles/car_*.glb from these folders. It leaves out the cars'
+badges (the atlas Carbadges_misc_U holds invented marks, some of which resemble real ones).

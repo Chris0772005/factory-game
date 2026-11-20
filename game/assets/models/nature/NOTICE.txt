@@ -1,0 +1,7 @@
+street_tree.glb: made from "Tree Small 02" (https://polyhaven.com/a/tree_small_02) from Poly Haven, CC0 1.0
+(https://creativecommons.org/publicdomain/zero/1.0/), in the prepared copy of the raisim2Lib project
+(https://github.com/raisimTech/raisim2Lib, rsc/forest/tree_small_02 at commit
+d9df2c979c9ddc44ec6b6727ff72c660688fdb62: one tree of the original line-up, 1K maps). Changes
+(tools/blender/tree.py): of 30,000 leaf pieces one in eight is kept and enlarged, leaves, branches and trunk are
+thinned to about 73,000 triangles in all, the black ground of the leaf map is filled with leaf colours, the tree is
+resized to 6.2 m. The street_tree_*.jpg files are its maps, extracted from the GLB by Godot's importer.

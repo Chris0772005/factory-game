@@ -41,6 +41,11 @@ func _ready() -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg == "--hot" or arg == "--pad" or arg == "--machines" or arg == "--shop" or arg == "--skip":
 			_debug(arg)
+		elif arg.begins_with("--walk="):
+			# Art check: the people on the pavement as they are that many seconds into their rounds.
+			var walkers := get_parent().get_node_or_null(^"TownWalkers") as TownWalkers
+			if walkers:
+				walkers.clock = float(arg.trim_prefix("--walk="))
 
 
 ## Art checks: `--hot` puts a hot pistol into the player's hands and raises

@@ -8,3 +8,18 @@ the author's. In the game the panes are made clear, road dirt is laid over the b
 
 The delivery_van_van_european_delivery_*.jpg files are that model's maps, extracted from delivery_van.glb by
 Godot's importer: same author and licence as delivery_van.glb.
+
+car_kiri86.glb, car_fairheaven_lt80.glb, car_fairheaven_sw84.glb: based on "Kiri '86 - Low poly model"
+(https://sketchfab.com/3d-models/kiri-86-low-poly-model-5c17c582ef9549798f694b660feea42a), "Fairheaven LT '80 - Low
+poly model" (https://sketchfab.com/3d-models/fairheaven-lt-80-low-poly-model-e2678da920cc4be68dbc193727919ffb) and
+"Fairheaven SW '84 - Low poly model"
+(https://sketchfab.com/3d-models/fairheaven-sw-84-low-poly-model-aa0becb6e854422596cac6b21bf79787) by Daniel
+Zhabotinsky (https://sketchfab.com/DanielZhabotinsky), licensed under CC-BY-4.0
+(http://creativecommons.org/licenses/by/4.0/). The sources, their licence files and a note on their origin are in
+tools/blender/sources/zhabotinsky_cars/ (prepared copies from the raisim2Lib project: one mesh per car, 1K maps,
+plain body paint). Changes (tools/blender/cars.py): turned upright and centred, split into body, inside and panes,
+the panes given a clear material of their own, the badges left out. In the game each parked car gets its own paint
+colour, a clear coat and road dirt.
+
+The car_*_*.jpg and car_*_*.png files are those models' maps, extracted from the GLB files by Godot's importer: same
+author and licence as the models.

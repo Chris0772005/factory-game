@@ -359,7 +359,7 @@ func _town() -> void:
 	PhotoProp.stand(self, "classic_laptop", POLICE + Vector3(-2.9, top, COUNTER_Z + 0.05), 15.0, 0.5)
 
 
-## What stands and hangs about the street: a delivery van at the kerb (ParkedVehicle) and, all scanned
+## What stands and hangs about the street: a van and three cars (ParkedVehicle), three trees and, all scanned
 ## (Poly Haven, CC0), bins and bags, a switch box, a bench, a car under a tarpaulin, the dealer's
 ## chalkboard, a barrel stove with cans, concrete blocks where the street ends, manhole covers, a lamp
 ## over the pawnbroker's door and air conditioners on the fronts.
@@ -370,8 +370,17 @@ func _street_dressing(zf: float) -> void:
 	PhotoProp.place(self, "utility_box_01", Vector3(11.9, 0, FRONT_Z - 0.4), 180.0)
 	PhotoProp.place(self, "painted_wooden_bench", Vector3(14.0, 0, FRONT_Z - 0.4), 180.0)
 	PhotoProp.place(self, "covered_car", Vector3(18.4, 0, zf + 1.3), 90.0)
-	# A delivery van at the far kerb, nose the way the street runs (the truck's lane stays free).
-	ParkedVehicle.place(self, ParkedVehicle.VAN, Vector3(-20.6, 0, zf + APRON + ROAD - 1.3), 0.0)
+	# Parked at the far kerb, noses the way the street runs (the truck's lane stays free): a delivery
+	# van, a small saloon and a big one. An estate car stands on the apron.
+	var kerb := zf + APRON + ROAD - 0.15
+	ParkedVehicle.place(self, ParkedVehicle.VAN, Vector3(-20.6, 0, kerb - 1.15), 0.0)
+	ParkedVehicle.place(self, ParkedVehicle.CAR_SMALL, Vector3(13.4, 0, kerb - 0.9), 0.0)
+	ParkedVehicle.place(self, ParkedVehicle.CAR_SALOON, Vector3(21.2, 0, kerb - 0.93), 0.0, Color("#1f2c47"))
+	ParkedVehicle.place(self, ParkedVehicle.CAR_ESTATE, Vector3(24.1, 0, zf + 1.55), 180.0, Color("#b7ab8c"))
+	# Trees along the far pavement, a step in from the kerb (clear of doors, lamps and the dealer's front).
+	TownBlock.street_tree(self, Vector3(-25.3, 0, kerb + 0.95), 20.0, 1.0)
+	TownBlock.street_tree(self, Vector3(-8.7, 0, kerb + 0.95), 150.0, 0.92)
+	TownBlock.street_tree(self, Vector3(12.7, 0, kerb + 0.95), 260.0, 1.06)
 	# The dealer's board on the pavement, and what stands about on the yard side.
 	var board := Vector3(-2.5, 0, FRONT_Z - 0.8)
 	PhotoProp.place(self, "standing_chalkboard_01", board, 196.0)

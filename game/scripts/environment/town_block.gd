@@ -10,6 +10,8 @@ const DOOR_W := 1.5
 const DOOR_H := 2.3
 const ROOM_H := 3.1
 const HEIGHT := 4.3
+## "Tree Small 02" from Poly Haven (CC0), thinned for the game (tools/blender/tree.py, see CREDITS.md).
+const TREE := "res://assets/models/nature/street_tree.glb"
 
 
 ## opts: key (material key), brick/mortar or plaster (colours), door_x,
@@ -409,6 +411,26 @@ static func _stock(set: Node3D, at: Vector3, width: float, goods: Array, rng: Ra
 			var z := 0.17 - size.z * 0.5 - rng.randf_range(0.0, 0.04)
 			PhotoProp.stand(set, pick, at + Vector3(x + size.x * 0.5, y, z), 180.0 + turn + rng.randf_range(-7.0, 7.0))
 			x += size.x + rng.randf_range(0.07, 0.24)
+
+
+## A street tree (a scanned tree thinned for the game, tools/blender/tree.py) in a pit of soil framed
+## with stone, cut into the paving at `at`. Its trunk stops people. `size` scales it (6.2 m at 1).
+static func street_tree(set: Node3D, at: Vector3, yaw := 0.0, size := 1.0) -> void:
+	WorldBuilder.add_collider(set, Vector3(0.3, 2.6, 0.3), Transform3D(Basis(), at + Vector3(0, 1.3, 0)))
+	if not EnvMesh.visual():
+		return
+	var packed := load(TREE) as PackedScene
+	if packed:
+		var tree := packed.instantiate() as Node3D
+		tree.transform = Transform3D(Basis(Vector3.UP, deg_to_rad(yaw)).scaled(Vector3.ONE * size), at)
+		set.add_child(tree)
+	var soil := EnvMesh.surface("soil", {base_color = Color("#4a3a30"), roughness_base = 0.95, macro = 0.15, grain = 0.15, contact_dark = 0.0, bump = 1.0})
+	EnvMesh.add(set, EnvMesh.box(Vector3(1.3, 0.04, 1.3), 0.0), soil, Transform3D(Basis(), at + Vector3(0, 0.022, 0)), false)
+	var frame := []
+	for s: float in [-1.0, 1.0]:
+		frame.append(EnvMesh.piece(EnvMesh.box(Vector3(1.5, 0.07, 0.1), 0.01), Transform3D(Basis(), at + Vector3(0, 0.035, s * 0.7))))
+		frame.append(EnvMesh.piece(EnvMesh.box(Vector3(0.1, 0.07, 1.3), 0.01), Transform3D(Basis(), at + Vector3(s * 0.7, 0.035, 0))))
+	EnvMesh.add(set, EnvMesh.merge(frame), stone(), Transform3D(), false)
 
 
 ## Red-and-white barrier across the street: this far and no further (yet).

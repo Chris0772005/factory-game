@@ -68,6 +68,62 @@ func _build_town() -> void:
 	cop.position = Vector3(14.0, 0.05, ScrapHallSet.BEAT_Z)
 	cop.max_z = ScrapHallSet.FRONT_Z - 0.8
 	add_child(cop)
+	_build_walkers()
+
+
+## Three people who go about their business on the far pavement: from the station to the pawnbroker
+## and the dealer and back, between the empty shop, the dealer and the bench, and from the kiosk to
+## the pawnbroker's window.
+func _build_walkers() -> void:
+	var walkers := TownWalkers.new()
+	walkers.name = "TownWalkers"
+	add_child(walkers)
+	var front := ScrapHallSet.FRONT_Z
+	var pawn := ScrapHallSet.PAWN
+	var police := ScrapHallSet.POLICE
+	var pawn_door := pawn.x - 2.6
+	var counter := ScrapHallSet.COUNTER_Z
+	# Two lanes on the pavement, so those who meet pass each other: westwards nearer the kerb.
+	var west := front - 2.9
+	var east := front - 1.9
+	walkers.add_round("Casual", {}, [
+		[Vector3(police.x - 3.0, 0, front + 1.7), 7.0, police + Vector3(0, 0, counter)],
+		[Vector3(police.x, 0, front + 1.3), 0.0],
+		[Vector3(police.x, 0, front - 0.6), 0.0],
+		[Vector3(police.x - 1.4, 0, west), 0.0],
+		[Vector3(pawn_door + 1.4, 0, west), 0.0],
+		[Vector3(pawn_door, 0, front - 0.6), 0.0],
+		[Vector3(pawn_door, 0, front + 1.0), 0.0],
+		[Vector3(pawn.x + 0.4, 0, front + counter - 0.85), 9.0, pawn + Vector3(0.7, 0, counter + 1.1)],
+		[Vector3(pawn_door, 0, front + 1.0), 0.0],
+		[Vector3(pawn_door, 0, front - 0.6), 0.0],
+		[Vector3(pawn_door + 1.4, 0, east), 0.0],
+		[Vector3(4.2, 0, east), 0.0],
+		[Vector3(5.4, 0, front - 0.95), 7.0, Vector3(5.4, 0, front + 2.0)],
+		[Vector3(6.8, 0, east), 0.0],
+		[Vector3(police.x - 1.4, 0, east), 0.0],
+		[Vector3(police.x, 0, front - 0.6), 0.0],
+		[Vector3(police.x, 0, front + 1.3), 0.0],
+	])
+	walkers.add_round("Casual_Woman", {}, [
+		[Vector3(-21.0, 0, front - 1.0), 8.0, Vector3(-21.0, 0, front)],
+		[Vector3(-20.0, 0, east), 0.0],
+		[Vector3(-0.2, 0, east), 0.0],
+		[Vector3(1.0, 0, front - 0.95), 6.0, Vector3(1.0, 0, front + 2.0)],
+		[Vector3(2.2, 0, east), 0.0],
+		[Vector3(13.0, 0, east), 0.0],
+		[Vector3(14.0, 0, front - 1.25), 12.0, Vector3(14.0, 0, front - 6.0)],
+		[Vector3(12.8, 0, west), 0.0],
+		[Vector3(-20.0, 0, west), 0.0],
+	], 30.0)
+	walkers.add_round("Worker", {}, [
+		[Vector3(24.3, 0, front - 0.9), 10.0, Vector3(24.3, 0, front)],
+		[Vector3(23.2, 0, west), 0.0],
+		[Vector3(-8.0, 0, west), 0.0],
+		[Vector3(-9.0, 0, front - 0.85), 6.0, Vector3(-9.0, 0, front + 2.0)],
+		[Vector3(-7.8, 0, east), 0.0],
+		[Vector3(23.2, 0, east), 0.0],
+	], 55.0)
 
 
 func is_scrap_hall() -> bool:
