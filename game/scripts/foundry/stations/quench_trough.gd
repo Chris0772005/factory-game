@@ -42,8 +42,9 @@ func _build_collision() -> void:
 
 
 func _build_art() -> void:
-	var steel := StationKit.metal("trough_steel", {steel_color = Color("#9fa6a9"), rust = 0.3, dents = 0.35,
-		metallic_steel = 0.65, roughness_steel = 0.4})
+	# (A galvanised tub: sheet steel with the yellowish rust of zinc gone thin.)
+	var steel := StationKit.metal("trough_steel", {scan = StationKit.METAL_SHEET, steel_color = Color("#9fa6a9"), rust = 0.3, dents = 0.15,
+		metallic_steel = 0.5, roughness_steel = 0.45})
 	# (Photographed brick, as the walls of the halls.)
 	var brick := EnvMesh.scan("trough_brick_feet", "red_brick_03", {drift = 0.15})
 	var hx := SIZE.x * 0.5

@@ -80,7 +80,7 @@ func _cans(rng: RandomNumberGenerator) -> void:
 ## Copper pipes, straight and with elbows, some with a green patina.
 func _pipes(rng: RandomNumberGenerator) -> void:
 	var copper := StationKit.metal("scrap_copper", {steel_color = Color("#b4683f"), rust_color = Color("#5fa68a"), rust = 0.35,
-		dents = 0.2, metallic_steel = 0.85, roughness_steel = 0.35})
+		patina = 1.0, dents = 0.2, metallic_steel = 0.85, roughness_steel = 0.35})
 	var parts := []
 	for i in 8:
 		var p := _spot(rng, 0.1, 0.7, 0.025)
@@ -99,7 +99,7 @@ func _pipes(rng: RandomNumberGenerator) -> void:
 ## Big old brass keys: ring, shaft and bit.
 func _keys(rng: RandomNumberGenerator) -> void:
 	var brass := StationKit.metal("scrap_brass", {steel_color = Color("#c9a14c"), rust_color = Color("#6d5a2e"), rust = 0.3,
-		dents = 0.15, metallic_steel = 0.9, roughness_steel = 0.3})
+		patina = 1.0, dents = 0.15, metallic_steel = 0.9, roughness_steel = 0.3})
 	var ring := TorusMesh.new()
 	ring.inner_radius = 0.018
 	ring.outer_radius = 0.03
@@ -167,27 +167,33 @@ func _sheets(rng: RandomNumberGenerator) -> void:
 	StationKit.add(self, StationKit.tube(coil, 0.005, 5, false), copper)
 
 
-## Pans, pots and lids from the restaurant kit, rusty cans from the
-## prototype kit and retired adventurer weapons.
+## Larger scrap lying on the heap: a kettle, cans, pipes, gears, a spring, a trophy and a bicycle bell,
+## the shapes the players dig out of it (ScrapModels) a few sizes up, in rusty iron, tin and brass.
+## (Until U11 these were pans, swords and shields from the comic kits.)
 func _kits(rng: RandomNumberGenerator) -> void:
-	var rusty := Color(0.95, 0.84, 0.74)
+	var iron := StationKit.metal("scrap_iron", {steel_color = Color("#5a514b"), rust = 0.8, dents = 0.5, metallic_steel = 0.4, roughness_steel = 0.75})
+	var tin := StationKit.metal("scrap_tin", {steel_color = Color("#8d9296"), rust = 0.45, dents = 0.5, metallic_steel = 0.6})
+	var brass := StationKit.metal("scrap_brass", {steel_color = Color("#c9a14c"), rust_color = Color("#6d5a2e"), rust = 0.3,
+		patina = 1.0, dents = 0.15, metallic_steel = 0.9, roughness_steel = 0.3})
+	# Kind, size against the real thing, how far from the middle of the heap, material.
 	var items := [
-		["kaykit_restaurant/pan_A.gltf", 0.45, 0.4, Vector3(0.6, 0.0, 0.3)],
-		["kaykit_restaurant/pot_A.gltf", 0.4, 0.3, Vector3(-0.2, 0.0, 0.4)],
-		["kaykit_restaurant/lid_large.gltf", 0.4, 0.25, Vector3(0.9, 0.0, -0.2)],
-		["kaykit_adventurers/sword_1handed.gltf", 0.55, 0.15, Vector3(1.4, 0.0, 0.3)],
-		["kaykit_adventurers/shield_round.gltf", 0.55, 0.45, Vector3(-0.4, 0.0, 0.6)],
-		["kaykit_adventurers/axe_1handed.gltf", 0.5, 0.35, Vector3(1.2, 0.0, -0.6)],
-		["kaykit_prototype/Can_A.gltf", 0.33, 0.55, Vector3(1.6, 0.0, 0.2)],
-		["kaykit_prototype/Can_B.gltf", 0.33, 0.62, Vector3(-1.3, 0.0, 0.1)],
+		[&"scrap_kettle", 2.2, 0.4, tin],
+		[&"junk_gear", 2.6, 0.3, iron],
+		[&"scrap_pipe", 2.4, 0.25, iron],
+		[&"junk_spring", 2.4, 0.15, iron],
+		[&"scrap_trophy", 2.0, 0.45, brass],
+		[&"junk_gear", 1.8, 0.35, iron],
+		[&"scrap_can", 2.6, 0.55, tin],
+		[&"scrap_can", 2.6, 0.62, iron],
+		[&"junk_sheet", 2.2, 0.5, iron],
+		[&"scrap_bikebell", 2.4, 0.2, brass],
 	]
 	for it in items:
 		var r: float = it[2]
 		var a := rng.randf() * TAU
-		var p := Vector3(cos(a) * r, surface_y(r) - 0.01, sin(a) * r)
-		var tilt: Vector3 = it[3] * 45.0
-		PropKit.place(self, it[0], p, rad_to_deg(a) + rng.randf_range(-40.0, 40.0), {solid = PropKit.Solid.NONE, scale = it[1],
-			tilt = tilt, tint = rusty, desaturate = 0.55, metallic = 0.35, rough = 0.6, dirt = 0.5})
+		var p := Vector3(cos(a) * r, surface_y(r) + 0.04, sin(a) * r)
+		var b := Basis(Vector3.UP, rng.randf() * TAU) * Basis(Vector3.RIGHT, rng.randf_range(-0.9, 0.9)) * Basis(Vector3.BACK, rng.randf_range(-0.6, 0.6))
+		StationKit.add(self, ScrapModels.mesh(it[0]), it[3], Transform3D(b.scaled(Vector3.ONE * float(it[1])), p))
 
 
 ## "SCHROTT" painted on a weathered board nailed to a stake in the heap.

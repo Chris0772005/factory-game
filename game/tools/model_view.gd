@@ -1,7 +1,7 @@
 extends Node3D
 ## Art check: shows one model on the street's asphalt in the light of the first level (--plain: a plain sky and sun instead).
 ##   godot-render --path . res://tools/model_view.tscn -- --shot=out.png --model=res://...[,res://...] [--yaw=35] [--pitch=12] [--dist=9] [--h=1.4] [--dump]
-##   ... --finish applies VehicleFinish (gloss, glass, lamps, dust and mud); --rig=0,-30,90,60 instead of --model shows the excavator rig posed (swing, boom, stick, bucket in degrees), --lamps with its lamps on. --hide=a,b hides the nodes of those names. --heap=2.5,1.1,3.0,1.76,1.0,0.42,0.9 shows a load of scrap (floor, rim, height, crown, fill). --row=a,b,c stands those Poly Haven scans side by side at their real size. --scrap=junk_gear,hot_pistol lays out things from the scrap. --anim=1.2 shows the model's first animation at that second (--clip=Run: that one; --clip=Run,Walk: one each for several models).
+##   ... --finish applies VehicleFinish (gloss, glass, lamps, dust and mud); --rig=0,-30,90,60 instead of --model shows the excavator rig posed (swing, boom, stick, bucket in degrees), --lamps with its lamps on. --hide=a,b hides the nodes of those names. --heap=2.5,1.1,3.0,1.76,1.0,0.42,0.9 shows a load of scrap (floor, rim, height, crown, fill). --row=a,b,c stands those Poly Haven scans side by side at their real size. --scrap=junk_gear,hot_pistol lays out things from the scrap. --anim=1.2 shows the model's first animation at that second (--clip=Run: that one; --clip=Run,Walk: one each for several models). --mats shows the stations' metal and wood on a block, a drum and a ball each.
 
 func _ready() -> void:
 	var model := ""
@@ -20,6 +20,7 @@ func _ready() -> void:
 	var scrap := PackedStringArray()
 	var anim_at := -1.0
 	var clip_name := ""
+	var mats := false
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--model="):
 			model = arg.trim_prefix("--model=")
@@ -53,6 +54,8 @@ func _ready() -> void:
 			anim_at = float(arg.trim_prefix("--anim="))
 		elif arg.begins_with("--clip="):
 			clip_name = arg.trim_prefix("--clip=")
+		elif arg == "--mats":
+			mats = true
 	if plain:
 		_plain_light()
 	else:
@@ -132,6 +135,8 @@ func _ready() -> void:
 			var wide := PhotoProp._box(scan_name).size.x
 			PhotoProp.place(self, scan_name, Vector3(x + wide * 0.5, 0, 0), 0.0, false)
 			x += wide + 0.15
+	if mats:
+		_material_samples()
 	for part_name in hide:
 		for part in find_children(part_name, "Node3D", true, false):
 			(part as Node3D).visible = false
@@ -142,6 +147,27 @@ func _ready() -> void:
 	add_child(cam)
 	cam.look_at(Vector3(0, h, 0))
 	cam.current = true
+
+
+## --mats: the stations' materials (StationKit) on a block, a drum and a ball each, 75 cm apart:
+## bare steel, cast iron, rusty steel, galvanised sheet, blue paint, worn yellow paint, bench wood, old timber, painted wood.
+func _material_samples() -> void:
+	var samples := [
+		StationKit.metal("view_bare", {}),
+		StationKit.metal("view_cast", {steel_color = Color("#3b3a3a"), rust = 0.45, metallic_steel = 0.35, roughness_steel = 0.6}),
+		StationKit.metal("view_rusty", {rust = 0.85}),
+		StationKit.metal("view_sheet", {scan = StationKit.METAL_SHEET, steel_color = Color("#8f979b"), rust = 0.3, metallic_steel = 0.45, roughness_steel = 0.5}),
+		StationKit.metal("view_blue", {paint = 1.0, paint_color = Color("#3f6f8f"), rust = 0.2}),
+		StationKit.metal("view_yellow", {paint = 0.8, paint_color = Color("#d9a520"), rust = 0.4}),
+		StationKit.wood("view_bench", {base_color = Color("#8c6a4e")}),
+		StationKit.wood("view_old", {base_color = Color("#6f5a48"), weathering = 0.75}),
+		StationKit.wood("view_paint", {base_color = Color("#8c6a4e"), paint = 0.7, paint_color = Color("#2f6f73")}),
+	]
+	for i in samples.size():
+		var x := (float(i) - float(samples.size() - 1) * 0.5) * 0.75
+		StationKit.add(self, EnvMesh.box(Vector3(0.5, 0.5, 0.5), 0.02), samples[i], Transform3D(Basis(Vector3.UP, 0.3), Vector3(x, 0.25, 0)))
+		StationKit.add(self, EnvMesh.cylinder(0.2, 0.2, 0.5, 24), samples[i], Transform3D(Basis(), Vector3(x, 0.25, 0.75)))
+		StationKit.add(self, EnvMesh.sphere(0.2, 24, 12), samples[i], Transform3D(Basis(), Vector3(x, 0.2, 1.4)))
 
 
 ## A plain sky and sun, without the level's grade (--plain).

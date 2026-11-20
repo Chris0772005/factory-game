@@ -2,20 +2,21 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dmmj14o0xulvn"
-path="res://.godot/imported/metal_d.jpg-20dfd434377d0eda1a717b5a60dc22f1.ctex"
+uid="uid://ciem4upfk355x"
+path.s3tc="res://.godot/imported/rusty_metal_sheet_arm.jpg-18dff0db0f9aab64e5bff6fa4e2e29b0.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 
 [deps]
 
-source_file="res://assets/textures/pbr/metal_d.jpg"
-dest_files=["res://.godot/imported/metal_d.jpg-20dfd434377d0eda1a717b5a60dc22f1.ctex"]
+source_file="res://assets/textures/scan/rusty_metal_sheet_arm.jpg"
+dest_files=["res://.godot/imported/rusty_metal_sheet_arm.jpg-18dff0db0f9aab64e5bff6fa4e2e29b0.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

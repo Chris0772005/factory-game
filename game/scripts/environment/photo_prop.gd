@@ -25,6 +25,8 @@ const SWAPS := {
 	"kaykit_furniture/chair_A_wood.gltf": ["painted_wooden_chair_01"],
 	"kaykit_city/streetlight.gltf": ["street_lamp_01"],
 	"kaykit_city/firehydrant.gltf": ["fire_hydrant:_aged"],
+	"kaykit_adventurers/mug_full.gltf": ["pot_enamel_01"],
+	"kaykit_adventurers/mug_empty.gltf": ["pot_enamel_01"],
 }
 
 static var _scenes := {}

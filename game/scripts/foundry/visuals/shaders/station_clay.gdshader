@@ -3,11 +3,19 @@ shader_type spatial;
 // mottled body with a pale clay glaze that ran down in drips, fine crazing
 // cracks, soot, and a heat glow that climbs from `glow_from` (object y,
 // hottest) towards `glow_to`. Cold surfaces stay dark so only melt and fire
-// are hot accents (Art Bible 4.3: graphite #3A3436, roughness 0.85).
+// are hot accents (Art Bible 4.3: graphite #3A3436, roughness 0.85). The grain and relief are a
+// scan of real clay (TECH_SPEC Modul Y).
 render_mode diffuse_burley, specular_schlick_ggx;
 
 #include "res://shaders/env_common.gdshaderinc"
 #include "res://shaders/fx_common.gdshaderinc"
+#include "res://scripts/foundry/visuals/shaders/station_scan.gdshaderinc"
+
+// The grain of real clay over the designed body (station_scan.gdshaderinc; StationKit sets these).
+uniform sampler2D scan_albedo : source_color, repeat_enable, filter_linear_mipmap_anisotropic;
+uniform sampler2D scan_normal : repeat_enable, filter_linear_mipmap_anisotropic;
+uniform float scan_tile = 0.8;
+uniform vec3 scan_mean = vec3(0.195, 0.116, 0.047);
 
 uniform vec4 body_color : source_color = vec4(0.227, 0.204, 0.212, 1.0);
 uniform vec4 glaze_color : source_color = vec4(0.55, 0.5, 0.46, 1.0);
@@ -52,6 +60,9 @@ void fragment() {
 	float grain = env_noise(p.xy * 70.0 + p.z * 53.0) - 0.5;
 	vec3 c = body_color.rgb * (1.0 + macro * 0.3 + grain * 0.12 + (v_seed - 0.5) * 0.12);
 	float rough = roughness_base + grain * 0.1;
+	vec3 relief;
+	float shade = station_scan(scan_albedo, scan_normal, (v_obj + v_seed * 2.3) / scan_tile, normalize(v_nobj), scan_mean, relief);
+	c *= mix(1.0, shade, 0.85);
 
 	float inside = inner_dark * step(dot(v_nobj.xz, v_obj.xz), -1e-5);
 	// Glaze: patches, plus drips running down from the rim.
@@ -83,7 +94,7 @@ void fragment() {
 		vec3 v = env_voronoi(vec2(ang * 3.2, (v_obj.y + length(v_obj.xz)) * 9.0) * noise_scale + v_seed * 7.0);
 		crack_mask = (1.0 - smoothstep(0.0, 0.06, v.z - v.x)) * cracks;
 		crack_mask *= smoothstep(0.35, 0.6, env_fbm(p.xy * 5.0 + 9.0));
-		c *= 1.0 - crack_mask * 0.55;
+		c *= 1.0 - crack_mask * 0.3;
 	}
 
 	if (soot > 0.0) {
@@ -109,5 +120,7 @@ void fragment() {
 		EMISSION = fx_heat_color(t * 0.8) * fx_heat_energy(t * 0.8) * glow_scale;
 		ALBEDO = mix(ALBEDO, ALBEDO * 0.5, t);
 	}
-	NORMAL = env_bump(VERTEX, NORMAL, (macro * 0.6 + grain * 0.3 - crack_mask * 0.5) * 0.0015, 1.0);
+	// The scan's relief, turned from the object into view space; the designed bumps and cracks on top.
+	NORMAL = normalize((VIEW_MATRIX * vec4(normalize(mat3(MODEL_MATRIX) * relief), 0.0)).xyz);
+	NORMAL = env_bump(VERTEX, NORMAL, (macro * 0.6 + grain * 0.3 - crack_mask * 0.3) * 0.0015, 1.0);
 }

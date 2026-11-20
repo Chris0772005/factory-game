@@ -269,8 +269,8 @@ func _build_art() -> void:
 		Vector2(0.4, p + 0.12), Vector2(0.0, p + 0.12)])
 	StationKit.add(_pivot, StationKit.lathe(inside, 32, 40.0, _spout), lining)
 	var steel := StationKit.metal("ladle_rig", {steel_color = Color("#56544f"), rust = 0.3, metallic_steel = 0.6})
-	var paint := StationKit.metal("crane_paint", {steel_color = Color("#d9a521"), rust = 0.25, dents = 0.2,
-		metallic_steel = 0.3, roughness_steel = 0.55})
+	var paint := StationKit.metal("crane_paint", {paint_color = Color("#d9a521"), paint = 0.92, rust = 0.3, dents = 0.1,
+		roughness_paint = 0.5})
 	var bands := []
 	for y: float in [0.25, 0.62]:
 		var r := lerpf(0.44, RADIUS, y / (HEIGHT - 0.06)) + 0.015

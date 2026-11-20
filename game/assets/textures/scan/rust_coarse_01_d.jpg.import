@@ -2,20 +2,21 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cdlgwwqb2dock"
-path="res://.godot/imported/wood_n.jpg-03c1876245a83cbdaccfdb7b6320d29a.ctex"
+uid="uid://ds6p4gjkvoejh"
+path.s3tc="res://.godot/imported/rust_coarse_01_d.jpg-c69307ac7fa5ec074f1e056f790a7775.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 
 [deps]
 
-source_file="res://assets/textures/pbr/wood_n.jpg"
-dest_files=["res://.godot/imported/wood_n.jpg-03c1876245a83cbdaccfdb7b6320d29a.ctex"]
+source_file="res://assets/textures/scan/rust_coarse_01_d.jpg"
+dest_files=["res://.godot/imported/rust_coarse_01_d.jpg-c69307ac7fa5ec074f1e056f790a7775.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

@@ -73,30 +73,6 @@ ph_plaster_arm={
 "type": "sampler2D",
 "value": "res://assets/textures/pbr/plaster_arm.jpg"
 }
-ph_wood_d={
-"type": "sampler2D",
-"value": "res://assets/textures/pbr/wood_d.jpg"
-}
-ph_wood_n={
-"type": "sampler2D",
-"value": "res://assets/textures/pbr/wood_n.jpg"
-}
-ph_wood_arm={
-"type": "sampler2D",
-"value": "res://assets/textures/pbr/wood_arm.jpg"
-}
-ph_metal_d={
-"type": "sampler2D",
-"value": "res://assets/textures/pbr/metal_d.jpg"
-}
-ph_metal_n={
-"type": "sampler2D",
-"value": "res://assets/textures/pbr/metal_n.jpg"
-}
-ph_metal_arm={
-"type": "sampler2D",
-"value": "res://assets/textures/pbr/metal_arm.jpg"
-}
 ph_dirt_d={
 "type": "sampler2D",
 "value": "res://assets/textures/pbr/dirt_d.jpg"

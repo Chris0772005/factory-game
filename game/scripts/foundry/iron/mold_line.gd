@@ -501,8 +501,8 @@ func _build_art() -> void:
 	# (By day a dark, mirror-like steel reads as a black box: the frame is a worn mid-grey, the hood
 	# galvanised sheet.)
 	var steel := StationKit.metal("line_frame", {steel_color = Color("#70767a"), rust = 0.3, metallic_steel = 0.3, roughness_steel = 0.55})
-	var sheet := StationKit.metal("line_hood", {steel_color = Color("#959ca0"), rust = 0.22, dents = 0.3, metallic_steel = 0.35, roughness_steel = 0.5})
-	var paint := StationKit.metal("line_paint", {steel_color = Color("#3f6f8f"), rust = 0.2, dents = 0.2, metallic_steel = 0.25, roughness_steel = 0.55})
+	var sheet := StationKit.metal("line_hood", {scan = StationKit.METAL_SHEET, steel_color = Color("#959ca0"), rust = 0.22, dents = 0.1, metallic_steel = 0.35, roughness_steel = 0.5})
+	var paint := StationKit.metal("line_paint", {paint_color = Color("#3f6f8f"), paint = 0.92, rust = 0.25, dents = 0.1, roughness_paint = 0.5})
 	var sand := StationKit.surface("line_sand", {base_color = Color("#5b4a3a"), stain_color = Color("#3a2c22"), stains = 0.5,
 		roughness_base = 0.95, macro = 0.25, grain = 0.6, noise_scale = 14.0})
 	var imprint := StationKit.surface("line_imprint", {base_color = Color("#2e241c"), roughness_base = 0.95, macro = 0.2, grain = 0.5})

@@ -2,20 +2,21 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://tqhi4arfv1na"
-path="res://.godot/imported/wood_arm.jpg-64d024767420f3f57a111b02af485385.ctex"
+uid="uid://36d3pkj7gtqn"
+path.s3tc="res://.godot/imported/rough_wood_arm.jpg-9e4e48ddb7c9325579226ca2640e3b5d.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 
 [deps]
 
-source_file="res://assets/textures/pbr/wood_arm.jpg"
-dest_files=["res://.godot/imported/wood_arm.jpg-64d024767420f3f57a111b02af485385.ctex"]
+source_file="res://assets/textures/scan/rough_wood_arm.jpg"
+dest_files=["res://.godot/imported/rough_wood_arm.jpg-9e4e48ddb7c9325579226ca2640e3b5d.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

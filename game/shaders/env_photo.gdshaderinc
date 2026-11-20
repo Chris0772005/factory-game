@@ -4,18 +4,14 @@
 // UVs are needed. Its colour only modulates the surface around the scan's
 // own average, which keeps every hand-picked tint; its normal map and
 // roughness add the real grain, pores and scratches.
+// (Wood and the stations' metal do not come through here any more: they are
+// scans themselves, see env_wood.gdshader and station_metal.gdshader.)
 global uniform sampler2D ph_concrete_d : source_color, repeat_enable, filter_linear_mipmap_anisotropic;
 global uniform sampler2D ph_concrete_n : repeat_enable, filter_linear_mipmap_anisotropic;
 global uniform sampler2D ph_concrete_arm : repeat_enable, filter_linear_mipmap_anisotropic;
 global uniform sampler2D ph_plaster_d : source_color, repeat_enable, filter_linear_mipmap_anisotropic;
 global uniform sampler2D ph_plaster_n : repeat_enable, filter_linear_mipmap_anisotropic;
 global uniform sampler2D ph_plaster_arm : repeat_enable, filter_linear_mipmap_anisotropic;
-global uniform sampler2D ph_wood_d : source_color, repeat_enable, filter_linear_mipmap_anisotropic;
-global uniform sampler2D ph_wood_n : repeat_enable, filter_linear_mipmap_anisotropic;
-global uniform sampler2D ph_wood_arm : repeat_enable, filter_linear_mipmap_anisotropic;
-global uniform sampler2D ph_metal_d : source_color, repeat_enable, filter_linear_mipmap_anisotropic;
-global uniform sampler2D ph_metal_n : repeat_enable, filter_linear_mipmap_anisotropic;
-global uniform sampler2D ph_metal_arm : repeat_enable, filter_linear_mipmap_anisotropic;
 global uniform sampler2D ph_dirt_d : source_color, repeat_enable, filter_linear_mipmap_anisotropic;
 global uniform sampler2D ph_dirt_n : repeat_enable, filter_linear_mipmap_anisotropic;
 global uniform sampler2D ph_dirt_arm : repeat_enable, filter_linear_mipmap_anisotropic;

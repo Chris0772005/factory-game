@@ -27,14 +27,57 @@ static func visual() -> bool:
 
 # --- Materials -------------------------------------------------------------
 
-## Shared worked-iron material (station_metal.gdshader), cached by `key`.
+## The scans worked metal is made of (station_metal.gdshader): painted sheet for what is painted; for
+## bare iron the coarse, pitted scan in grey (forged and cast parts, mill scale), which in its own
+## colours is also the rust over everything; galvanised sheet (`scan = METAL_SHEET`) for tubs and hoods.
+## Per base scan the mean of its roughness map and the redness from which the scan is rust itself
+## (the coarse scan is rust all over: none of it counts; the sheet is yellowish: only its reddest does).
+const METAL_PAINTED := "green_metal_rust"
+const METAL_BARE := "rust_coarse_01"
+const METAL_SHEET := "rusty_metal_sheet"
+const METAL_RUST := "rust_coarse_01"
+const METAL_SCANS := {
+	"green_metal_rust": {rough_mean = 0.5, own_from = 0.1, own_to = 0.5},
+	"rust_coarse_01": {rough_mean = 0.78, own_from = 4.0, own_to = 5.0},
+	"rusty_metal_sheet": {rough_mean = 0.82, own_from = 0.5, own_to = 0.95},
+}
+
+
+## Shared worked-iron material (station_metal.gdshader), cached by `key`. `scan` in `params` names
+## another base scan (a key of METAL_SCANS).
 static func metal(key: String, params := {}) -> ShaderMaterial:
-	return EnvMesh.material("st_metal_" + key, SHADER_DIR + "station_metal.gdshader", params)
+	var scan: String = params.get("scan", METAL_PAINTED if float(params.get("paint", 0.0)) >= 0.5 else METAL_BARE)
+	var all := EnvMesh.scan_maps(scan)
+	all.merge(METAL_SCANS[scan], true)
+	var rust: Color = EnvMesh.SCANS[METAL_RUST][1]
+	all.rust_map = load(EnvMesh.SCAN_DIR + METAL_RUST + "_d.jpg")
+	all.rust_tile = float(EnvMesh.SCANS[METAL_RUST][0])
+	all.rust_mean = Vector3(rust.r, rust.g, rust.b)
+	all.merge(params, true)
+	all.erase("scan")
+	return EnvMesh.material("st_metal_" + key, SHADER_DIR + "station_metal.gdshader", all)
+
+
+## Scans whose grain lies over the designed clay and sand (station_scan.gdshaderinc), and the size
+## they are laid on at (m; smaller than life, the parts are small).
+const DETAIL_SCANS := {"station_clay": ["clay_floor_001", 0.8], "station_sand": ["sand_02", 0.7]}
+
+
+## The parameters that give `shader` (a file name without ending) its scan, if it takes one.
+static func _detail(shader: String) -> Dictionary:
+	if not DETAIL_SCANS.has(shader):
+		return {}
+	var scan: String = DETAIL_SCANS[shader][0]
+	var mean: Color = EnvMesh.SCANS[scan][1]
+	return {scan_albedo = load(EnvMesh.SCAN_DIR + scan + "_d.jpg"), scan_normal = load(EnvMesh.SCAN_DIR + scan + "_n.jpg"),
+		scan_tile = float(DETAIL_SCANS[shader][1]), scan_mean = Vector3(mean.r, mean.g, mean.b)}
 
 
 ## Shared fired-clay / clay-graphite / brick material, cached by `key`.
 static func clay(key: String, params := {}) -> ShaderMaterial:
-	return EnvMesh.material("st_clay_" + key, SHADER_DIR + "station_clay.gdshader", params)
+	var all := _detail("station_clay")
+	all.merge(params, true)
+	return EnvMesh.material("st_clay_" + key, SHADER_DIR + "station_clay.gdshader", all)
 
 
 static func wood(key: String, params := {}) -> ShaderMaterial:
@@ -57,8 +100,10 @@ static func paper() -> ShaderMaterial:
 static func unique(shader: String, params := {}) -> ShaderMaterial:
 	var mat := ShaderMaterial.new()
 	mat.shader = load(SHADER_DIR + shader + ".gdshader")
-	for p in params:
-		mat.set_shader_parameter(p, params[p])
+	var all := _detail(shader)
+	all.merge(params, true)
+	for p in all:
+		mat.set_shader_parameter(p, all[p])
 	return mat
 
 
@@ -290,6 +335,7 @@ static func add(parent: Node3D, mesh: Mesh, material: Material, xform := Transfo
 	mi.transform = xform
 	if not shadows:
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	EnvMesh.aim_grain(mi)
 	parent.add_child(mi)
 	return mi
 
@@ -299,6 +345,30 @@ static func add_merged(parent: Node3D, pieces: Array, material: Material, shadow
 	if pieces.is_empty():
 		return null
 	return add(parent, EnvMesh.merge(pieces), material, Transform3D(), shadows)
+
+
+## A wooden pallet, `side` metres square and 14.4 cm high: three runners, nine blocks, three bearers
+## and seven deck boards of sawn wood (a scan, like all the wood). Nothing solid.
+static func pallet(parent: Node3D, side := 1.2) -> void:
+	if not visual():
+		return
+	var wood := StationKit.wood("pallet", {base_color = Color("#b3966e"), grain_color = Color("#75593a"), weathering = 0.4, variation = 0.18})
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4711
+	var rows := [-side * 0.5 + 0.0725, 0.0, side * 0.5 - 0.0725]
+	var pieces := []
+	for z: float in rows:
+		pieces.append(EnvMesh.piece(EnvMesh.box(Vector3(side, 0.022, 0.1), 0.004), Transform3D(Basis(), Vector3(0, 0.011, z)), rng.randf(), Vector3.RIGHT))
+		for x: float in rows:
+			pieces.append(EnvMesh.piece(EnvMesh.box(Vector3(0.145, 0.078, 0.1), 0.005), Transform3D(Basis(), Vector3(x, 0.061, z)), rng.randf(), Vector3.RIGHT))
+	for x: float in rows:
+		pieces.append(EnvMesh.piece(EnvMesh.box(Vector3(0.145, 0.022, side), 0.004), Transform3D(Basis(), Vector3(x, 0.111, 0)), rng.randf(), Vector3.BACK))
+	for i in 7:
+		var z := -side * 0.5 + 0.06 + i * (side - 0.12) / 6.0
+		# (No board lies quite straight.)
+		var skew := Basis(Vector3.UP, rng.randf_range(-0.012, 0.012))
+		pieces.append(EnvMesh.piece(EnvMesh.box(Vector3(side, 0.022, 0.118), 0.004), Transform3D(skew, Vector3(0, 0.133, z)), rng.randf(), Vector3.RIGHT))
+	add_merged(parent, pieces, wood)
 
 
 ## Painted or chalked lettering lying on a surface: a shaded Label3D whose

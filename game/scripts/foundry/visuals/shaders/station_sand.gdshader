@@ -10,6 +10,7 @@ shader_type spatial;
 render_mode diffuse_burley, specular_schlick_ggx;
 
 #include "res://shaders/env_common.gdshaderinc"
+#include "res://scripts/foundry/visuals/shaders/station_scan.gdshaderinc"
 #include "res://shaders/fx_common.gdshaderinc"
 
 uniform vec4 loose_color : source_color = vec4(0.84, 0.72, 0.53, 1.0);
@@ -32,10 +33,18 @@ uniform sampler2D edge_field : filter_linear, repeat_disable, hint_default_white
 uniform float field_range = 0.1;
 uniform float seed = 0.0;
 
+// The grain of real sand over the designed bed (station_scan.gdshaderinc; StationKit sets these).
+uniform sampler2D scan_albedo : source_color, repeat_enable, filter_linear_mipmap_anisotropic;
+uniform sampler2D scan_normal : repeat_enable, filter_linear_mipmap_anisotropic;
+uniform float scan_tile = 0.7;
+uniform vec3 scan_mean = vec3(0.119, 0.093, 0.064);
+
 varying vec3 v_obj;
+varying vec3 v_nobj;
 
 void vertex() {
 	v_obj = VERTEX;
+	v_nobj = NORMAL;
 }
 
 void fragment() {
@@ -115,6 +124,9 @@ void fragment() {
 		}
 	}
 
+	vec3 relief;
+	float shade = station_scan(scan_albedo, scan_normal, (v_obj + seed * 0.37) / scan_tile, normalize(v_nobj), scan_mean, relief);
+	base *= mix(1.0, shade, 0.9);
 	ALBEDO = base;
 	ROUGHNESS = clamp(rough, 0.0, 1.0);
 	SPECULAR = 0.3;
@@ -124,5 +136,7 @@ void fragment() {
 		float t = glow * near * near * (0.85 + macro * 0.6);
 		EMISSION = fx_heat_color(t * 0.4) * fx_heat_energy(t * 0.4) * 0.6;
 	}
+	// The scan's relief, turned from the object into view space; furrows, lumps and stamps on top.
+	NORMAL = normalize((VIEW_MATRIX * vec4(normalize(mat3(MODEL_MATRIX) * relief), 0.0)).xyz);
 	NORMAL = env_bump(VERTEX, NORMAL, h * 0.0016, 1.0);
 }

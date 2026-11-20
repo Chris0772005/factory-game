@@ -3,8 +3,11 @@ extends Node
 ## Outline on whatever the local worker would grab or use next (Art Bible 5.4):
 ## the body `Player.grab_candidate()` returns, else the station from
 ## `Player.nearest_interactable()` that has something to say. A warm paper-white
-## contour (#FFF3D6, 2 cm) with a 0.2 s pulse when the target changes, so in a
-## crowd of four you see what your hands are about to take.
+## contour (#FFF3D6) with a 0.2 s pulse when the target changes, so in a crowd of
+## four you see what your hands are about to take. The contour is a fixed number of
+## pixels wide whatever the distance (in first person a contour of fixed size in the
+## world, as it was until U11, became a band as thick as a thumb on things close by),
+## but never wider than 3 cm in the world.
 ##
 ## Works on any material, shared or not: every mesh of the target gets a
 ## `material_overlay` that writes the stencil buffer where the target is visible
@@ -13,11 +16,13 @@ extends Node
 ## The target's own materials are never touched. Local player only.
 
 const OUTLINE_COLOR := Color("#fff3d6")
-const THICKNESS := 0.02
-## Pulse on a new target: the ring starts this much thicker and settles in PULSE_TIME.
-const PULSE_THICKNESS := 0.045
+## Width of the contour on a screen 1080 pixels high (it scales with the height), and its limit in the world (m).
+const PIXELS := 2.6
+const THICKNESS := 0.03
+## Pulse on a new target: the ring starts this much wider and settles in PULSE_TIME.
+const PULSE_PIXELS := 7.0
 const PULSE_TIME := 0.2
-const OPACITY := 0.9
+const OPACITY := 0.85
 ## Stencil reference; sorted after other transparent effects, before HUD labels.
 const STENCIL_REF := 1
 const MASK_PRIORITY := 7
@@ -39,10 +44,15 @@ render_mode unshaded, depth_draw_never, cull_back, shadows_disabled, fog_disable
 stencil_mode read, compare_not_equal, %d;
 
 uniform vec4 outline_color : source_color = vec4(1.0);
-uniform float thickness = 0.02;
+// Width in pixels of a screen 1080 high, and the most it may be in the world (m).
+uniform float pixels = 2.6;
+uniform float thickness = 0.03;
 
 void vertex() {
-	VERTEX += normalize(NORMAL) * thickness;
+	// What one such pixel measures at this vertex's depth.
+	float depth = max(-(VIEW_MATRIX * vec4(VERTEX, 1.0)).z, 0.05);
+	float pixel = depth * 2.0 / (abs(PROJECTION_MATRIX[1][1]) * 1080.0);
+	VERTEX += normalize(NORMAL) * min(pixels * pixel, thickness);
 }
 
 void fragment() {
@@ -147,7 +157,8 @@ func _apply_style() -> void:
 	if _outline == null:
 		return
 	var k := 1.0 - (1.0 - _pulse) * (1.0 - _pulse)
-	_outline.set_shader_parameter(&"thickness", lerpf(PULSE_THICKNESS, THICKNESS, k))
+	_outline.set_shader_parameter(&"pixels", lerpf(PULSE_PIXELS, PIXELS, k))
+	_outline.set_shader_parameter(&"thickness", THICKNESS)
 	var c := OUTLINE_COLOR
 	c.a = OPACITY * lerpf(0.6, 1.0, k)
 	_outline.set_shader_parameter(&"outline_color", c)

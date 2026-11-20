@@ -59,7 +59,7 @@ func _build_art() -> void:
 	if not StationKit.visual():
 		return
 	if look == &"bronze":
-		PropKit.place(self, "kaykit_hexagon/pallet.gltf", Vector3.ZERO, 0.0, {solid = PropKit.Solid.NONE, scale = 1.05})
+		StationKit.pallet(self, 1.26)
 		for i in 4:
 			var stack := Node3D.new()
 			stack.position = Vector3(-0.27 + (i % 2) * 0.54, 0.14 + (i / 2) * 0.25, -0.12 + (i % 2) * 0.05)

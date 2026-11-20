@@ -279,8 +279,10 @@ func _build_art() -> void:
 	add_child(_fan)
 	if not StationKit.visual():
 		return
-	var shell := StationKit.metal("cupola_shell", {steel_color = Color("#3f3b38"), rust = 0.55, dents = 0.3,
-		metallic_steel = 0.45, roughness_steel = 0.7, soot = 0.6, soot_bottom = 0.2, soot_top = 0.8})
+	# (The soot used to reach full strength at 0.8 m: by day the whole shaft was a black column. Now
+	# the plates are rusty steel and the soot gathers toward the charging door and the cap.)
+	var shell := StationKit.metal("cupola_shell", {steel_color = Color("#6a625b"), rust = 0.6, dents = 0.3,
+		metallic_steel = 0.4, roughness_steel = 0.7, soot = 0.5, soot_bottom = 2.6, soot_top = 4.8})
 	var brick := StationKit.clay("cupola_brick", {body_color = Color("#8c4a35"), soot = 0.5, cracks = 0.3})
 	var r := SHAFT_RADIUS
 	# Shaft on four legs over a sand bed, banded, with a spark arrester cap.
@@ -323,8 +325,8 @@ func _build_art() -> void:
 	add_child(hole)
 	StationKit.label(self, "KUPOLOFEN", Transform3D(Basis(), Vector3(0, 3.25, r + 0.04)), 96, Color("#f0e2c4"), 800, 0.0018)
 	# Skip: an inclined rail up to the charging door, the bucket rides it.
-	var paint := StationKit.metal("crane_paint", {steel_color = Color("#d9a521"), rust = 0.25, dents = 0.2,
-		metallic_steel = 0.3, roughness_steel = 0.55})
+	var paint := StationKit.metal("crane_paint", {paint_color = Color("#d9a521"), paint = 0.92, rust = 0.3, dents = 0.1,
+		roughness_paint = 0.5})
 	var skip_rig := []
 	var door := Vector3(r + 0.05, SHAFT_HEIGHT - 0.7, -0.1)
 	for s: float in [-1.0, 1.0]:

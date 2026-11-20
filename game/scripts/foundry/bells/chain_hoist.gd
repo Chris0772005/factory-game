@@ -228,11 +228,11 @@ func _sync(tx: float, hy: float, bz: float, h: int) -> void:
 func _build_art() -> void:
 	if not StationKit.visual():
 		return
-	var yellow := StationKit.metal("crane_paint", {steel_color = Color("#d9a521"), rust = 0.25, dents = 0.2,
-		metallic_steel = 0.3, roughness_steel = 0.55})
+	var yellow := StationKit.metal("crane_paint", {paint_color = Color("#d9a521"), paint = 0.92, rust = 0.3, dents = 0.1,
+		roughness_paint = 0.5})
 	# Girder and rails sit at camera height: they dissolve in the line of sight.
-	var girder_paint := StationKit.metal("crane_girder", {steel_color = Color("#d9a521"), rust = 0.25, dents = 0.2,
-		metallic_steel = 0.3, roughness_steel = 0.55, cutaway = true})
+	var girder_paint := StationKit.metal("crane_girder", {paint_color = Color("#d9a521"), paint = 0.92, rust = 0.3, dents = 0.1,
+		roughness_paint = 0.5, cutaway = true})
 	var steel := StationKit.metal("crane_steel", {steel_color = Color("#4b4a49"), rust = 0.4, cutaway = true})
 	# Runway rails along both side walls (fixed).
 	var rails := []
@@ -305,7 +305,7 @@ class Pendant:
 				add_collision_exception_with(body))
 		if not StationKit.visual():
 			return
-		var yellow := StationKit.metal("crane_paint", {steel_color = Color("#d9a521")})
+		var yellow := StationKit.metal("crane_paint", {paint_color = Color("#d9a521"), paint = 0.92, rust = 0.3, dents = 0.1, roughness_paint = 0.5})
 		StationKit.add(self, EnvMesh.box(Vector3(0.12, 0.24, 0.09), 0.025), yellow)
 		var red := StandardMaterial3D.new()
 		red.albedo_color = Color("#c0392b")

@@ -75,8 +75,24 @@ static func add(parent: Node3D, mesh: Mesh, material: Material, xform := Transfo
 	mi.transform = xform
 	if not shadows:
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	aim_grain(mi)
 	parent.add_child(mi)
 	return mi
+
+
+## A wooden mesh that is one piece (no colours from merge()) gets its grain along its longest side;
+## the wood shader reads that from the instance. Call again after swapping the mesh.
+static func aim_grain(mi: MeshInstance3D) -> void:
+	var mat := mi.material_override as ShaderMaterial
+	if mat == null or mat.shader == null or not mat.shader.resource_path.ends_with("env_wood.gdshader") or mi.mesh == null:
+		return
+	var size := mi.mesh.get_aabb().size
+	var axis := Vector3.UP
+	if size.x >= size.y and size.x >= size.z:
+		axis = Vector3.RIGHT
+	elif size.z >= size.y:
+		axis = Vector3.BACK
+	mi.set_instance_shader_parameter(&"grain_axis", axis)
 
 
 ## Chamfered box (MeshFactory.rounded_box), cached.
@@ -125,7 +141,28 @@ static func material(key: String, shader: String, params := {}) -> ShaderMateria
 
 
 static func wood(key: String, params := {}) -> ShaderMaterial:
-	return material("wood_" + key, "res://shaders/env_wood.gdshader", params)
+	if _materials.has("wood_" + key):
+		return _materials["wood_" + key]
+	# Sawn boards for worked wood, a cracked old beam for what has stood in the weather; `scan` names
+	# another (a key of WOOD_SCANS).
+	var scan: String = params.get("scan", "rough_wood" if float(params.get("weathering", 0.35)) >= 0.6 else "wood_planks")
+	var all := scan_maps(scan)
+	all.merge(WOOD_SCANS[scan], true)
+	all.merge(params, true)
+	all.erase("scan")
+	return material("wood_" + key, "res://shaders/env_wood.gdshader", all)
+
+
+## The three maps of a scan and its mean colour, as the parameters the scan-based shaders share.
+static func scan_maps(scan_name: String) -> Dictionary:
+	var mean: Color = SCANS[scan_name][1]
+	return {
+		albedo_map = load(SCAN_DIR + scan_name + "_d.jpg"),
+		normal_map = load(SCAN_DIR + scan_name + "_n.jpg"),
+		arm_map = load(SCAN_DIR + scan_name + "_arm.jpg"),
+		tile = float(SCANS[scan_name][0]),
+		scan_mean = Vector3(mean.r, mean.g, mean.b),
+	}
 
 
 static func surface(key: String, params := {}) -> ShaderMaterial:
@@ -157,6 +194,19 @@ const SCANS := {
 	"hangar_concrete_floor": [2.0, Color(0.034, 0.030, 0.026)],
 	"large_sandstone_blocks": [3.0, Color(0.100, 0.093, 0.075)],
 	"roof_slates_03": [3.0, Color(0.167, 0.160, 0.140)],
+	"rusty_metal_sheet": [2.0, Color(0.186, 0.157, 0.092)],
+	"rust_coarse_01": [2.2, Color(0.128, 0.043, 0.015)],
+	"wood_planks": [1.5, Color(0.191, 0.099, 0.041)],
+	"rough_wood": [0.5, Color(0.148, 0.124, 0.098)],
+	"sand_02": [2.1, Color(0.119, 0.093, 0.064)],
+	"clay_floor_001": [2.0, Color(0.195, 0.116, 0.047)],
+}
+## The scans wood is made of (shaders/env_wood.gdshader): edge length used (m; old timber is laid on
+## larger than life, or a long beam repeats every half metre), the mean of the roughness map and
+## whether the grain runs up the image.
+const WOOD_SCANS := {
+	"wood_planks": {tile = 1.5, rough_mean = 0.86, grain_up = false},
+	"rough_wood": {tile = 1.0, rough_mean = 0.51, grain_up = true},
 }
 
 

@@ -12,7 +12,7 @@ func _ready() -> void:
 	StationKit.box_collider(self, Vector3(1.2, 0.9, 1.2), Transform3D(Basis(), Vector3(0, 0.45, 0)))
 	if not StationKit.visual():
 		return
-	PropKit.place(self, "kaykit_hexagon/pallet.gltf", Vector3.ZERO, 0.0, {solid = PropKit.Solid.NONE, scale = 0.95})
+	StationKit.pallet(self, 1.14)
 	# Display stack: three crates on the pallet, one more on top, slightly askew.
 	var spots := [Vector3(-0.27, 0.3, -0.25), Vector3(0.25, 0.3, -0.22), Vector3(-0.22, 0.3, 0.27), Vector3(-0.05, 0.66, -0.05)]
 	for i in spots.size():
