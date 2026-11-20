@@ -1,13 +1,12 @@
 class_name GarageSet
 extends Node3D
-## Level 2 set: a brick double garage turned foundry, at dusk. Seen as an
-## open-fronted dollhouse: the roller door is up (the front is open towards
-## the default camera), the roof only casts shadows (MeshInstance3D shadows-only)
-## and the walls dissolve around the line of sight (env_cutaway), so the
-## orbit camera may pass outside them. Outside: a paved driveway, the street
-## lamp, hedges and the neighbours.
+## Level 2 set: a brick double garage turned foundry, on a clear day. The roller door is up: the
+## front stands open to the driveway, the street lamp, hedges and the neighbours across the street.
+## Walls, floor and ceiling are photo scans, the things that stand about are scanned props and the
+## family car is a real model (the project's graphics standard, TECH_SPEC Modul Y). The other
+## halls build on this set (BellHallSet, IronHallSet, ScrapHallSet) and only say what differs.
 ##
-## Everything is CC0 or procedural (KayKit props via PropKit, docs/ASSETS.md).
+## Everything is CC0, CC-BY or procedural (CREDITS.md).
 
 const WALL := 0.24
 ## Where the station wagon is parked (left bay, nose to the back wall).
@@ -29,11 +28,19 @@ var bay_line_x := CAR_POS.x + 1.45
 ## Extra env_concrete parameters (colours) for other halls.
 var floor_params := {}
 ## Ground slab and floor plane: size and where its middle lies along Z.
-var ground_size := Vector2(40.0, 40.0)
-var ground_z := 2.0
+var ground_size := Vector2(70.0, 70.0)
+var ground_z := 6.0
 var stations: Array = []
+## Names this hall's materials (so two halls never share one by accident).
+var key := "garage"
+## The walls are photographed: `_wall_low_mat` up to `wall_split` metres, `_wall_high_mat` above it
+## (a hall sets them in `_materials`; without them every wall is `_wall_mat`).
+var wall_split := 0.95
 var _passthrough: Array[RID] = []
 var _wall_mat: ShaderMaterial
+var _wall_low_mat: ShaderMaterial
+var _wall_high_mat: ShaderMaterial
+var _roof_mat: ShaderMaterial
 var _trim_mat: ShaderMaterial
 
 
@@ -46,13 +53,27 @@ static func build(world: Node3D, level_stations: Array) -> GarageSet:
 	return set
 
 
-## Wall and trim materials (halls override for their own look).
+func _exit_tree() -> void:
+	EnvMesh.release_scans()
+
+
+## Wall, ceiling and trim materials (halls override for their own look): a red brick plinth, painted
+## brick above, a concrete slab overhead.
 func _materials() -> void:
-	_wall_mat = EnvMesh.material("garage_wall", "res://shaders/env_plaster.gdshader", {
-		plaster = Color("#d8cab4"), grime = Color("#6f655c"), brick = Color("#a65a42"), mortar = Color("#c9b9a2"),
-		chips = 0.45, streaks = 0.25, cutaway = true, brick_below = 0.95})
+	_wall_low_mat = EnvMesh.scan("garage_brick", "red_brick_03", {foot = 0.4, drift = 0.2})
+	# (The scan's paint is a strong yellow: brought most of the way to an off-white.)
+	_wall_high_mat = EnvMesh.scan("garage_wall", "painted_worn_brick", {drift = 0.14, tint = EnvMesh.toward("painted_worn_brick", Color("#cdc7b9"), 0.75)})
+	_wall_mat = _wall_high_mat
+	# A plastered ceiling in a light warm grey.
+	_roof_mat = EnvMesh.repainted("garage_ceiling", "beige_wall_001", Color("#c9c4b8"), {drift = 0.06})
 	_trim_mat = EnvMesh.wood("garage_trim", {base_color = Color("#5f6f73"), grain_color = Color("#3c474a"),
 		weathering = 0.45, paint = 0.8, paint_color = Color("#3f6f78"), roughness_base = 0.7})
+
+
+## The floor inside as a photo scan (a name of EnvMesh.SCANS), with the level's stains on it; "" keeps
+## the drawn concrete.
+func _floor_scan() -> String:
+	return "garage_floor"
 
 
 func _build() -> void:
@@ -98,6 +119,17 @@ func _floor() -> void:
 	mat.set_shader_parameter(&"stain_count", count)
 	var mi := EnvMesh.add(self, plane, mat, Transform3D(Basis(), Vector3(0, 0, ground_z)), false)
 	mi.name = "Floor"
+	# The photographed floor lies over it inside, with the same stains and the bay line.
+	if _floor_scan() != "":
+		var inside := EnvMesh.scan(key + "_floor", _floor_scan(), {drift = 0.12, stains = stains, stain_count = count, bay_line_x = bay_line_x})
+		# (Barely above the base floor: lines painted on the floor lie a few millimetres up.)
+		_slab(inside, inner_min.x - WALL, inner_max.x + WALL, inner_min.y - WALL, inner_max.y + WALL * 0.5, 0.002)
+
+
+## A thin slab of ground from x0 to x1 and z0 to z1, its top `top` metres above the base ground (a
+## finger's breadth, unless told otherwise).
+func _slab(mat: Material, x0: float, x1: float, z0: float, z1: float, top := 0.012) -> void:
+	EnvMesh.add(self, EnvMesh.box(Vector3(x1 - x0, 0.03, z1 - z0), 0.0), mat, Transform3D(Basis(), Vector3((x0 + x1) * 0.5, top - 0.015, (z0 + z1) * 0.5)), false)
 
 
 ## Stains from the station layout: soot round the furnace, sand at the molds,
@@ -150,19 +182,34 @@ func _walls() -> void:
 	EnvMesh.add(self, EnvMesh.merge(pieces), skirt)
 
 
+## One wall. With two wall materials it is two boxes, split at `wall_split`: the lower one stands a
+## little proud of the upper (across the wall only: along it, the boxes of one wall must still meet).
 func _wall_box(center: Vector3, size: Vector3) -> void:
 	var body := WorldBuilder.add_collider(self, size, Transform3D(Basis(), center))
 	body.add_to_group(CAMERA_PASSTHROUGH)
 	_passthrough.append(body.get_rid())
-	EnvMesh.add(self, EnvMesh.box(size, 0.015), _wall_mat, Transform3D(Basis(), center))
+	if _wall_low_mat == null or _wall_high_mat == null:
+		EnvMesh.add(self, EnvMesh.box(size, 0.015), _wall_mat, Transform3D(Basis(), center))
+		return
+	var bottom := center.y - size.y * 0.5
+	var top := center.y + size.y * 0.5
+	var split := clampf(wall_split, bottom, top)
+	if split - bottom > 0.01:
+		EnvMesh.add(self, EnvMesh.box(Vector3(size.x, split - bottom, size.z), 0.0), _wall_low_mat,
+			Transform3D(Basis(), Vector3(center.x, (bottom + split) * 0.5, center.z)))
+	if top - split > 0.01:
+		var thin_x := size.x < size.z
+		EnvMesh.add(self, EnvMesh.box(Vector3(size.x - (0.04 if thin_x else 0.0), top - split, size.z - (0.0 if thin_x else 0.04)), 0.0), _wall_high_mat,
+			Transform3D(Basis(), Vector3(center.x, (split + top) * 0.5, center.z)))
 
 
-## Steel-framed workshop window: six panes, sill, the dusk sky behind.
+## Steel-framed workshop window: six panes, sill, pale daylight in the glass.
 func _window(center: Vector3, size: Vector2) -> void:
 	if not EnvMesh.visual():
 		return
-	var glass := EnvMesh.material("garage_glass", "res://shaders/env_window.gdshader", {
-		energy = 0.35, glow = Color("#b9a6d8"), room = Color("#43406a"), glass_dark = Color("#1d2036"), glass_sky = Color("#7c6fa3")})
+	var glass := EnvMesh.material("hall_glass_day", "res://shaders/env_window.gdshader", {
+		energy = 0.9, glow = Color("#dfeaf6"), room = Color("#9fb4cc"), glass_dark = Color("#6f8298"), glass_sky = Color("#cfe0f2"),
+		curtain = Color("#c3d2e2")})
 	EnvMesh.add(self, EnvMesh.box(Vector3(size.x, size.y, 0.02), 0.0), glass, Transform3D(Basis(), center + Vector3(0, 0, -0.02)), false)
 	var frame := []
 	var bar := 0.05
@@ -203,8 +250,7 @@ func _front() -> void:
 
 ## The brick of the door pillars and the lintel.
 func _pillar_material() -> ShaderMaterial:
-	return EnvMesh.material("garage_brick", "res://shaders/env_plaster.gdshader", {
-		brick = Color("#a65a42"), mortar = Color("#c9b9a2"), brickwork = 1.0, cutaway = true})
+	return _wall_low_mat if _wall_low_mat else _wall_mat
 
 
 ## Hand-painted shop sign on the back wall, over the pegboard.
@@ -225,7 +271,7 @@ func _roof() -> void:
 
 ## What the roof is made of (seen from below in first person).
 func _roof_material() -> ShaderMaterial:
-	return _wall_mat
+	return _roof_mat if _roof_mat else _wall_mat
 
 
 # --- Dressing --------------------------------------------------------------------
@@ -235,28 +281,25 @@ func prop(model: String, pos: Vector3, yaw := 0.0, opts := {}) -> Node3D:
 
 
 func _dressing() -> void:
-	# The family car, pushed into the left bay (the reason the foundry is small).
-	# The kit model only lends its collider; the car itself is CarArt.
-	var kit_car := prop("kaykit_city/car_stationwagon.gltf", CAR_POS, 180.0, {scale = 1.05, tint = Color("#b9c3cc"), desaturate = 0.35})
-	if kit_car:
-		kit_car.visible = false
-	if EnvMesh.visual():
-		CarArt.station_wagon(self, Transform3D(Basis(Vector3.UP, PI), CAR_POS), 4.3, 1.72, Color("#2f5e48"))
+	# The family car, pushed into the left bay, nose to the back wall (the reason the foundry is
+	# small): a real estate car in the project's vehicle finish, kept clean in its garage.
+	ParkedVehicle.place(self, ParkedVehicle.CAR_ESTATE, CAR_POS + Vector3(0.12, 0, 0.25), 90.0, Color("#2f5e48"), {mud = 0.12, dust = 0.3})
 	# Tyres stacked by the car, a jerrycan and oil cans.
-	_tyres(Vector3(-5.45, 0, 3.75), 3)
-	_tyres(Vector3(-5.5, 0, -0.9), 2)
-	prop("kaykit_prototype/Can_A.gltf", Vector3(-3.15, 0, 3.9), 25.0, {solid = P.NONE, tint = Color("#a33b2e"), desaturate = 0.2})
-	prop("kaykit_prototype/Can_B.gltf", Vector3(-3.4, 0, 4.05), -10.0, {solid = P.NONE, tint = Color("#3f6f78"), desaturate = 0.2})
-	# Back wall: steel shelving with boxes and paint tins, the pegboard, a cabinet.
-	_shelving(Vector3(-4.55, 0.0, inner_min.y + 0.28))
+	_tyres(Vector3(-5.6, 0, 3.8), 3)
+	_tyres(Vector3(-5.62, 0, -1.25), 2)
+	PhotoProp.place(self, "metal_jerrycan_green", Vector3(-3.1, 0, 3.95), 25.0, false)
+	PhotoProp.stand(self, "oil_tin", Vector3(-3.42, 0, 4.08), -10.0)
+	PhotoProp.stand(self, "small_oil_can_01", Vector3(-3.3, 0, 3.72), 60.0)
+	# Back wall: steel shelving with boxes and tins, the pegboard with its tools.
+	_shelving(Vector3(-4.55, 0.0, inner_min.y + 0.3))
 	_pegboard(Vector3(-1.6, 1.55, inner_min.y + 0.02))
-	prop("kaykit_furniture/cabinet_medium.gltf", Vector3(5.35, 0, -2.0), -90.0, {tint = Color("#8f9ca0"), desaturate = 0.4})
-	# Right wall: barrels and a broom (the crate delivery is a station).
+	# Right wall: a tool cart under the orders, barrels and a broom (the crate delivery is a station).
+	PhotoProp.place(self, "tool_cart", Vector3(5.5, 0, -2.0), -90.0)
 	prop("kaykit_prototype/Barrel_A.gltf", Vector3(5.3, 0.4, -3.9), 15.0, {solid = P.CYLINDER, tint = Color("#3f5f8a"), desaturate = 0.3})
 	prop("kaykit_prototype/Barrel_B.gltf", Vector3(5.45, 0.4, -3.1), -30.0, {solid = P.CYLINDER, tint = Color("#8a4b2e"), desaturate = 0.3})
 	_broom(Vector3(5.85, 0, 3.2))
-	# A wheelbarrow by the scrap and an extension cable across the floor.
-	prop("kaykit_hexagon/wheelbarrow.gltf", Vector3(-2.7, 0, -4.0), 75.0, {scale = 0.85})
+	# A hand truck by the scrap and an extension cable across the floor.
+	PhotoProp.place(self, "hand_truck", Vector3(-2.7, 0, -4.15), 20.0)
 	_cable()
 	_lamps()
 
@@ -315,96 +358,57 @@ func _workshop_gear() -> void:
 		pick += 1
 
 
-## Galvanised steel rack: four uprights, four shelves, cardboard boxes,
-## paint tins and jars. One merged mesh per material.
+## Steel shelving (a model, a tenth of its file's size: 1.1 m wide, 2.1 m high) with boxes, a toolbox,
+## a drill and tins on its boards.
 func _shelving(base: Vector3) -> void:
-	WorldBuilder.add_collider(self, Vector3(1.7, 2.1, 0.5), Transform3D(Basis(), base + Vector3(0, 1.05, 0)))
+	WorldBuilder.add_collider(self, Vector3(1.1, 2.14, 0.5), Transform3D(Basis(), base + Vector3(0, 1.07, 0)))
 	if not EnvMesh.visual():
 		return
-	var steel := EnvMesh.surface("garage_rack", {base_color = Color("#9aa0a4"), metallic_base = 0.55, roughness_base = 0.45, stains = 0.2})
-	var card := EnvMesh.surface("garage_card", {base_color = Color("#b48b5c"), roughness_base = 0.9, macro = 0.12, contact_dark = 0.2})
-	var tins := EnvMesh.surface("garage_tins", {base_color = Color("#3f6f78"), metallic_base = 0.4, roughness_base = 0.5})
-	var rack := []
-	var boxes := []
-	var cans := []
-	for sx: float in [-0.8, 0.8]:
-		for sz: float in [-0.22, 0.22]:
-			rack.append(EnvMesh.piece(EnvMesh.box(Vector3(0.04, 2.1, 0.04), 0.004), Transform3D(Basis(), base + Vector3(sx, 1.05, sz))))
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 31
-	for k in 4:
-		var y := 0.12 + k * 0.6
-		rack.append(EnvMesh.piece(EnvMesh.box(Vector3(1.66, 0.03, 0.48), 0.006), Transform3D(Basis(), base + Vector3(0, y, 0))))
-		if k == 3:
-			continue
-		var x := -0.7
-		while x < 0.6:
-			var w := rng.randf_range(0.25, 0.45)
-			if rng.randf() < 0.65:
-				var h := rng.randf_range(0.2, 0.42)
-				boxes.append(EnvMesh.piece(EnvMesh.box(Vector3(w, h, rng.randf_range(0.3, 0.42)), 0.01),
-					Transform3D(Basis(Vector3.UP, rng.randf_range(-0.1, 0.1)), base + Vector3(x + w * 0.5, y + 0.015 + h * 0.5, 0))))
-			else:
-				for c in 2:
-					cans.append(EnvMesh.piece(EnvMesh.cylinder(0.07, 0.07, 0.16, 10), Transform3D(Basis(), base + Vector3(x + 0.08 + c * 0.16, y + 0.095, rng.randf_range(-0.1, 0.1)))))
-			x += w + 0.05
-	EnvMesh.add(self, EnvMesh.merge(rack), steel)
-	EnvMesh.add(self, EnvMesh.merge(boxes), card)
-	EnvMesh.add(self, EnvMesh.merge(cans), tins)
+	PhotoProp.stand(self, "steel_frame_shelves_01", base, 0.0, 0.1)
+	# (The tops of its boards, from the floor up.)
+	var boards := [0.115, 0.622, 1.128, 1.634]
+	PhotoProp.stand(self, "cardboard_box_01", base + Vector3(-0.2, boards[0], 0.0), 94.0)
+	PhotoProp.stand(self, "metal_toolbox", base + Vector3(0.27, boards[0], 0.02), 8.0)
+	PhotoProp.stand(self, "metal_toolbox", base + Vector3(-0.24, boards[1], 0.02), -6.0)
+	PhotoProp.stand(self, "small_oil_can_01", base + Vector3(0.18, boards[1], 0.05), 30.0)
+	PhotoProp.stand(self, "oil_tin", base + Vector3(0.38, boards[1], -0.04), 70.0)
+	PhotoProp.stand(self, "cardboard_box_01", base + Vector3(0.18, boards[2], 0.0), 88.0)
+	PhotoProp.stand(self, "Drill_01", base + Vector3(-0.3, boards[2], 0.03), 20.0)
+	PhotoProp.stand(self, "cardboard_box_01", base + Vector3(-0.2, boards[3], -0.02), 96.0)
+	PhotoProp.stand(self, "oil_tin", base + Vector3(0.3, boards[3], 0.02), 15.0)
 
 
+## A stack of old tyres (scans), lying flat one on the other.
 func _tyres(base: Vector3, count: int) -> void:
-	var rubber := EnvMesh.surface("garage_tyre", {base_color = Color("#2b2a2c"), roughness_base = 0.75, macro = 0.05, contact_dark = 0.1})
-	var pieces := []
+	WorldBuilder.add_cylinder_collider(self, 0.31, count * 0.165 + 0.02, base)
 	for i in count:
-		var tor := TorusMesh.new()
-		tor.inner_radius = 0.17
-		tor.outer_radius = 0.33
-		tor.rings = 16
-		tor.ring_segments = 8
-		pieces.append(EnvMesh.piece(tor, Transform3D(Basis(Vector3.UP, i * 0.6).scaled(Vector3(1, 1.4, 1)), base + Vector3(0.02 * (i % 2), 0.115 + i * 0.225, 0))))
-	EnvMesh.add(self, EnvMesh.merge(pieces), rubber)
-	WorldBuilder.add_cylinder_collider(self, 0.34, count * 0.225 + 0.02, base)
+		var tyre := PhotoProp.stand(self, "old_tyre", Vector3.ZERO)
+		if tyre:
+			# (The scan stands upright on its tread, round its own middle.)
+			tyre.transform = Transform3D(Basis(Vector3.UP, i * 0.9 + base.x) * Basis(Vector3.RIGHT, PI * 0.5),
+				base + Vector3(0.015 * (i % 2), 0.082 + i * 0.163, 0.01 * i))
 
 
-## Perforated hardboard with outlined tool silhouettes and the tools on hooks.
+## Perforated hardboard with the tools on their hooks (scans): wrenches, hammers, a drill.
 func _pegboard(center: Vector3) -> void:
 	if not EnvMesh.visual():
 		return
 	var board := EnvMesh.wood("pegboard", {base_color = Color("#a67f58"), grain_color = Color("#7c5a3d"), weathering = 0.1,
 		grain_strength = 0.2, roughness_base = 0.85})
 	EnvMesh.add(self, EnvMesh.box(Vector3(2.2, 1.0, 0.02), 0.004), board, Transform3D(Basis(), center + Vector3(0, 0, 0.01)))
-	var steel := EnvMesh.surface("garage_tools", {base_color = Color("#8c9196"), metallic_base = 0.7, roughness_base = 0.4})
-	var grip := EnvMesh.surface("garage_grips", {base_color = Color("#b8402f"), roughness_base = 0.55})
-	var tools := []
-	var grips := []
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 77
-	for i in 9:
-		var x := center.x - 0.95 + i * 0.235
-		var y := center.y + (0.18 if i % 2 == 0 else -0.12)
-		var shaft := rng.randf_range(0.22, 0.38)
-		# Wrench / screwdriver: a steel shaft and a coloured grip.
-		tools.append(EnvMesh.piece(EnvMesh.box(Vector3(0.025, shaft, 0.015), 0.004), Transform3D(Basis(Vector3.BACK, rng.randf_range(-0.15, 0.15)), Vector3(x, y, center.z + 0.04))))
-		if i % 3 != 1:
-			grips.append(EnvMesh.piece(EnvMesh.box(Vector3(0.04, 0.1, 0.03), 0.01), Transform3D(Basis(), Vector3(x, y - shaft * 0.5, center.z + 0.045))))
-	# A saw and a coil of wire on the right half.
-	tools.append(EnvMesh.piece(EnvMesh.box(Vector3(0.55, 0.12, 0.008), 0.003), Transform3D(Basis(Vector3.BACK, 0.05), Vector3(center.x + 0.55, center.y - 0.33, center.z + 0.04))))
-	var coil := TorusMesh.new()
-	coil.inner_radius = 0.07
-	coil.outer_radius = 0.1
-	tools.append(EnvMesh.piece(coil, Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(center.x - 0.65, center.y - 0.3, center.z + 0.05))))
-	EnvMesh.add(self, EnvMesh.merge(tools), steel)
-	EnvMesh.add(self, EnvMesh.merge(grips), grip)
+	var face := center + Vector3(0, 0, 0.022)
+	var hung := [["pipe_wrench", -0.9, -0.02], ["cross_pein_hammer", -0.62, 0.02], ["pipe_wrench", -0.34, -0.26], ["cross_pein_hammer", -0.06, -0.02],
+		["Drill_01", 0.28, 0.1], ["pipe_wrench", 0.62, -0.05], ["cross_pein_hammer", 0.9, -0.22]]
+	for entry: Array in hung:
+		PhotoProp.mount(self, entry[0], face + Vector3(entry[1], entry[2], 0), Vector3.BACK)
 
 
+## A broom leaning in the corner (a scan).
 func _broom(base: Vector3) -> void:
-	if not EnvMesh.visual():
-		return
-	var wood := EnvMesh.wood("broom", {base_color = Color("#b48a5e"), weathering = 0.2})
-	var stick := PackedVector3Array([base + Vector3(0, 0.08, 0), base + Vector3(0.0, 1.45, -0.32)])
-	EnvMesh.add(self, StationKit.tube(stick, 0.016, 6), wood)
-	EnvMesh.add(self, EnvMesh.box(Vector3(0.32, 0.08, 0.07), 0.01), wood, Transform3D(Basis(Vector3.RIGHT, -0.22), base + Vector3(0, 0.06, 0.02)))
+	var broom := PhotoProp.stand(self, "wooden_broom", base, 0.0)
+	if broom:
+		# Its head along the wall on its right, the stick leaned against that wall.
+		broom.transform = Transform3D(Basis(Vector3.UP, -PI * 0.5) * Basis(Vector3.RIGHT, -0.2), base + Vector3(-0.14, 0.13, 0))
 
 
 ## Orange extension cable from a wall socket to the bench lamp, lying in loose curves.
@@ -422,49 +426,27 @@ func _cable() -> void:
 	EnvMesh.add(self, StationKit.tube(pts, 0.012, 6), mat, Transform3D(), false)
 
 
-## Light: two fluorescent battens on the back wall (cool), a caged bulkhead
-## lamp by the door, and implied ceiling lights (shadowless omnis). The
-## furnace remains the hottest, brightest light (Art Bible rule 2).
+## Light: fluorescent strips under the ceiling (scans) and a caged lamp on the wall by the door. By
+## day they only fill the corners the sky does not reach.
 func _lamps() -> void:
 	if not EnvMesh.visual():
 		return
-	var housing := EnvMesh.surface("garage_lamp_housing", {base_color = Color("#d9d9d4"), roughness_base = 0.4})
-	var tube := StandardMaterial3D.new()
-	tube.albedo_color = Color("#eef3ff")
-	tube.emission_enabled = true
-	tube.emission = Color("#dfe8ff")
-	tube.emission_energy_multiplier = 3.2
-	for x: float in [-3.0, 2.4]:
-		var c := Vector3(x, 2.55, inner_min.y + 0.09)
-		EnvMesh.add(self, EnvMesh.box(Vector3(1.3, 0.07, 0.1), 0.01), housing, Transform3D(Basis(), c), false)
-		EnvMesh.add(self, EnvMesh.cylinder(0.022, 0.022, 1.2, 8), tube, Transform3D(Basis(Vector3.BACK, PI * 0.5), c + Vector3(0, -0.05, 0.03)), false)
+	for p: Vector3 in [Vector3(-1.0, height, -2.2), Vector3(-1.0, height, 1.6), Vector3(2.2, height, 0.2)]:
+		TownBlock.strip_light(self, p, Color("#f4f6ff"))
 		var light := OmniLight3D.new()
-		light.light_color = Color("#d8e2ff")
-		light.light_energy = 0.9
+		light.light_color = Color("#eef2ff")
+		light.light_energy = 0.7
 		light.omni_range = 6.5
-		light.omni_attenuation = 1.3
-		light.position = c + Vector3(0, -0.2, 0.6)
-		light.shadow_enabled = x < 0.0 and not EnvQuality.disabled("shadows")
+		light.omni_attenuation = 1.1
+		light.light_specular = 0.3
+		light.position = p + Vector3(0, -0.35, 0)
 		add_child(light)
-	# Implied ceiling lights: soft cool fill over the work area.
-	for p: Vector3 in [Vector3(-1.2, 2.8, 0.6), Vector3(3.0, 2.8, 0.2)]:
-		var fill := OmniLight3D.new()
-		fill.light_color = Color("#ffe1bf")
-		fill.light_energy = 0.75
-		fill.omni_range = 6.0
-		fill.omni_attenuation = 0.9
-		fill.light_specular = 0.2
-		fill.position = p
-		add_child(fill)
-	# Warm caged bulkhead lamp on the left wall by the door.
-	var bulb := EnvMesh.material("garage_bulb", "res://shaders/env_bulb.gdshader", {energy = 2.0})
-	var post := Vector3(inner_min.x + 0.12, 2.2, 3.6)
-	EnvMesh.add(self, EnvMesh.sphere(0.09, 10, 6), bulb, Transform3D(Basis(), post), false)
+	PhotoProp.mount(self, "industrial_wall_lamp", Vector3(inner_min.x, 2.05, 3.6), Vector3.RIGHT)
 	var warm := OmniLight3D.new()
-	warm.light_color = Color("#ffb877")
-	warm.light_energy = 1.4
-	warm.omni_range = 5.0
-	warm.position = post + Vector3(0.25, 0, 0)
+	warm.light_color = Color("#ffcf9a")
+	warm.light_energy = 0.9
+	warm.omni_range = 4.5
+	warm.position = Vector3(inner_min.x + 0.4, 2.1, 3.6)
 	add_child(warm)
 
 
@@ -472,23 +454,77 @@ func _lamps() -> void:
 
 func _outside() -> void:
 	var zf := inner_max.y + WALL * 0.5
+	if EnvMesh.visual():
+		# Photographed ground: pavers on the driveway, the pavement and the street beyond it, worn
+		# concrete beside and behind the garage.
+		var half := ground_size.x * 0.5
+		var back := ground_z - ground_size.y * 0.5
+		var front := ground_z + ground_size.y * 0.5
+		var out_x := inner_max.x + WALL
+		var yard := EnvMesh.scan(key + "_yard", "dirty_concrete", {drift = 0.2})
+		_slab(EnvMesh.scan(key + "_drive", "concrete_pavers", {drift = 0.18, tint = Vector3(0.84, 0.88, 0.94)}), -half, half, zf, zf + 7.4)
+		_slab(EnvMesh.scan(key + "_street", "asphalt_02", {drift = 0.22, tint = Vector3(0.7, 0.7, 0.72)}), -half, half, zf + 7.4, front)
+		_slab(yard, -half, -out_x, back, zf)
+		_slab(yard, out_x, half, back, zf)
+		_slab(yard, -out_x, out_x, back, inner_min.y - WALL)
+		# The kerb between driveway and street.
+		EnvMesh.add(self, EnvMesh.box(Vector3(ground_size.x, 0.12, 0.2)), EnvMesh.scan(key + "_kerb", "dirty_concrete", {tile = 1.6, tint = Vector3(0.85, 0.85, 0.85)}),
+			Transform3D(Basis(), Vector3(0, 0.03, zf + 7.4)))
 	prop("kaykit_city/streetlight.gltf", Vector3(7.6, 0, zf + 5.2), 180.0, {scale = 0.95, solid = P.CYLINDER})
 	for i in 7:
-		prop("kaykit_city/bush.gltf", Vector3(inner_min.x - 1.2 - (i % 2) * 0.3, 0, zf + 0.4 + i * 0.85), i * 40.0, {scale = 1.1, solid = P.NONE})
-		prop("kaykit_city/bush.gltf", Vector3(inner_max.x + 1.1 + (i % 2) * 0.3, 0, zf + 0.6 + i * 0.85), i * 55.0, {scale = 1.05, solid = P.NONE})
-	prop("kaykit_city/dumpster.gltf", Vector3(inner_max.x + 1.5, 0, -1.5), 90.0, {scale = 0.8})
+		prop("kaykit_city/bush.gltf", Vector3(inner_min.x - 0.45 - (i % 2) * 0.2, 0, zf + 0.4 + i * 0.85), i * 40.0, {scale = 1.1, solid = P.NONE})
+		prop("kaykit_city/bush.gltf", Vector3(inner_max.x + 0.45 + (i % 2) * 0.2, 0, zf + 0.6 + i * 0.85), i * 55.0, {scale = 1.05, solid = P.NONE})
+	TownBlock.dumpster(self, Vector3(inner_max.x + 1.6, 0, -1.5), 90.0)
 	prop("kaykit_city/firehydrant.gltf", Vector3(5.6, 0, zf + 6.4), 0.0, {scale = 0.9, solid = P.CYLINDER})
-	# Neighbours across the street, and behind the garage.
-	prop("kaykit_city/building_A_withoutBase.gltf", Vector3(-6.0, 0, zf + 14.0), 180.0, {solid = P.NONE, desaturate = 0.5})
-	prop("kaykit_city/building_C_withoutBase.gltf", Vector3(2.5, 0, zf + 14.5), 180.0, {solid = P.NONE, desaturate = 0.5})
-	prop("kaykit_city/building_F_withoutBase.gltf", Vector3(11.0, 0, zf + 13.5), 180.0, {solid = P.NONE, desaturate = 0.5})
-	prop("kaykit_city/building_C_withoutBase.gltf", Vector3(-9.0, 0, -11.0), 0.0, {solid = P.NONE, desaturate = 0.5})
-	prop("kaykit_city/building_A_withoutBase.gltf", Vector3(1.0, 0, -11.5), 0.0, {solid = P.NONE, desaturate = 0.5})
-	prop("kaykit_city/building_F_withoutBase.gltf", Vector3(10.0, 0, -11.0), 0.0, {solid = P.NONE, desaturate = 0.5})
-	# Low walls keep workers on the driveway.
-	for x: float in [inner_min.x - 1.0, inner_max.x + 1.0]:
-		WorldBuilder.add_collider(self, Vector3(0.4, 1.2, 7.0), Transform3D(Basis(), Vector3(x, 0.6, zf + 3.5)))
-	WorldBuilder.add_collider(self, Vector3(16.0, 1.2, 0.4), Transform3D(Basis(), Vector3(0, 0.6, zf + 7.2)))
+	# Neighbours across the street and behind the garage: houses with photographed fronts.
+	TownBlock.block(self, Vector3(-9.5, 0, zf + 13.5), 9.0, 8.0, {key = key + "_n1", scan = "red_brick", storeys = 2})
+	TownBlock.block(self, Vector3(0.5, 0, zf + 14.0), 9.0, 8.0, {key = key + "_n2", scan = "yellow_plaster", storeys = 3})
+	TownBlock.block(self, Vector3(10.5, 0, zf + 13.5), 9.0, 8.0, {key = key + "_n3", scan = "painted_worn_brick", storeys = 2})
+	TownBlock.block(self, Vector3(-10.0, 0, -18.5), 9.0, 7.0, {key = key + "_n4", scan = "yellow_plaster", storeys = 2})
+	TownBlock.block(self, Vector3(0.0, 0, -19.0), 9.0, 7.0, {key = key + "_n5", scan = "red_brick_03", storeys = 3})
+	TownBlock.block(self, Vector3(10.0, 0, -18.5), 9.0, 7.0, {key = key + "_n6", scan = "red_brick", storeys = 2})
+	TownBlock.block(self, Vector3(-20.5, 0, zf + 14.0), 10.0, 8.0, {key = key + "_n7", scan = "red_brick_03", storeys = 3})
+	TownBlock.block(self, Vector3(21.5, 0, zf + 14.0), 10.0, 8.0, {key = key + "_n8", scan = "red_brick", storeys = 3})
+	TownBlock.block(self, Vector3(-21.0, 0, zf - 6.0), 9.0, 9.0, {key = key + "_n9", scan = "yellow_plaster", storeys = 2})
+	TownBlock.block(self, Vector3(21.0, 0, zf - 6.0), 9.0, 9.0, {key = key + "_n10", scan = "painted_worn_brick", storeys = 2})
+	# Low garden walls keep workers on the driveway (the hedges grow before them); it is open to the street.
+	_forecourt(7.2, 1.0, false)
+
+
+## What keeps the workers before the hall: low brick walls with a coping on both sides, `side` metres
+## out from the hall's walls, and the end of the forecourt `depth` metres before the door line. With
+## `gate` a wall with an iron gate between two piers closes that end; without, it stays open to look
+## at (nobody gets past it all the same).
+func _forecourt(depth: float, side: float, gate: bool) -> void:
+	var zf := inner_max.y + WALL * 0.5
+	var x0 := inner_min.x - side
+	var x1 := inner_max.x + side
+	# [middle, size] of every stretch of low wall.
+	var runs := [[Vector3(x0, 0, zf + depth * 0.5), Vector3(0.25, 1.1, depth)], [Vector3(x1, 0, zf + depth * 0.5), Vector3(0.25, 1.1, depth)]]
+	for x: float in [x0, x1]:
+		WorldBuilder.add_collider(self, Vector3(0.4, 1.2, depth), Transform3D(Basis(), Vector3(x, 0.6, zf + depth * 0.5)))
+	WorldBuilder.add_collider(self, Vector3(x1 - x0 + 0.4, 3.0 if gate else 1.2, 0.4), Transform3D(Basis(), Vector3((x0 + x1) * 0.5, 1.5 if gate else 0.6, zf + depth)))
+	var pier := 1.72
+	if gate:
+		runs.append([Vector3((x0 - pier) * 0.5, 0, zf + depth), Vector3(-pier - x0, 1.1, 0.25)])
+		runs.append([Vector3((x1 + pier) * 0.5, 0, zf + depth), Vector3(x1 - pier, 1.1, 0.25)])
+	if not EnvMesh.visual():
+		return
+	var brick := EnvMesh.scan(key + "_garden", "red_brick_03", {foot = 0.4, drift = 0.2})
+	var walls := []
+	var stones := []
+	for run: Array in runs:
+		var at: Vector3 = run[0]
+		var size: Vector3 = run[1]
+		walls.append(EnvMesh.piece(EnvMesh.box(size, 0.0), Transform3D(Basis(), at + Vector3(0, size.y * 0.5, 0))))
+		stones.append(EnvMesh.piece(EnvMesh.box(Vector3(size.x + 0.09, 0.07, size.z + 0.09)), Transform3D(Basis(), at + Vector3(0, size.y + 0.035, 0))))
+	if gate:
+		for s: float in [-1.0, 1.0]:
+			walls.append(EnvMesh.piece(EnvMesh.box(Vector3(0.46, 3.1, 0.46), 0.0), Transform3D(Basis(), Vector3(s * pier, 1.55, zf + depth))))
+			stones.append(EnvMesh.piece(EnvMesh.box(Vector3(0.58, 0.12, 0.58)), Transform3D(Basis(), Vector3(s * pier, 3.16, zf + depth))))
+		PhotoProp.stand(self, "large_iron_gate", Vector3(0, 0, zf + depth), 0.0)
+	EnvMesh.add(self, EnvMesh.merge(walls), brick)
+	EnvMesh.add(self, EnvMesh.merge(stones), TownBlock.stone())
 
 
 # --- Camera and reflections ---------------------------------------------------------
@@ -519,8 +555,10 @@ func _reflection_probe() -> void:
 	probe.update_mode = ReflectionProbe.UPDATE_ONCE
 	probe.size = Vector3(inner_max.x - inner_min.x + 0.8, height + 0.3, inner_max.y - inner_min.y + 0.6)
 	probe.position = Vector3((inner_min.x + inner_max.x) * 0.5, height * 0.5, (inner_min.y + inner_max.y) * 0.5)
-	probe.interior = true
+	# The front stands open to the day: paint and glass inside mirror the sky through it, and the
+	# hall's own bounce is neutral.
+	probe.interior = false
 	probe.ambient_mode = ReflectionProbe.AMBIENT_COLOR
-	probe.ambient_color = Color("#3a3446")
-	probe.ambient_color_energy = 0.6
+	probe.ambient_color = Color("#77736c")
+	probe.ambient_color_energy = 0.55
 	add_child(probe)

@@ -1,10 +1,11 @@
 class_name BellHallSet
 extends GarageSet
-## Level 3 set: the old bell foundry, a tall brick hall with timber posts,
-## an arched workshop window and a church tower across the square. Same
-## dollhouse rules as the garage (open front, shadow-only roof, cutaway walls).
+## Level 3 set: the old bell foundry, a tall hall of factory brick, limewashed above the shoulder,
+## with timber posts under a boarded roof, a brick floor, a workshop window and a church of
+## sandstone across the square (photo scans throughout, TECH_SPEC Modul Y). The front stands open
+## like the garage's.
 ## Dressing: a wooden bell frame with three display bells (cast from the same
-## BellProfile meshes), loam sacks, strickle boards and warm lanterns.
+## BellProfile meshes), sacks of loam, strickle boards and lamps on the posts.
 
 const FRAME_POS := Vector3(-6.2, 0.0, 3.4)
 
@@ -12,6 +13,10 @@ const FRAME_POS := Vector3(-6.2, 0.0, 3.4)
 static func build_hall(world: Node3D, level_stations: Array) -> BellHallSet:
 	var set := BellHallSet.new()
 	set.name = "BellHallSet"
+	set.key = "bellhall"
+	set.wall_split = 1.5
+	set.ground_size = Vector2(90.0, 84.0)
+	set.ground_z = 12.0
 	set.stations = level_stations
 	set.inner_min = Vector2(-8.0, -5.6)
 	set.inner_max = Vector2(8.0, 5.4)
@@ -25,12 +30,20 @@ static func build_hall(world: Node3D, level_stations: Array) -> BellHallSet:
 	return set
 
 
+## Factory brick to the shoulder, limewashed brick above, weathered roof boards overhead; the timber
+## is oak. (All brick and dark boards made the hall a cave: lime and pale wood give the light back.)
 func _materials() -> void:
-	_wall_mat = EnvMesh.material("bellhall_wall", "res://shaders/env_plaster.gdshader", {
-		plaster = Color("#cdb99c"), grime = Color("#655a50"), brick = Color("#9a5440"), mortar = Color("#bfae95"),
-		chips = 0.8, streaks = 0.45, cutaway = true, brick_below = 1.5})
+	_wall_low_mat = EnvMesh.scan("bellhall_plinth", "factory_brick", {foot = 0.5, drift = 0.18})
+	_wall_high_mat = EnvMesh.scan("bellhall_wall", "painted_worn_brick", {drift = 0.14, tint = EnvMesh.toward("painted_worn_brick", Color("#d8cfba"), 0.7)})
+	_wall_mat = _wall_high_mat
+	_roof_mat = EnvMesh.repainted("bellhall_roof", "roof_planks", Color("#9c8b74"), {drift = 0.1})
 	_trim_mat = EnvMesh.wood("bellhall_trim", {base_color = Color("#6d4c32"), grain_color = Color("#3f2b1c"),
 		weathering = 0.35, roughness_base = 0.8})
+
+
+## An old floor of brick laid on edge.
+func _floor_scan() -> String:
+	return "double_brick_floor"
 
 
 func _extra_stains() -> PackedVector4Array:
@@ -53,9 +66,12 @@ func _dressing() -> void:
 	_bell_frame(FRAME_POS)
 	_loam_sacks(Vector3(-7.3, 0, 2.0))
 	_strickle_boards(Vector3(inner_max.x - 0.1, 0, -4.4))
-	prop("kaykit_hexagon/wheelbarrow.gltf", Vector3(-4.6, 0, 1.2), 60.0, {scale = 0.9})
+	PhotoProp.place(self, "hand_truck", Vector3(-4.6, 0, 1.2), 150.0)
 	prop("kaykit_dungeon/barrel_large.gltf", Vector3(7.3, 0, 3.4), 10.0, {solid = PropKit.Solid.CYLINDER, tint = Color("#a99f94")})
-	prop("kaykit_dungeon/crates_stacked.gltf", Vector3(-7.1, 0, -4.7), 20.0, {scale = 0.75})
+	# Crates in the corner by the scrap.
+	WorldBuilder.add_collider(self, Vector3(0.9, 1.05, 0.5), Transform3D(Basis(Vector3.UP, deg_to_rad(20.0)), Vector3(-7.1, 0.525, -4.7)))
+	for i in 3:
+		PhotoProp.stand(self, "wooden_crate_01", Vector3(-7.1, i * 0.35, -4.7), 20.0 + i * 7.0)
 	_lamps()
 
 
@@ -104,16 +120,15 @@ func _bell_frame(base: Vector3) -> void:
 		EnvMesh.add(self, EnvMesh.box(Vector3(0.06, 0.12, 0.08), 0.01), iron, Transform3D(Basis(), base + Vector3(0, top - 0.02, z)))
 
 
+## Sacks of loam for the molds, piled by the wall (scans).
 func _loam_sacks(base: Vector3) -> void:
-	var sack := EnvMesh.surface("loam_sack", {base_color = Color("#b9a27c"), roughness_base = 0.95, macro = 0.15, contact_dark = 0.3})
-	var pieces := []
+	WorldBuilder.add_collider(self, Vector3(1.5, 0.56, 0.8), Transform3D(Basis(), base + Vector3(0, 0.28, 0)))
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 5
 	for i in 7:
-		var p := base + Vector3((i % 3) * 0.42 - 0.4, 0.17 + (i / 3) * 0.26, rng.randf_range(-0.1, 0.1))
-		pieces.append(EnvMesh.piece(EnvMesh.box(Vector3(0.4, 0.24, 0.62), 0.09), Transform3D(Basis(Vector3.UP, rng.randf_range(-0.3, 0.3)), p)))
-	EnvMesh.add(self, EnvMesh.merge(pieces), sack)
-	WorldBuilder.add_collider(self, Vector3(1.3, 0.8, 0.8), Transform3D(Basis(), base + Vector3(0, 0.4, 0)))
+		var row := i / 3
+		var at := base + Vector3((i % 3) * 0.5 - 0.5 + row * 0.13, row * 0.175, rng.randf_range(-0.05, 0.05))
+		PhotoProp.stand(self, "cement_bag", at, rng.randf_range(-12.0, 12.0))
 
 
 ## Old strickle boards leaning on the right wall: bell profiles in wood.
@@ -137,58 +152,66 @@ func _strickle_boards(base: Vector3) -> void:
 func _lamps() -> void:
 	if not EnvMesh.visual():
 		return
-	# Warm lanterns on the timber posts and a cool window light.
-	var bulb := EnvMesh.material("hall_bulb", "res://shaders/env_bulb.gdshader", {energy = 2.4})
-	for p: Vector3 in [Vector3(-4.0, 2.6, inner_min.y + 0.32), Vector3(4.0, 2.6, inner_min.y + 0.32),
-			Vector3(inner_min.x + 0.32, 2.6, -2.0), Vector3(inner_max.x - 0.32, 2.6, 1.6)]:
-		EnvMesh.add(self, EnvMesh.sphere(0.1, 10, 6), bulb, Transform3D(Basis(), p), false)
+	# Caged lamps on the timber posts (scans). By day they only warm the corners.
+	for spot: Array in [[Vector3(-4.0, 2.5, inner_min.y + 0.27), Vector3.BACK], [Vector3(4.0, 2.5, inner_min.y + 0.27), Vector3.BACK],
+			[Vector3(inner_min.x + 0.27, 2.5, -2.0), Vector3.RIGHT], [Vector3(inner_max.x - 0.27, 2.5, 1.6), Vector3.LEFT]]:
+		var at: Vector3 = spot[0]
+		var out: Vector3 = spot[1]
+		PhotoProp.mount(self, "industrial_wall_lamp", at, out)
 		var l := OmniLight3D.new()
-		l.light_color = Color("#ffb877")
-		l.light_energy = 1.3
-		l.omni_range = 7.0
+		l.light_color = Color("#ffc890")
+		l.light_energy = 0.9
+		l.omni_range = 6.0
 		l.omni_attenuation = 1.2
-		l.position = p + Vector3(0, -0.1, 0)
-		l.shadow_enabled = p.x < -3.0 and not EnvQuality.disabled("shadows")
+		l.position = at + out * 0.35 + Vector3(0, 0.15, 0)
 		add_child(l)
-	for p: Vector3 in [Vector3(-2.5, 4.0, 0.0), Vector3(2.5, 4.0, 0.0)]:
-		var fill := OmniLight3D.new()
-		fill.light_color = Color("#ffe1bf")
-		fill.light_energy = 0.8
-		fill.omni_range = 9.0
-		fill.position = p
-		add_child(fill)
-	var window_light := SpotLight3D.new()
-	window_light.light_color = Color("#b9c4ff")
-	window_light.light_energy = 2.0
-	window_light.spot_range = 9.0
-	window_light.spot_angle = 35.0
-	window_light.position = Vector3(0, window.w, inner_min.y - 0.5)
-	window_light.rotation_degrees = Vector3(-35, 180, 0)
-	add_child(window_light)
 
 
 func _outside() -> void:
 	var zf := inner_max.y + WALL * 0.5
-	# Church across the square: nave, tower with a pointed spire and a louvre.
 	if EnvMesh.visual():
-		var stone := EnvMesh.material("church_stone", "res://shaders/env_plaster.gdshader", {
-			plaster = Color("#d9cbb2"), brick = Color("#a09382"), mortar = Color("#c4b8a4"), chips = 0.6})
-		var roof := EnvMesh.material("church_roof", "res://shaders/env_plaster.gdshader", {
-			plaster = Color("#3f4a55"), grime = Color("#2c333a"), chips = 0.0, streaks = 0.6})
+		# Photographed ground: old slabs on the square, worn concrete beside and behind the hall.
+		var half := ground_size.x * 0.5
+		var back := ground_z - ground_size.y * 0.5
+		var front := ground_z + ground_size.y * 0.5
+		var out_x := inner_max.x + WALL
+		var yard := EnvMesh.scan(key + "_yard", "dirty_concrete", {drift = 0.2})
+		_slab(EnvMesh.scan(key + "_square", "concrete_tiles_02", {drift = 0.16}), -half, half, zf, front)
+		_slab(yard, -half, -out_x, back, zf)
+		_slab(yard, out_x, half, back, zf)
+		_slab(yard, -out_x, out_x, back, inner_min.y - WALL)
+		# Church across the square: nave, tower with a pointed spire and a louvre. Sandstone and slate.
+		# (The scan is a dark, weathered stone: lifted to a pale sandstone. The slates are kept matt, or
+		# the whole roof glares in the sun.)
+		var stone := EnvMesh.scan("church_stone", "large_sandstone_blocks", {drift = 0.12, tint = EnvMesh.toward("large_sandstone_blocks", Color("#b3a384"), 0.85)})
+		var roof := EnvMesh.scan("church_roof", "roof_slates_03", {drift = 0.1, tint = Vector3(0.5, 0.53, 0.6), roughness_scale = 2.5})
 		var c := Vector3(3.0, 0, zf + 17.0)
 		EnvMesh.add(self, EnvMesh.box(Vector3(4.0, 14.0, 4.0), 0.05), stone, Transform3D(Basis(), c + Vector3(0, 7.0, 0)))
 		var spire := EnvMesh.cylinder(0.0, 2.9, 7.0, 4)
 		EnvMesh.add(self, spire, roof, Transform3D(Basis(Vector3.UP, PI * 0.25), c + Vector3(0, 17.5, 0)))
 		EnvMesh.add(self, EnvMesh.box(Vector3(12.0, 9.0, 7.0), 0.05), stone, Transform3D(Basis(), c + Vector3(-8.0, 4.5, 1.5)))
-		var louvre := EnvMesh.material("church_louvre", "res://shaders/env_window.gdshader", {energy = 0.6, glow = Color("#ffb877")})
+		# The nave's roof: two slopes of slate.
+		for s: float in [-1.0, 1.0]:
+			EnvMesh.add(self, EnvMesh.box(Vector3(12.4, 0.18, 4.6), 0.0), roof,
+				Transform3D(Basis(Vector3.RIGHT, s * 0.72), c + Vector3(-8.0, 10.45, 1.5 + s * 1.72)))
+		var louvre := StandardMaterial3D.new()
+		louvre.albedo_color = Color("#1c1a18")
+		louvre.roughness = 0.8
 		EnvMesh.add(self, EnvMesh.box(Vector3(1.4, 2.0, 0.05), 0.0), louvre, Transform3D(Basis(), c + Vector3(0, 11.0, -2.03)), false)
+		# Tall dark windows along the nave.
+		for i in 4:
+			EnvMesh.add(self, EnvMesh.box(Vector3(0.9, 3.2, 0.05), 0.0), louvre, Transform3D(Basis(), c + Vector3(-12.5 + i * 3.0, 4.6, -2.03)), false)
+	# The houses round the square and behind the hall.
+	TownBlock.block(self, Vector3(-22.0, 0, zf + 6.0), 11.0, 14.0, {key = key + "_n1", scan = "red_brick", storeys = 3})
+	TownBlock.block(self, Vector3(23.0, 0, zf + 6.0), 11.0, 14.0, {key = key + "_n2", scan = "yellow_plaster", storeys = 3})
+	TownBlock.block(self, Vector3(18.0, 0, zf + 24.0), 14.0, 9.0, {key = key + "_n3", scan = "painted_worn_brick", storeys = 3})
+	TownBlock.block(self, Vector3(-24.0, 0, zf + 26.0), 12.0, 9.0, {key = key + "_n4", scan = "yellow_plaster", storeys = 4})
+	TownBlock.block(self, Vector3(-13.0, 0, -22.0), 12.0, 8.0, {key = key + "_n5", scan = "red_brick_03", storeys = 3})
+	TownBlock.block(self, Vector3(12.0, 0, -21.5), 12.0, 8.0, {key = key + "_n6", scan = "red_brick", storeys = 3})
 	prop("kaykit_city/streetlight.gltf", Vector3(-6.5, 0, zf + 5.0), 0.0, {scale = 0.95, solid = PropKit.Solid.CYLINDER})
 	prop("kaykit_city/streetlight.gltf", Vector3(7.5, 0, zf + 5.0), 180.0, {scale = 0.95, solid = PropKit.Solid.CYLINDER})
 	for i in 6:
-		prop("kaykit_city/bush.gltf", Vector3(inner_min.x - 1.2, 0, zf + 0.5 + i * 0.9), i * 40.0, {scale = 1.1, solid = PropKit.Solid.NONE})
-		prop("kaykit_city/bush.gltf", Vector3(inner_max.x + 1.2, 0, zf + 0.5 + i * 0.9), i * 55.0, {scale = 1.1, solid = PropKit.Solid.NONE})
-	prop("kaykit_city/building_C_withoutBase.gltf", Vector3(-11.0, 0, -12.5), 0.0, {solid = PropKit.Solid.NONE, desaturate = 0.5})
-	prop("kaykit_city/building_F_withoutBase.gltf", Vector3(11.0, 0, -12.0), 0.0, {solid = PropKit.Solid.NONE, desaturate = 0.5})
-	for x: float in [inner_min.x - 1.2, inner_max.x + 1.2]:
-		WorldBuilder.add_collider(self, Vector3(0.4, 1.2, 8.0), Transform3D(Basis(), Vector3(x, 0.6, zf + 4.0)))
-	WorldBuilder.add_collider(self, Vector3(20.0, 1.2, 0.4), Transform3D(Basis(), Vector3(0, 0.6, zf + 8.2)))
+		prop("kaykit_city/bush.gltf", Vector3(inner_min.x - 0.6, 0, zf + 0.5 + i * 0.9), i * 40.0, {scale = 1.1, solid = PropKit.Solid.NONE})
+		prop("kaykit_city/bush.gltf", Vector3(inner_max.x + 0.6, 0, zf + 0.5 + i * 0.9), i * 55.0, {scale = 1.1, solid = PropKit.Solid.NONE})
+	# The yard before the hall: brick walls and the foundry's iron gate to the square.
+	_forecourt(8.2, 1.2, true)

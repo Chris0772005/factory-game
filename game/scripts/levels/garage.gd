@@ -2,7 +2,7 @@ extends FoundryLevel
 ## Level 2 – Garage: the foundry moves into a brick double garage. More room
 ## (two model benches, two molds), the family car in the left bay, and the
 ## garage's new systems (quench trough, sealed scrap crates, orders) next to
-## the stations the crew already knows. Set: GarageSet, light: GarageLighting.
+## the stations the crew already knows. Set: GarageSet, light: GarageLighting (a clear day).
 
 const SPAWN := Vector3(0.6, 0.2, 3.4)
 ## Mold cooling in the garage (the backyard's is MoldBox.COOL_TIME = 4.5 s).
@@ -11,6 +11,7 @@ const COOL_TIME := 14.0
 
 func build_stations() -> void:
 	GarageLighting.build(self)
+	GarageLighting.daylight(self)
 
 	var furnace := Furnace.new()
 	furnace.position = Vector3(-2.6, 0, -2.7)
@@ -41,7 +42,7 @@ func build_stations() -> void:
 	trough.rotation.y = PI * 0.5
 	add_child(trough)
 	var crate := SellCrate.new()
-	# Pickup is out on the driveway, in the evening sun.
+	# Pickup is out on the driveway, in the sun.
 	crate.position = Vector3(3.7, 0, 5.5)
 	crate.rotation.y = 0.25
 	add_child(crate)

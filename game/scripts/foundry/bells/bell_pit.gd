@@ -369,8 +369,8 @@ func _popup(pos: Vector3, text: String, color: Color) -> void:
 func _build_art() -> void:
 	if not StationKit.visual():
 		return
-	var brick := EnvMesh.material("pit_brick", "res://shaders/env_plaster.gdshader", {
-		brick = Color("#9c553f"), mortar = Color("#bfae95"), brickwork = 1.0})
+	# (Photographed brick, as the walls of the halls.)
+	var brick := EnvMesh.scan("pit_brick", "red_brick_03", {drift = 0.15})
 	var r := outer_radius()
 	var ring := PackedVector2Array([Vector2(r - 0.18, RIM), Vector2(r - 0.18, 0.0), Vector2(r, 0.0), Vector2(r, RIM),
 		Vector2(r - 0.02, RIM + 0.03), Vector2(r - 0.16, RIM + 0.03), Vector2(r - 0.18, RIM)])

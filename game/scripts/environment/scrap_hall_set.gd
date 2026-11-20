@@ -66,6 +66,8 @@ var _sheet_mat: ShaderMaterial
 static func build_hall(world: Node3D, level_stations: Array) -> ScrapHallSet:
 	var set := ScrapHallSet.new()
 	set.name = "ScrapHallSet"
+	set.key = "scraphall"
+	set.wall_split = BRICK_TOP
 	set.stations = level_stations
 	set.inner_min = Vector2(-14.0, -10.0)
 	set.inner_max = Vector2(14.0, 8.0)
@@ -80,64 +82,21 @@ static func build_hall(world: Node3D, level_stations: Array) -> ScrapHallSet:
 	return set
 
 
-func _exit_tree() -> void:
-	EnvMesh.release_scans()
-
-
+## Photographed walls (graphics standard, TECH_SPEC Modul Y): a brick plinth up to BRICK_TOP, profiled
+## sheet above and overhead.
 func _materials() -> void:
-	_wall_mat = EnvMesh.material("scraphall_wall", "res://shaders/env_plaster.gdshader", {
-		plaster = Color("#9aa3a6"), grime = Color("#4c4a47"), brick = Color("#8a4632"), mortar = Color("#b3a592"),
-		chips = 0.55, streaks = 0.8, cutaway = true, brick_below = 2.2})
 	_trim_mat = StationKit.metal("scraphall_trim", {steel_color = Color("#3f474c"), rust = 0.4, metallic_steel = 0.4})
-	# Photographed surfaces (graphics standard, TECH_SPEC Modul Y): a brick plinth, profiled sheet above.
 	_brick_mat = EnvMesh.scan("scraphall_brick", "red_brick_03", {foot = 0.5, drift = 0.2, cutaway = true})
 	_sheet_mat = EnvMesh.repainted("scraphall_sheet", "box_profile_metal_sheet", Color("#7d8a8e"), {drift = 0.1, cutaway = true})
+	_wall_low_mat = _brick_mat
+	_wall_high_mat = _sheet_mat
+	_wall_mat = _sheet_mat
+	_roof_mat = EnvMesh.repainted("scraphall_roof", "box_profile_metal_sheet", Color("#8f989a"), {drift = 0.08})
 
 
-## Brick below, sheeting above: every wall is two boxes, split at BRICK_TOP.
-func _wall_box(center: Vector3, size: Vector3) -> void:
-	var body := WorldBuilder.add_collider(self, size, Transform3D(Basis(), center))
-	body.add_to_group(CAMERA_PASSTHROUGH)
-	_passthrough.append(body.get_rid())
-	var bottom := center.y - size.y * 0.5
-	var top := center.y + size.y * 0.5
-	var split := clampf(BRICK_TOP, bottom, top)
-	if split - bottom > 0.01:
-		EnvMesh.add(self, EnvMesh.box(Vector3(size.x, split - bottom, size.z), 0.0), _brick_mat,
-			Transform3D(Basis(), Vector3(center.x, (bottom + split) * 0.5, center.z)))
-	if top - split > 0.01:
-		# The sheet stands a little back from the face of the brick (across the wall only: along it,
-		# the boxes of one wall must still meet).
-		var thin_x := size.x < size.z
-		EnvMesh.add(self, EnvMesh.box(Vector3(size.x - (0.04 if thin_x else 0.0), top - split, size.z - (0.0 if thin_x else 0.04)), 0.0), _sheet_mat,
-			Transform3D(Basis(), Vector3(center.x, (split + top) * 0.5, center.z)))
-
-
-func _pillar_material() -> ShaderMaterial:
-	return _brick_mat
-
-
-func _roof_material() -> ShaderMaterial:
-	return EnvMesh.repainted("scraphall_roof", "box_profile_metal_sheet", Color("#8f989a"), {drift = 0.08})
-
-
-## Daylight in the window band instead of the dusk glow of the other halls.
-func _window(center: Vector3, size: Vector2) -> void:
-	super(center, size)
-	var glass := EnvMesh.material("garage_glass", "res://shaders/env_window.gdshader")
-	if glass and EnvMesh.visual():
-		var day := glass.duplicate() as ShaderMaterial
-		day.set_shader_parameter(&"glow", Color("#dfeaf6"))
-		day.set_shader_parameter(&"room", Color("#9fb4cc"))
-		day.set_shader_parameter(&"glass_dark", Color("#6f8298"))
-		day.set_shader_parameter(&"glass_sky", Color("#cfe0f2"))
-		# No curtains in a works hall: the panes show pale sky.
-		day.set_shader_parameter(&"curtain", Color("#c3d2e2"))
-		day.set_shader_parameter(&"energy", 0.9)
-		for child in get_children():
-			var mi := child as MeshInstance3D
-			if mi and mi.material_override == glass:
-				mi.material_override = day
+## The scrap hall keeps its drawn concrete floor.
+func _floor_scan() -> String:
+	return ""
 
 
 func _extra_stains() -> PackedVector4Array:
@@ -162,17 +121,6 @@ func _dressing() -> void:
 	_tyres(Vector3(-13.0, 0, 6.8), 4)
 	_tyres(Vector3(-12.1, 0, 7.1), 2)
 	_lamps()
-
-
-## In daylight the hall's own bounce is neutral (the other halls stand in dusk).
-func _reflection_probe() -> void:
-	super()
-	var probe := get_node_or_null(^"GarageReflections") as ReflectionProbe
-	if probe:
-		probe.ambient_color = Color("#77736c")
-		probe.ambient_color_energy = 0.55
-		# The front stands open to the day: paint and glass inside mirror the sky through it.
-		probe.interior = false
 
 
 ## The corner for the foundry stays clear until it is bought.
@@ -300,11 +248,6 @@ func _paving(zf: float) -> void:
 	_slab(concrete, -half, -out_x, back, zf)
 	_slab(concrete, out_x, half, back, zf)
 	_slab(concrete, -out_x, out_x, back, inner_min.y - WALL)
-
-
-## A thin slab of ground from x0 to x1 and z0 to z1, a finger's breadth above the base ground.
-func _slab(mat: Material, x0: float, x1: float, z0: float, z1: float) -> void:
-	EnvMesh.add(self, EnvMesh.box(Vector3(x1 - x0, 0.03, z1 - z0), 0.0), mat, Transform3D(Basis(), Vector3((x0 + x1) * 0.5, -0.003, (z0 + z1) * 0.5)), false)
 
 
 ## The quarter around the hall: the pawnbroker and the police station, both

@@ -17,6 +17,7 @@ func build_level() -> void:
 
 func build_stations() -> void:
 	GarageLighting.build(self)
+	GarageLighting.daylight(self)
 	for p: Vector3 in [Vector3(-5.6, 0, -3.7), Vector3(-3.0, 0, -4.0)]:
 		var furnace := Furnace.new()
 		furnace.position = p

@@ -1,10 +1,10 @@
 class_name IronHallSet
 extends GarageSet
 ## Level 4 set: the Eisenhalle, a tall steel-framed works hall. Brick below,
-## painted sheeting above, a long band of factory windows, steel columns
-## carrying the crane runway, high-bay lamps. Same dollhouse rules as the
-## garage (open front, shadow-only roof, cutaway walls). Across the yard
-## through the open front: the cathedral the Kaiserglocke is for.
+## painted sheeting above and overhead, a dark concrete floor, a long band of factory windows,
+## steel columns carrying the crane runway, high-bay lamps (photo scans throughout, TECH_SPEC
+## Modul Y). The front stands open like the garage's. Across the yard: the cathedral of
+## sandstone the Kaiserglocke is for.
 
 const COLUMN_Z := [-4.5, -0.5, 3.5]
 
@@ -12,6 +12,10 @@ const COLUMN_Z := [-4.5, -0.5, 3.5]
 static func build_hall(world: Node3D, level_stations: Array) -> IronHallSet:
 	var set := IronHallSet.new()
 	set.name = "IronHallSet"
+	set.key = "ironhall"
+	set.wall_split = 2.6
+	set.ground_size = Vector2(100.0, 104.0)
+	set.ground_z = 16.0
 	set.stations = level_stations
 	set.inner_min = Vector2(-10.0, -6.5)
 	set.inner_max = Vector2(10.0, 6.0)
@@ -24,11 +28,18 @@ static func build_hall(world: Node3D, level_stations: Array) -> IronHallSet:
 	return set
 
 
+## A brick plinth, profiled sheet in works blue-grey above and overhead.
 func _materials() -> void:
-	_wall_mat = EnvMesh.material("ironhall_wall", "res://shaders/env_plaster.gdshader", {
-		plaster = Color("#8f9aa0"), grime = Color("#4a4846"), brick = Color("#7e3d2c"), mortar = Color("#a99a88"),
-		chips = 0.5, streaks = 0.7, cutaway = true, brick_below = 2.6})
+	_wall_low_mat = EnvMesh.scan("ironhall_brick", "red_brick_03", {foot = 0.5, drift = 0.2})
+	_wall_high_mat = EnvMesh.repainted("ironhall_sheet", "box_profile_metal_sheet", Color("#75868f"), {drift = 0.1})
+	_wall_mat = _wall_high_mat
+	_roof_mat = EnvMesh.repainted("ironhall_roof", "box_profile_metal_sheet", Color("#8a9498"), {drift = 0.08})
 	_trim_mat = StationKit.metal("ironhall_trim", {steel_color = Color("#3d4a52"), rust = 0.35, metallic_steel = 0.4})
+
+
+## Dark, worn concrete as in a hangar.
+func _floor_scan() -> String:
+	return "hangar_concrete_floor"
 
 
 func _extra_stains() -> PackedVector4Array:
@@ -59,7 +70,8 @@ func _dressing() -> void:
 	_pattern_shelf(Vector3(-2.0, 0, inner_min.y + 0.3))
 	prop("kaykit_dungeon/barrel_large.gltf", Vector3(9.2, 0, -5.7), 10.0, {solid = PropKit.Solid.CYLINDER, tint = Color("#7f8a90")})
 	prop("kaykit_dungeon/barrel_large.gltf", Vector3(8.4, 0, -5.9), 70.0, {solid = PropKit.Solid.CYLINDER, tint = Color("#8a5a40")})
-	prop("kaykit_hexagon/wheelbarrow.gltf", Vector3(-3.2, 0, -3.0), 120.0, {scale = 0.9})
+	PhotoProp.place(self, "hand_truck", Vector3(-3.2, 0, -3.0), 120.0)
+	PhotoProp.place(self, "portable_welding_cart", Vector3(9.1, 0, 1.0), -90.0)
 	_signs()
 	_lamps()
 
@@ -111,7 +123,15 @@ func _finished_covers(base: Vector3) -> void:
 	WorldBuilder.add_collider(self, Vector3(1.2, 0.7, 1.2), Transform3D(Basis(), base + Vector3(0, 0.35, 0)))
 	if not EnvMesh.visual():
 		return
-	PropKit.place(self, "kaykit_hexagon/pallet.gltf", base, 0.0, {solid = PropKit.Solid.NONE, scale = 1.0})
+	# A pallet of rough boards under them.
+	var pallet := EnvMesh.scan("pallet_boards", "roof_planks", {tile = 1.0, tint = Vector3(0.75, 0.72, 0.68), drift = 0.2})
+	var boards := []
+	for i in 5:
+		boards.append(EnvMesh.piece(EnvMesh.box(Vector3(1.2, 0.022, 0.14), 0.004), Transform3D(Basis(), base + Vector3(0, 0.133, -0.48 + i * 0.24))))
+	for i in 3:
+		boards.append(EnvMesh.piece(EnvMesh.box(Vector3(0.1, 0.1, 1.1), 0.006), Transform3D(Basis(), base + Vector3(-0.5 + i * 0.5, 0.072, 0))))
+		boards.append(EnvMesh.piece(EnvMesh.box(Vector3(1.2, 0.022, 0.1), 0.004), Transform3D(Basis(), base + Vector3(0, 0.011, -0.5 + i * 0.5))))
+	EnvMesh.add(self, EnvMesh.merge(boards), pallet)
 	var iron := MetalMaterial.create(&"iron", 21)
 	iron.set_shader_parameter(&"crust", 0.1)
 	var covers := []
@@ -209,28 +229,44 @@ func _lamps() -> void:
 func _outside() -> void:
 	var zf := inner_max.y + WALL * 0.5
 	if EnvMesh.visual():
-		# The cathedral across the yard: nave and two spired towers.
-		var stone := EnvMesh.material("dom_stone", "res://shaders/env_plaster.gdshader", {
-			plaster = Color("#cbbfae"), brick = Color("#9a8e7f"), mortar = Color("#b9ad9b"), chips = 0.6, streaks = 0.8})
-		var roof := EnvMesh.material("dom_roof", "res://shaders/env_plaster.gdshader", {
-			plaster = Color("#3a4650"), grime = Color("#283038"), chips = 0.0, streaks = 0.6})
+		# Photographed ground: the works yard in worn concrete, old slabs before the cathedral.
+		var half := ground_size.x * 0.5
+		var back := ground_z - ground_size.y * 0.5
+		var front := ground_z + ground_size.y * 0.5
+		var out_x := inner_max.x + WALL
+		var yard := EnvMesh.scan(key + "_yard", "dirty_concrete", {drift = 0.2})
+		_slab(yard, -half, half, zf, zf + 12.0)
+		_slab(EnvMesh.scan(key + "_square", "concrete_tiles_02", {drift = 0.16}), -half, half, zf + 12.0, front)
+		_slab(yard, -half, -out_x, back, zf)
+		_slab(yard, out_x, half, back, zf)
+		_slab(yard, -out_x, out_x, back, inner_min.y - WALL)
+		# The cathedral across the yard: nave and two spired towers. Sandstone and slate.
+		var stone := EnvMesh.scan("dom_stone", "large_sandstone_blocks", {drift = 0.12, tint = EnvMesh.toward("large_sandstone_blocks", Color("#b3a384"), 0.85)})
+		var roof := EnvMesh.scan("dom_roof", "roof_slates_03", {drift = 0.1, tint = Vector3(0.5, 0.53, 0.6), roughness_scale = 2.5})
 		var c := Vector3(-2.0, 0, zf + 24.0)
 		for s: float in [-1.0, 1.0]:
 			var t := c + Vector3(s * 3.6, 0, 0)
 			EnvMesh.add(self, EnvMesh.box(Vector3(4.0, 18.0, 4.0), 0.05), stone, Transform3D(Basis(), t + Vector3(0, 9.0, 0)))
 			EnvMesh.add(self, EnvMesh.cylinder(0.0, 2.8, 9.0, 8), roof, Transform3D(Basis(Vector3.UP, PI / 8.0), t + Vector3(0, 22.5, 0)))
 		EnvMesh.add(self, EnvMesh.box(Vector3(11.0, 11.0, 14.0), 0.05), stone, Transform3D(Basis(), c + Vector3(0, 5.5, 8.0)))
-		var louvre := EnvMesh.material("dom_louvre", "res://shaders/env_window.gdshader", {energy = 0.7, glow = Color("#ffb877")})
+		var dark := StandardMaterial3D.new()
+		dark.albedo_color = Color("#1c1a18")
+		dark.roughness = 0.8
 		for s: float in [-1.0, 1.0]:
-			EnvMesh.add(self, EnvMesh.box(Vector3(1.4, 2.6, 0.05), 0.0), louvre, Transform3D(Basis(), c + Vector3(s * 3.6, 14.0, -2.03)), false)
+			EnvMesh.add(self, EnvMesh.box(Vector3(1.4, 2.6, 0.05), 0.0), dark, Transform3D(Basis(), c + Vector3(s * 3.6, 14.0, -2.03)), false)
+		# The great door between the towers.
+		EnvMesh.add(self, EnvMesh.box(Vector3(2.4, 4.2, 0.05), 0.0), dark, Transform3D(Basis(), c + Vector3(0, 2.1, 0.97)), false)
 		# Works chimney behind the hall.
-		var brick := EnvMesh.material("chimney_brick", "res://shaders/env_plaster.gdshader", {
-			brick = Color("#7e3d2c"), mortar = Color("#a99a88"), brickwork = 1.0})
+		var brick := EnvMesh.scan("chimney_brick", "red_brick_03", {drift = 0.2})
 		EnvMesh.add(self, EnvMesh.cylinder(0.8, 1.3, 22.0, 16), brick, Transform3D(Basis(), Vector3(-12.0, 11.0, -12.0)))
+	# The works buildings and houses round the yard and behind the hall.
+	TownBlock.block(self, Vector3(-25.0, 0, zf + 4.0), 12.0, 16.0, {key = key + "_n1", scan = "red_brick_03", storeys = 3})
+	TownBlock.block(self, Vector3(25.0, 0, zf + 4.0), 12.0, 16.0, {key = key + "_n2", scan = "red_brick", storeys = 3})
+	TownBlock.block(self, Vector3(-22.0, 0, zf + 27.0), 14.0, 10.0, {key = key + "_n3", scan = "yellow_plaster", storeys = 4})
+	TownBlock.block(self, Vector3(20.0, 0, zf + 27.0), 14.0, 10.0, {key = key + "_n4", scan = "painted_worn_brick", storeys = 3})
+	TownBlock.block(self, Vector3(0.0, 0, -24.0), 13.0, 8.0, {key = key + "_n5", scan = "red_brick", storeys = 3})
+	TownBlock.block(self, Vector3(16.0, 0, -23.5), 12.0, 8.0, {key = key + "_n6", scan = "red_brick_03", storeys = 4})
 	prop("kaykit_city/streetlight.gltf", Vector3(-8.0, 0, zf + 5.0), 0.0, {scale = 0.95, solid = PropKit.Solid.CYLINDER})
 	prop("kaykit_city/streetlight.gltf", Vector3(8.0, 0, zf + 5.0), 180.0, {scale = 0.95, solid = PropKit.Solid.CYLINDER})
-	prop("kaykit_city/building_C_withoutBase.gltf", Vector3(-14.0, 0, -13.0), 0.0, {solid = PropKit.Solid.NONE, desaturate = 0.5})
-	prop("kaykit_city/building_F_withoutBase.gltf", Vector3(14.0, 0, -12.5), 0.0, {solid = PropKit.Solid.NONE, desaturate = 0.5})
-	for x: float in [inner_min.x - 1.2, inner_max.x + 1.2]:
-		WorldBuilder.add_collider(self, Vector3(0.4, 1.2, 8.0), Transform3D(Basis(), Vector3(x, 0.6, zf + 4.0)))
-	WorldBuilder.add_collider(self, Vector3(24.0, 1.2, 0.4), Transform3D(Basis(), Vector3(0, 0.6, zf + 8.2)))
+	# The works yard: brick walls and the works gate.
+	_forecourt(8.2, 1.2, true)

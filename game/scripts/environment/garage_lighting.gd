@@ -1,8 +1,8 @@
 class_name GarageLighting
-## Lighting for the garage (level 2): the backyard's dusk sky, grade and
-## post-processing, but with the low sun raking in through the open roller
-## door (the roof and walls shade the rest), a weaker sky fill and ambient,
-## so the interior lamps and the furnace carry the room.
+## Lighting of the halls. `build` sets up the backyard's dusk sky, grade and post-processing with
+## a low sun raking in through the open front; `daylight` then turns it into a clear working day.
+## Every hall of the game calls both (the graphics standard, TECH_SPEC Modul Y); the dusk alone is
+## what the later halls looked like before.
 
 ## Low sun from the front-left: a warm shaft through the door across the floor.
 const SUN_ROTATION := Vector3(-17.0, -32.0, 0.0)
@@ -52,7 +52,6 @@ const DAY_SUN := Vector3(-47.9, -34.2, 0.0)
 ## Turns a hall built with `build` from dusk to a clear working day in the open: a photographed sky
 ## that lights the scene and mirrors in paint and glass, a hard high sun with crisp shadows, clear air
 ## instead of workshop haze, and a grade with punch (the project's graphics standard, TECH_SPEC Modul Y).
-## The scrap hall uses it.
 static func daylight(parent: Node3D) -> void:
 	var low := EnvQuality.is_low()
 	var we := parent.get_node_or_null(^"WorldEnvironment") as WorldEnvironment

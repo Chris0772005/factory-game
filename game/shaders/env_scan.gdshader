@@ -29,6 +29,17 @@ uniform float foot = 0.0;
 uniform float foot_height = 0.7;
 // Hall walls dissolve around the line of sight of the orbit camera (env_cutaway), as the drawn walls do.
 uniform bool cutaway = false;
+// Floors: stains placed by the level (xy = world xz, z = radius, w = kind: 0 oil, 1 soot, 2 moulding
+// sand, 3 rust ring) and a painted line along z at `bay_line_x` (below -50: none).
+uniform vec4 stains[12];
+uniform int stain_count = 0;
+uniform float bay_line_x = -100.0;
+uniform float bay_line_from_z = -1.0;
+uniform vec4 oil : source_color = vec4(0.16, 0.15, 0.16, 1.0);
+uniform vec4 soot : source_color = vec4(0.17, 0.15, 0.14, 1.0);
+uniform vec4 sand : source_color = vec4(0.78, 0.65, 0.45, 1.0);
+uniform vec4 rust : source_color = vec4(0.45, 0.27, 0.17, 1.0);
+uniform vec4 line_paint : source_color = vec4(0.85, 0.66, 0.18, 1.0);
 
 varying vec3 world_pos;
 varying vec3 world_nrm;
@@ -90,6 +101,41 @@ void fragment() {
 		float low = (1.0 - smoothstep(0.0, foot_height, world_pos.y + (slow - 0.5) * 0.5)) * foot * (1.0 - abs(n.y));
 		col *= 1.0 - 0.45 * low;
 		rough = mix(rough, min(rough, 0.55), low * 0.5);
+	}
+	if (n.y > 0.7 && (stain_count > 0 || bay_line_x > -50.0)) {
+		vec2 xz = world_pos.xz;
+		float grain = env_noise(xz * 37.0);
+		// A worn, scuffed line of paint.
+		float line = (1.0 - smoothstep(0.045, 0.055, abs(xz.x - bay_line_x))) * step(bay_line_from_z, xz.y);
+		line *= smoothstep(0.25, 0.55, env_noise(xz * 7.0) + slow * 0.3);
+		col = mix(col, line_paint.rgb * (0.85 + grain * 0.2), line * 0.85);
+		rough = mix(rough, rough * 0.8, line);
+		// (Fixed bound, no `continue`: some drivers crash on a uniform loop bound with an early continue.)
+		float wet = 0.0;
+		float edge_n = env_fbm(xz * 2.2) - 0.5;
+		float speck = step(0.62, env_noise(xz * 48.0));
+		for (int i = 0; i < 12; i++) {
+			if (i < stain_count) {
+				vec4 s = stains[i];
+				float d = length(xz - s.xy) / s.z + edge_n * 0.55;
+				float k = 1.0 - smoothstep(0.55, 1.0, d);
+				if (k > 0.0) {
+					if (s.w < 0.5) {
+						col = mix(col, oil.rgb, k * 0.75);
+						wet = max(wet, k);
+					} else if (s.w < 1.5) {
+						col = mix(col, soot.rgb * (0.85 + grain * 0.4), k * 0.7);
+					} else if (s.w < 2.5) {
+						col = mix(col, sand.rgb * (0.9 + grain * 0.2), k * (0.55 + speck * 0.3));
+						rough = mix(rough, 0.97, k);
+					} else {
+						float ring = 1.0 - smoothstep(0.0, 0.08, abs(d - 0.75));
+						col = mix(col, rust.rgb, max(ring, k * 0.3) * 0.6);
+					}
+				}
+			}
+		}
+		rough = mix(rough, 0.25, wet);
 	}
 	ALBEDO = col;
 	ROUGHNESS = rough;

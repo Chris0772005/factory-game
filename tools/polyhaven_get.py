@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
-"""Fetches scanned models from Poly Haven (https://polyhaven.com, CC0) for PhotoProp.
+"""Fetches scanned models and surfaces from Poly Haven (https://polyhaven.com, CC0).
 
-Each model comes as a glTF file with its buffer and its 1k maps and lands in
+Models (for PhotoProp): each comes as a glTF file with its buffer and its 1k maps and lands in
 game/assets/models/polyhaven/<name>/ the way PhotoProp expects it (<name>_1k.gltf, <name>.bin,
 textures/). With --small the maps are scaled down to 512 px (small things on shelves and tables).
 --dry only lists what would be fetched and how big it is.
 
     python3 -I tools/polyhaven_get.py [--small] [--dry] name [name ...]
+
+Surfaces (for EnvMesh.scan): with --scan each name is a texture set. Its 1k colour, normal and
+occlusion-roughness-metal maps land in game/assets/textures/scan/ as <name>_d.jpg, <name>_n.jpg and
+<name>_arm.jpg, and the line for EnvMesh.SCANS is printed (edge length in metres, mean colour).
+
+    python3 -I tools/polyhaven_get.py --scan name [name ...]
 
 After fetching: let Godot import them, then run tools/texture_flags.py on the new folders (it sets
 compress/mode=2 and mipmaps/generate=true in the textures' .import files, normal maps also
@@ -20,6 +26,7 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 OUT = ROOT / "game/assets/models/polyhaven"
+SCANS = ROOT / "game/assets/textures/scan"
 AGENT = "asset-browser/1.0"
 
 
@@ -30,10 +37,34 @@ def fetch(url, path):
         raise SystemExit("%s: HTTP %s %s" % (url, done.stdout, done.stderr[:200]))
 
 
+def linear(value):
+    value /= 255.0
+    return value / 12.92 if value <= 0.04045 else ((value + 0.055) / 1.055) ** 2.4
+
+
+def scan(name):
+    """One texture set for EnvMesh.scan: three maps and the line for EnvMesh.SCANS."""
+    from PIL import Image
+    info = SCANS / (name + "_info.json")
+    fetch("https://api.polyhaven.com/info/" + name, info)
+    size = (json.loads(info.read_text()).get("dimensions") or [2000])[0] / 1000.0
+    info.unlink()
+    for theirs, ours in (("diff", "d"), ("nor_gl", "n"), ("arm", "arm")):
+        fetch("https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/%s/%s_%s_1k.jpg" % (name, name, theirs),
+              SCANS / ("%s_%s.jpg" % (name, ours)))
+    pixels = list(Image.open(SCANS / (name + "_d.jpg")).convert("RGB").resize((64, 64), Image.BOX).tobytes())
+    mean = [sum(linear(v) for v in pixels[c::3]) / (len(pixels) / 3) for c in range(3)]
+    print('\t"%s": [%.1f, Color(%.3f, %.3f, %.3f)],' % (name, size, mean[0], mean[1], mean[2]))
+
+
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     small = "--small" in sys.argv
     dry = "--dry" in sys.argv
+    if "--scan" in sys.argv:
+        for name in args:
+            scan(name)
+        return
     for name in args:
         listing = OUT / name / "files.json"
         fetch("https://api.polyhaven.com/files/" + name, listing)

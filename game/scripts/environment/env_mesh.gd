@@ -150,6 +150,13 @@ const SCANS := {
 	"green_metal_rust": [1.0, Color(0.05, 0.074, 0.034)],
 	"floor_tiles_06": [3.0, Color(0.203, 0.168, 0.154)],
 	"long_white_tiles": [1.27, Color(0.614, 0.57, 0.472)],
+	"garage_floor": [1.9, Color(0.202, 0.154, 0.095)],
+	"double_brick_floor": [2.2, Color(0.151, 0.058, 0.021)],
+	"roof_planks": [1.5, Color(0.183, 0.069, 0.021)],
+	"factory_brick": [1.5, Color(0.244, 0.154, 0.096)],
+	"hangar_concrete_floor": [2.0, Color(0.034, 0.030, 0.026)],
+	"large_sandstone_blocks": [3.0, Color(0.100, 0.093, 0.075)],
+	"roof_slates_03": [3.0, Color(0.167, 0.160, 0.140)],
 }
 
 

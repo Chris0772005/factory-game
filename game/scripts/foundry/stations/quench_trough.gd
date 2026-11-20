@@ -44,8 +44,8 @@ func _build_collision() -> void:
 func _build_art() -> void:
 	var steel := StationKit.metal("trough_steel", {steel_color = Color("#9fa6a9"), rust = 0.3, dents = 0.35,
 		metallic_steel = 0.65, roughness_steel = 0.4})
-	var brick := EnvMesh.material("garage_brick_feet", "res://shaders/env_plaster.gdshader", {
-		brick = Color("#9c553f"), mortar = Color("#c2b29a"), brickwork = 1.0})
+	# (Photographed brick, as the walls of the halls.)
+	var brick := EnvMesh.scan("trough_brick_feet", "red_brick_03", {drift = 0.15})
 	var hx := SIZE.x * 0.5
 	var hz := SIZE.z * 0.5
 	# Tub: tapered walls with a rolled rim, riveted seams.

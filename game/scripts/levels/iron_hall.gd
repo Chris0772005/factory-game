@@ -18,6 +18,7 @@ func build_level() -> void:
 
 func build_stations() -> void:
 	GarageLighting.build(self)
+	GarageLighting.daylight(self)
 	var cupola := CupolaFurnace.new()
 	cupola.position = Vector3(-7.2, 0, -4.4)
 	add_child(cupola)
