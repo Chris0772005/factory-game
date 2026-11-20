@@ -217,7 +217,7 @@ func attract_show() -> void:
 	skip._update_look()
 	_add_truck()
 	# Two mates at the heap: one digs with the bare hands, one has found a copper kettle.
-	_stand_mates([0.9, 1.5, 212.0, 2.7, 2.7, -18.0], 0.0)
+	_stand_mates([0.9, 1.5, 212.0, -1.4, 3.8, -9.0], 0.0)
 
 
 func _announce(title: String, subtitle: String) -> void:
