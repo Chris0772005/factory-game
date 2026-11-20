@@ -116,14 +116,17 @@ func _build_walkers() -> void:
 		[Vector3(12.8, 0, west), 0.0],
 		[Vector3(-20.0, 0, west), 0.0],
 	], 30.0)
+	# The old man strolls. He keeps to a lane of his own along the tree pits, so nobody has to pass
+	# through him.
+	var slow := front - 3.5
 	walkers.add_round("Worker", {}, [
 		[Vector3(24.3, 0, front - 0.9), 10.0, Vector3(24.3, 0, front)],
-		[Vector3(23.2, 0, west), 0.0],
-		[Vector3(-8.0, 0, west), 0.0],
+		[Vector3(23.2, 0, slow), 0.0],
+		[Vector3(-7.4, 0, slow), 0.0],
 		[Vector3(-9.0, 0, front - 0.85), 6.0, Vector3(-9.0, 0, front + 2.0)],
-		[Vector3(-7.8, 0, east), 0.0],
-		[Vector3(23.2, 0, east), 0.0],
-	], 55.0)
+		[Vector3(-7.4, 0, slow), 0.0],
+		[Vector3(23.2, 0, slow), 0.0],
+	], 55.0, 0.75)
 
 
 func is_scrap_hall() -> bool:

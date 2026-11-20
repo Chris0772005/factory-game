@@ -18,21 +18,21 @@ var _sync := 0.0
 
 
 ## A walker of `model` (TownFigure: Casual, Casual_Woman, Worker, Suit) in `colors`, who starts
-## `offset` seconds into the round. `stops` are [position, seconds to stand there] in walking order,
-## with a third entry where the walker should look meanwhile (a point); after the last stop the
-## walker returns to the first.
-func add_round(model: String, colors: Dictionary, stops: Array, offset := 0.0) -> void:
+## `offset` seconds into the round and walks at `pace` m/s (below about 1 m/s the people stroll).
+## `stops` are [position, seconds to stand there] in walking order, with a third entry where the
+## walker should look meanwhile (a point); after the last stop the walker returns to the first.
+func add_round(model: String, colors: Dictionary, stops: Array, offset := 0.0, pace := SPEED) -> void:
 	var legs: Array = []
 	var total := 0.0
 	for i in stops.size():
 		var from: Vector3 = stops[i][0]
 		var to: Vector3 = stops[(i + 1) % stops.size()][0]
 		var wait: float = stops[i][1]
-		var walk := from.distance_to(to) / SPEED
+		var walk := from.distance_to(to) / pace
 		var look: Vector3 = stops[i][2] if (stops[i] as Array).size() > 2 else to
 		legs.append([total, wait, walk, from, to, look])
 		total += wait + walk
-	var entry := {legs = legs, total = total, offset = offset, figure = null, side = 0.0, facing = 0.0}
+	var entry := {legs = legs, total = total, offset = offset, pace = pace, figure = null, side = 0.0, facing = 0.0}
 	if DisplayServer.get_name() != "headless":
 		var figure := TownFigure.make(model, colors)
 		add_child(figure)
@@ -84,7 +84,7 @@ func _physics_process(delta: float) -> void:
 		figure.global_position = at + forward.cross(Vector3.UP) * float(entry.side)
 		entry.facing = lerp_angle(float(entry.facing), atan2(forward.x, forward.z), minf(delta * 7.0, 1.0))
 		figure.rotation.y = entry.facing
-		figure.animate(delta, forward * SPEED if moving else Vector3.ZERO)
+		figure.animate(delta, forward * float(entry.pace) if moving else Vector3.ZERO)
 
 
 @rpc("authority", "call_remote", "unreliable")

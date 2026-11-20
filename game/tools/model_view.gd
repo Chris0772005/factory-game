@@ -1,7 +1,7 @@
 extends Node3D
 ## Art check: shows one model on the street's asphalt in the light of the first level (--plain: a plain sky and sun instead).
-##   godot-render --path . res://tools/model_view.tscn -- --shot=out.png --model=res://... [--yaw=35] [--pitch=12] [--dist=9] [--h=1.4] [--dump]
-##   ... --finish applies VehicleFinish (gloss, glass, lamps, dust and mud); --rig=0,-30,90,60 instead of --model shows the excavator rig posed (swing, boom, stick, bucket in degrees), --lamps with its lamps on. --hide=a,b hides the nodes of those names. --heap=2.5,1.1,3.0,1.76,1.0,0.42,0.9 shows a load of scrap (floor, rim, height, crown, fill). --row=a,b,c stands those Poly Haven scans side by side at their real size.
+##   godot-render --path . res://tools/model_view.tscn -- --shot=out.png --model=res://...[,res://...] [--yaw=35] [--pitch=12] [--dist=9] [--h=1.4] [--dump]
+##   ... --finish applies VehicleFinish (gloss, glass, lamps, dust and mud); --rig=0,-30,90,60 instead of --model shows the excavator rig posed (swing, boom, stick, bucket in degrees), --lamps with its lamps on. --hide=a,b hides the nodes of those names. --heap=2.5,1.1,3.0,1.76,1.0,0.42,0.9 shows a load of scrap (floor, rim, height, crown, fill). --row=a,b,c stands those Poly Haven scans side by side at their real size. --anim=1.2 shows the model's first animation at that second (--clip=Run: that one; --clip=Run,Walk: one each for several models).
 
 func _ready() -> void:
 	var model := ""
@@ -17,6 +17,8 @@ func _ready() -> void:
 	var hide := PackedStringArray()
 	var heap := ""
 	var row := PackedStringArray()
+	var anim_at := -1.0
+	var clip_name := ""
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--model="):
 			model = arg.trim_prefix("--model=")
@@ -44,6 +46,10 @@ func _ready() -> void:
 			heap = arg.trim_prefix("--heap=")
 		elif arg.begins_with("--row="):
 			row = arg.trim_prefix("--row=").split(",")
+		elif arg.begins_with("--anim="):
+			anim_at = float(arg.trim_prefix("--anim="))
+		elif arg.begins_with("--clip="):
+			clip_name = arg.trim_prefix("--clip=")
 	if plain:
 		_plain_light()
 	else:
@@ -67,14 +73,34 @@ func _ready() -> void:
 		digger.set_pose(deg_to_rad(parts[0].to_float()), parts[1].to_float(), parts[2].to_float(), parts[3].to_float())
 		digger.lamps_on = lamps
 	elif model != "":
-		var packed := load(model) as PackedScene
-		if packed:
+		# Several models (--model=a,b,c) stand side by side, 0.9 m apart.
+		var paths := model.split(",")
+		for i in paths.size():
+			var packed := load(paths[i]) as PackedScene
+			if packed == null:
+				continue
 			var node := packed.instantiate()
 			add_child(node)
+			if node is Node3D:
+				(node as Node3D).position.x = (float(i) - float(paths.size() - 1) * 0.5) * 0.9
 			if finish and node is Node3D:
 				VehicleFinish.apply(node as Node3D)
 			if dump:
 				_dump(node, 0)
+			if anim_at >= 0.0:
+				# --anim=1.2: the model's first animation, held at that second. --clip=Run,Walk: the first
+				# model shows Run, the second Walk, and so on round the list.
+				var player := node.find_child("AnimationPlayer", true, false) as AnimationPlayer
+				if player and not player.get_animation_list().is_empty():
+					var clip := player.get_animation_list()[0]
+					var wanted := clip_name.split(",")
+					var mine := wanted[i % wanted.size()] if clip_name != "" else ""
+					if mine != "" and player.has_animation(mine):
+						clip = mine
+					print("ANIMS ", player.get_animation_list(), " ", clip, " ", player.get_animation(clip).length)
+					player.play(clip)
+					player.seek(anim_at, true)
+					player.pause()
 	if heap != "":
 		# --heap=2.5,1.1,3.0,1.76,1.0,0.42,0.9: a load of scrap (ScrapLoadArt.pile: floor x and z, rim x and z,
 		# height, crown) filled to the last number.

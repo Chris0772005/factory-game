@@ -24,4 +24,9 @@ Steam-Passwort, Steam-Guard-Codes, Bankdaten. Für den Upload richten wir einen 
 
 ## Später im Fragebogen zu Inhalten
 
-Die Musik im Spiel ist von einer KI komponiert. Das gibst du im Abschnitt „KI-generierte Inhalte“ an.
+Im Abschnitt „KI-generierte Inhalte“ gibst du an, was im Spiel von einer KI stammt und von Spielern gesehen oder gehört wird (vorab erzeugt, nicht während des Spielens):
+
+- Die Musik ist von einer KI komponiert.
+- Die Stadtbewohner (Passanten, Pfandleiher, Polizist) sind KI-erzeugte 3D-Figuren (Higgsfield: GPT Image 2.6 und Meshy 7). Sie zeigen keine echten Personen.
+
+Steam zeigt diese Angabe auf der Shopseite an. Kommt später weiteres KI-Material dazu, steht es in `CREDITS.md` und muss hier ergänzt werden.

@@ -1,0 +1,50 @@
+worker.glb, broker.glb, officer.glb, woman.glb, youth.glb: the townspeople of MOLTEN MATES. These five figures
+are AI-GENERATED CONTENT. Nobody modelled or painted them by hand, and they show no real person: each face and
+outfit was invented by the image model from a written description.
+
+How they were made (all through the owner's Higgsfield account, https://higgsfield.ai, in November 2026):
+  1. A studio picture of each person, front view in an A-pose, from a written description
+     (Higgsfield image model "GPT Image 2.6").
+  2. From that picture a textured, rigged 3D figure with one clip, a slow walk
+     (Higgsfield 3D model "Meshy 7 image-to-3D": about 25,000 triangles, PBR maps, 24-joint skeleton,
+     clip "Casual_Walk" of Meshy's animation library).
+  3. For the first figure (worker) further clips of the same library on the same skeleton
+     (Higgsfield "Meshy rigging"): "Quick_Walk", "Run_02", "Wave_One_Hand"; also "Idle" and
+     "Confident_Walk", which are not used.
+  4. tools/people.py put each figure together for the game: its own mesh, skeleton and slow walk (clip Stroll),
+     the first figure's clips carried over to the others (Walk, Run, Wave), a clip of standing still made from the
+     waving clip (Idle_Neutral), every clip set on the ground, and the maps laid out anew: the generator packs
+     thousands of small patches edge to edge, whose colours run into each other from a few metres away; the
+     tool moves the patches (each keeps its size and picture) so that like colours lie together with room
+     between. Colour map 3072 px wide, normal and roughness maps half that, saved as JPEG files beside the models.
+
+Import settings that matter (the *.import files beside the models): the maps are compressed for the graphics card
+with mipmaps (compress/mode=2, the normal maps in high quality), and animation/remove_immutable_tracks is off,
+so that every clip moves every bone and no pose is left over from the clip before.
+
+Higgsfield job ids (they identify the generations in the owner's account):
+  worker   picture 71ddeabe-a1bf-4c81-8572-2b3707a9cdb6   figure 37900f3e-ba48-47bb-b528-ed518b465f42
+           clips: Quick_Walk e035df35-0b95-4676-b11f-14b098fb13b2, Run_02 f753c990-234d-4e34-86e9-ce3ad239b6ba,
+           Wave_One_Hand 740d4657-7a67-4505-b5ce-cc118c407c72
+           (not used: Idle d593b435-3284-4748-ac06-257cde1c57c1, Confident_Walk 4f519b4e-7a3d-48b7-ac14-efa5b14aab3f)
+  broker   picture 3f8831d5-b2bb-496e-810c-dfa99abfbe08   figure 9455faa6-0df7-4dc4-bf9c-9effea6fad43
+  officer  picture 88cdec5a-7205-423b-8660-2aa951d86765   figure d7220e94-c371-4ef9-b459-5a3e7cc26c64
+  woman    picture 6c8d42db-cf20-448a-b36b-f3839bc7b550   figure 68f0c52b-83ea-4163-94cd-82f1c447723b
+  youth    picture cb12c4ef-581d-4c0c-8f55-c7b939aad98f   figure 2283e621-5f80-4ac7-a5d5-dd7444ee9e70
+
+The generated source files (10 to 13 MB each) are not in this repository; they can be downloaded again from the
+owner's Higgsfield account under the ids above.
+
+Rights: Higgsfield's help centre states that it claims no ownership of what users generate and does not restrict
+commercial use ("Who owns my generations and can I use them commercially?",
+https://higgsfield.ai/creator-hub/help-center/account/who-owns-my-generations-and-can-i-use-them-commercially,
+which refers to section 4.4 of its Terms of Use; read through a web search on 20 November 2026, the page itself
+could not be opened from the build environment). The same page says that outputs are not exclusive and that the
+user stays responsible for what the content shows. Before a release the owner should read the current Terms of
+Use (https://higgsfield.ai/terms-of-use-agreement) once more.
+
+Steam: this is pre-generated AI content that players see. It has to be declared in the Steam content survey,
+together with the AI-composed music (see CREDITS.md).
+
+The <name>_colour.jpg, <name>_normal.jpg and <name>_rough.jpg (roughness and metal) files are the figures' maps;
+the models name them and do not hold them.
