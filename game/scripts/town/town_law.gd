@@ -36,7 +36,9 @@ func _init() -> void:
 
 func _ready() -> void:
 	add_to_group(GROUP)
-	if DisplayServer.get_name() != "headless":
+	var here := get_tree().get_first_node_in_group(&"world") as GameWorld
+	# No wanted level behind the main menu, where the level only stands as a backdrop.
+	if DisplayServer.get_name() != "headless" and not (here and here.attract_mode):
 		add_child(LawHud.new())
 	for arg in OS.get_cmdline_user_args():
 		if arg == "--hot" or arg == "--pad" or arg == "--machines" or arg == "--shop" or arg == "--skip":

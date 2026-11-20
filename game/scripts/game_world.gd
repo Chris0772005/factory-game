@@ -206,6 +206,8 @@ func _spawn_entity(data: Dictionary) -> Node:
 
 ## Floating text for everyone (host calls this).
 func popup_all(pos: Vector3, text: String, color: Color) -> void:
+	if attract_mode:
+		return
 	HUD.popup(self, pos, text, color)
 	if Network.is_online() and multiplayer.is_server():
 		_popup_remote.rpc(pos, text, color)

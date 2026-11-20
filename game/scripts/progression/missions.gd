@@ -68,7 +68,8 @@ func _ready() -> void:
 	if world:
 		world.money_changed.connect(_on_money.bind(world))
 		_last_money = world.money
-	if DisplayServer.get_name() != "headless":
+	# No panel behind the main menu, where the level only stands as a backdrop.
+	if DisplayServer.get_name() != "headless" and not (world and world.attract_mode):
 		add_child(MissionsPanel.new())
 
 var _last_money := 0

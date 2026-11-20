@@ -498,7 +498,7 @@ Schatten `CLOUD_SHADE`, Drift 0,002 UV/s), Sterne blenden nachts ein. Vorlagen s
 | Welt-Labels | `Label3D` nur für dynamische Info (Preise, Noten, Spielernamen): Billboard, Fredoka 700, `outline_size` 18. Stationsschilder („VERKAUF“, „KATALOG“) sind **bemalte Holzschilder** (Textur/Decal), keine schwebende UI-Schrift. |
 | Diegetisch zuerst | Temperatur = Zeiger-Thermometer am Tiegelgriff, Füllstand = Steiger im Formkasten. Zahlen nur sekundär. |
 | HUD | oben links Geld (Münz-Icon statt „$“), oben rechts Auftragskarte, unten mittig nur kontextuell. Safe Area 5 %. Max. 3 HUD-Elemente gleichzeitig. |
-| Hauptmenü | 3D-Diorama des echten Hinterhofs in Dämmerung oder Golden Hour, Kamera kreist langsam (0,02 rad/s), DOF; Logo „MOLTEN MATES“ mit Metall-Verlauf `#FFD27A` → `#FF6A1A`, Ink-Kontur 10 px, Glow. Nie Testszenen zeigen. |
+| Hauptmenü | 3D-Bild der Schrotthalle bei Tag mit arbeitendem Bagger (seit 20.11.2026, Grafikstandard TECH_SPEC Modul Y; vorher der Hinterhof in der Dämmerung), Kamera schwenkt langsam (0,02 rad/s), DOF; Logo „MOLTEN MATES“ mit Metall-Verlauf `#FFD27A` → `#FF6A1A`, Ink-Kontur 10 px, Glow. Nie Testszenen zeigen. |
 | DrawPad | Papierbogen auf Werkbank (unscharfer 3D-Hintergrund), Stift-Cursor, leicht zittrige Tintenlinie; Vorschau mit Metallglühen. |
 
 ---

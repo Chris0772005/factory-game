@@ -1,26 +1,40 @@
 class_name MenuCamera
 extends Camera3D
-## Title-screen camera (Art Bible 12): a slightly raised diorama view from
-## the yard's front-right corner that sweeps slowly back and forth (about
-## 0.02 rad/s at its fastest) around the furnace: molds in the foreground,
-## the lit house and the string lights behind, the dusk sky and the moon over
-## the roofs, the calm front lawn on the left under the menu column. It moves
-## between the front lawn and the space above the low front fence and never
-## passes through the house, a pole or the big tree, nor shows a string-light
-## pole close up. Soft far depth of field on the neighbourhood.
+## Title-screen camera: a slightly raised view that sweeps slowly back and forth (about 0.02 rad/s at
+## its fastest) around a point of the level behind the menu, with a soft far depth of field. The
+## values it starts with frame the backyard (Art Bible 12: from the yard's front-right corner around
+## the furnace, never through the house, a pole or the big tree); `frame_scrap_hall` sets the view
+## the menu uses now.
 
 ## Point the camera circles and looks at: above and behind the furnace.
-const TARGET := Vector3(-2.0, 2.4, -4.0)
-const RADIUS := 15.0
+var target := Vector3(-2.0, 2.4, -4.0)
+var radius := 15.0
 ## Absolute eye height: low enough that the dusk sky shows above the roofs.
-const EYE_HEIGHT := 3.6
+var eye_height := 3.6
 ## Sweep centre and half-width (rad around the yard's front axis, +x = right).
-const SWEEP_CENTER := 0.5
-const SWEEP := 0.14
-## Seconds for one full left-right-left sweep (peak 2 pi SWEEP / PERIOD rad/s).
+var sweep_center := 0.5
+var sweep := 0.14
+## Seconds for one full left-right-left sweep (peak 2 pi sweep / PERIOD rad/s).
 const PERIOD := 45.0
 
 var _t := 0.0
+
+
+## The view for the scrap hall behind the menu: from the far pavement across the street into the open
+## hall, the excavator and the skip in the middle, the truck's place on the left, daylight sky over
+## the roof. The sweep stays between the tree and the dealer's shop.
+func frame_scrap_hall() -> void:
+	target = Vector3(-6.5, 2.3, 5.5)
+	radius = 13.6
+	eye_height = 3.0
+	sweep_center = 0.2
+	sweep = 0.15
+	h_offset = -1.3
+	var attrs := attributes as CameraAttributesPractical
+	if attrs:
+		attrs.dof_blur_far_distance = 36.0
+		attrs.dof_blur_far_transition = 24.0
+	_update()
 
 
 func _ready() -> void:
@@ -48,7 +62,7 @@ func _process(delta: float) -> void:
 
 
 func _update() -> void:
-	var a := SWEEP_CENTER + sin(_t * TAU / PERIOD + 0.4) * SWEEP
+	var a := sweep_center + sin(_t * TAU / PERIOD + 0.4) * sweep
 	var bob := sin(_t * 0.21) * 0.12
-	var pos := Vector3(TARGET.x + sin(a) * RADIUS, EYE_HEIGHT + bob, TARGET.z + cos(a) * RADIUS)
-	look_at_from_position(pos, TARGET + Vector3(0, bob * 0.5, 0))
+	var pos := Vector3(target.x + sin(a) * radius, eye_height + bob, target.z + cos(a) * radius)
+	look_at_from_position(pos, target + Vector3(0, bob * 0.5, 0))

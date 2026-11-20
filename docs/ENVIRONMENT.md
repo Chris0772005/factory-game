@@ -25,7 +25,7 @@ kommt aus `_build_environment()` → `YardLighting.build()` (auch vom Asset-Kont
 | `yard_ambience.gd` | Schornsteinrauch, Glühwürmchen (GPU-Partikel). |
 | `yard_lighting.gd` + `env_sky` | Dämmerung: Sky-Shader (Verlauf, Abendrot, Erdschatten + „Venusgürtel“, Mond, Sterne, Wolken), AgX white 6 / contrast 1.3, Glow nur über HDR 1.2 (bloom 0), SSAO, SSIL (High), Tiefennebel mit Luftperspektive 0,65 (Fernes läuft in die Himmelsfarbe aus), Volumetrik (High), Sonne `#FFA36B` 1.2 tief von vorn-links, kühles Fill von hinten. |
 | `yard_set.gd` | Ruft alles auf; Kamera-Durchlass (Abschnitt 2), eine Box-`ReflectionProbe` über dem Hof (einmalig gerendert, Art Bible 6.5), Profiling-Ausgabe `--env-stats` (Abschnitt 4). |
-| `menu_camera.gd` | Hauptmenü-Kamera: leicht erhöhter Diorama-Blick (3,6 m) aus der vorderen rechten Hofecke, pendelt langsam (Spitze ≈ 0,02 rad/s, 45 s je Hin und Zurück) um den Ofen; Formkästen vorn, Haus mit Fenstern und Lichterkette dahinter, Dämmerhimmel mit Mond über den Dächern, ruhiger Rasen links unter der Menüspalte. Bewegt sich zwischen Vorgarten und dem Raum über dem niedrigen Lattenzaun, fährt nie durch Haus, Mast oder Baum, kein Lichterkettenmast im Nahbereich. Weiche Fern-Tiefenunschärfe ab 26 m. Vorschau: `-- --menu-cam-t=<s>`. |
+| `menu_camera.gd` | Hauptmenü-Kamera: leicht erhöhter Diorama-Blick (3,6 m) aus der vorderen rechten Hofecke, pendelt langsam (Spitze ≈ 0,02 rad/s, 45 s je Hin und Zurück) um den Ofen; Formkästen vorn, Haus mit Fenstern und Lichterkette dahinter, Dämmerhimmel mit Mond über den Dächern, ruhiger Rasen links unter der Menüspalte. Bewegt sich zwischen Vorgarten und dem Raum über dem niedrigen Lattenzaun, fährt nie durch Haus, Mast oder Baum, kein Lichterkettenmast im Nahbereich. Weiche Fern-Tiefenunschärfe ab 26 m. Vorschau: `-- --menu-cam-t=<s>`. **Seit 20.11.2026:** Das Menü ruft `frame_scrap_hall()` auf und zeigt die Schrotthalle bei Tag (TECH_SPEC Modul Y); die hier beschriebene Hof-Fahrt sind nur noch die Startwerte der Kamera. |
 
 Alle Zufallswerte haben feste Seeds → jeder Peer baut denselben Hof (gleiche Kollisionen).
 Headless (Tests, Server) werden nur Kollisionen gebaut, keine Meshes/Gras (`EnvMesh.visual()`).
@@ -113,7 +113,7 @@ Gras nur 3 m über den Zaun hinaus (Hecken verdecken den Rest), Detailmaske nur 
   Der Boden-Shader hat bewusst keine gebumpten Risse (die Kontur hätte jede Zelle nachgezeichnet).
 - **Kamera (`camera_rig.gd`, WP 7):** siehe Abschnitt 2. Offen: Verdeckungs-Dither (Art Bible 8.2) für Zaun/Baum/Schuppen
   zwischen Kamera und Figur – bei flacher Neigung (−12°) verdeckt der 1,55-m-Zaun sonst die Beine der Figur.
-- **Hauptmenü (`main_menu.gd`):** Im Attract-Modus hält das Menü den Ofen auf Hitze ≈ 0,9 (langsames Atmen), der Tiegel
+- **Hauptmenü (`main_menu.gd`):** Im Attract-Modus hält das Menü den Ofen auf Hitze ≈ 0,9 (langsames Atmen), der Tiegel **Seit 20.11.2026** steht hinter dem Menü die Schrotthalle (`ScrapHall.attract_show()`, TECH_SPEC Modul Y); Ofen und Arbeiter gibt es dort nicht, die Funktionen dafür greifen ins Leere.
   im Ofen ist mit glühender Schmelze gefüllt, zwei Arbeiter (nur Modelle) treten den Blasebalg bzw. zeichnen an der
   Werkbank. Der Hammer lehnt am zweiten Formkasten statt im Vordergrund zu stehen. Menü und Showcases laden/schreiben
   nie den Spielstand (`SaveGame.is_active()`).

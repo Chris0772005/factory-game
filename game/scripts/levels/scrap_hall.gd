@@ -145,27 +145,50 @@ func _ensure_machines() -> void:
 		add_child(bench)
 		_announce("WERKBANK STEHT!", "Hinten links in der Halle: Eimer mit Altblech, Federn, Schrauben hinbringen und F")
 	if not _digger_built and has_upgrade(&"excavator"):
-		_digger_built = true
-		var skip := ScrapSkip.new()
-		skip.position = ScrapHallSet.SKIP_POS
-		add_child(skip)
-		var digger := Excavator.new()
-		digger.heap = get_tree().get_first_node_in_group(&"scrap_piles") as ScrapPile
-		digger.skip = skip
-		digger.position = ScrapHallSet.DIGGER_POS
-		# Tracks towards the heap.
-		digger.rotation.y = PI
-		add_child(digger)
+		_add_digger()
 		_announce("DER BAGGER IST DA!", "Er lädt den Berg in die Mulde – an der Mulde F drücken, dann holt Kowalski sie ab")
 	if not _truck_built and has_upgrade(&"truck"):
-		_truck_built = true
-		var truck := ScrapTruck.new()
-		truck.park = ScrapHallSet.TRUCK_PARK
-		truck.dock = ScrapHallSet.TRUCK_DOCK
-		truck.lane_z = ScrapHallSet.TRUCK_LANE_Z
-		truck.skip = get_tree().get_first_node_in_group(ScrapSkip.GROUP) as ScrapSkip
-		add_child(truck)
+		_add_truck()
 		_announce("DEIN LKW STEHT VOR DER HALLE!", "Er fährt jede volle Mulde von selbst weg – Großhandelspreis")
+
+
+## The skip by the hall door and the excavator that loads it.
+func _add_digger() -> ScrapSkip:
+	_digger_built = true
+	var skip := ScrapSkip.new()
+	skip.position = ScrapHallSet.SKIP_POS
+	add_child(skip)
+	var digger := Excavator.new()
+	digger.heap = get_tree().get_first_node_in_group(&"scrap_piles") as ScrapPile
+	digger.skip = skip
+	digger.position = ScrapHallSet.DIGGER_POS
+	# Tracks towards the heap.
+	digger.rotation.y = PI
+	add_child(digger)
+	return skip
+
+
+func _add_truck() -> void:
+	_truck_built = true
+	var truck := ScrapTruck.new()
+	truck.park = ScrapHallSet.TRUCK_PARK
+	truck.dock = ScrapHallSet.TRUCK_DOCK
+	truck.lane_z = ScrapHallSet.TRUCK_LANE_Z
+	truck.skip = get_tree().get_first_node_in_group(ScrapSkip.GROUP) as ScrapSkip
+	add_child(truck)
+
+
+## The hall behind the main menu (attract mode): mid-shift, as it looks once the machines are
+## bought. The excavator loads the skip, which starts two thirds full, and the truck hauls it
+## away when it is full. Nothing here is saved or announced.
+func attract_show() -> void:
+	if _digger_built or _truck_built:
+		return
+	var skip := _add_digger()
+	skip.count = 40
+	skip.worth = 40 * FoundryRules.raw_price(&"scrap")
+	skip._update_look()
+	_add_truck()
 
 
 func _announce(title: String, subtitle: String) -> void:

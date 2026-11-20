@@ -1,12 +1,13 @@
 extends Node
-## Title screen: the real backyard at dusk turns behind the menu (MenuCamera), the
-## molten MOLTEN MATES logo drops in, and the menu column slides in. Play solo, host
+## Title screen: the scrap hall by day stands behind the menu, its excavator at work (MenuCamera
+## sweeps slowly across the street in front of it), the molten MOLTEN MATES logo drops in, and the
+## menu column slides in. Play solo, host
 ## or join; settings open in a card over the yard. Scene changes run through the
 ## iris Transition; every button has hover/press motion and UI sounds.
 
-const LEVEL := "res://scenes/backyard.tscn"
-## Where a new game starts (the menu backdrop stays the backyard for now).
+## Where a new game starts, and what stands behind the menu: the scrap hall by day.
 const START := "res://scenes/scrap_hall.tscn"
+const LEVEL := START
 const COLUMN_X := 112.0
 
 var _camera: Camera3D
@@ -36,11 +37,15 @@ func _ready() -> void:
 	var bg: GameWorld = load(LEVEL).instantiate()
 	bg.attract_mode = true
 	add_child(bg)
+	# The hall mid-shift: excavator at work, skip filling, the truck at its place.
+	if bg.has_method(&"attract_show"):
+		bg.call(&"attract_show")
 	_light_the_furnace(bg)
 	_add_workers(bg)
-	_camera = MenuCamera.new()
-	add_child(_camera)
-	_camera.add_child(OutlinePass.create())
+	var view := MenuCamera.new()
+	add_child(view)
+	view.frame_scrap_hall()
+	_camera = view
 	_build_ui()
 	Transition.reveal()
 	_intro()
