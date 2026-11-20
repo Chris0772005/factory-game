@@ -498,7 +498,10 @@ func _build(code: String) -> Dictionary:
 
 func _build_art() -> void:
 	var visual := StationKit.visual()
-	var steel := StationKit.metal("line_frame", {steel_color = Color("#4b4a49"), rust = 0.35, metallic_steel = 0.55})
+	# (By day a dark, mirror-like steel reads as a black box: the frame is a worn mid-grey, the hood
+	# galvanised sheet.)
+	var steel := StationKit.metal("line_frame", {steel_color = Color("#70767a"), rust = 0.3, metallic_steel = 0.3, roughness_steel = 0.55})
+	var sheet := StationKit.metal("line_hood", {steel_color = Color("#959ca0"), rust = 0.22, dents = 0.3, metallic_steel = 0.35, roughness_steel = 0.5})
 	var paint := StationKit.metal("line_paint", {steel_color = Color("#3f6f8f"), rust = 0.2, dents = 0.2, metallic_steel = 0.25, roughness_steel = 0.55})
 	var sand := StationKit.surface("line_sand", {base_color = Color("#5b4a3a"), stain_color = Color("#3a2c22"), stains = 0.5,
 		roughness_base = 0.95, macro = 0.25, grain = 0.6, noise_scale = 14.0})
@@ -581,8 +584,8 @@ func _build_art() -> void:
 		hood.append(EnvMesh.piece(EnvMesh.box(Vector3(PITCH * 2.0, 0.9, 0.04), 0.01), Transform3D(Basis(), c + Vector3(0, 0.75, s * 0.42))))
 	hood.append(EnvMesh.piece(EnvMesh.box(Vector3(PITCH * 2.0, 0.04, 0.88), 0.01), Transform3D(Basis(), c + Vector3(0, 1.2, 0))))
 	hood.append(EnvMesh.piece(EnvMesh.cylinder(0.16, 0.16, 1.6, 12), Transform3D(Basis(), c + Vector3(0, 2.0, 0))))
-	StationKit.add_merged(self, hood, steel)
-	StationKit.label(self, "KÜHLSTRECKE", Transform3D(Basis(), c + Vector3(0, 0.85, 0.445)), 56, Color("#f0e2c4"), 800, 0.0012)
+	StationKit.add_merged(self, hood, sheet)
+	StationKit.label(self, "KÜHLSTRECKE", Transform3D(Basis(), c + Vector3(0, 0.85, 0.445)), 56, Color("#2a2522"), 800, 0.0012)
 	var grate := []
 	for k in 7:
 		grate.append(EnvMesh.piece(EnvMesh.box(Vector3(0.04, 0.04, 0.7)), Transform3D(Basis(), Vector3(-0.36 + k * 0.12, 0.02, 0))))
