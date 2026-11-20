@@ -240,22 +240,11 @@ func _outside() -> void:
 		_slab(yard, -half, -out_x, back, zf)
 		_slab(yard, out_x, half, back, zf)
 		_slab(yard, -out_x, out_x, back, inner_min.y - WALL)
-		# The cathedral across the yard: nave and two spired towers. Sandstone and slate.
-		var stone := EnvMesh.scan("dom_stone", "large_sandstone_blocks", {drift = 0.12, tint = EnvMesh.toward("large_sandstone_blocks", Color("#b3a384"), 0.85)})
-		var roof := EnvMesh.scan("dom_roof", "roof_slates_03", {drift = 0.1, tint = Vector3(0.5, 0.53, 0.6), roughness_scale = 2.5})
-		var c := Vector3(-2.0, 0, zf + 24.0)
-		for s: float in [-1.0, 1.0]:
-			var t := c + Vector3(s * 3.6, 0, 0)
-			EnvMesh.add(self, EnvMesh.box(Vector3(4.0, 18.0, 4.0), 0.05), stone, Transform3D(Basis(), t + Vector3(0, 9.0, 0)))
-			EnvMesh.add(self, EnvMesh.cylinder(0.0, 2.8, 9.0, 8), roof, Transform3D(Basis(Vector3.UP, PI / 8.0), t + Vector3(0, 22.5, 0)))
-		EnvMesh.add(self, EnvMesh.box(Vector3(11.0, 11.0, 14.0), 0.05), stone, Transform3D(Basis(), c + Vector3(0, 5.5, 8.0)))
-		var dark := StandardMaterial3D.new()
-		dark.albedo_color = Color("#1c1a18")
-		dark.roughness = 0.8
-		for s: float in [-1.0, 1.0]:
-			EnvMesh.add(self, EnvMesh.box(Vector3(1.4, 2.6, 0.05), 0.0), dark, Transform3D(Basis(), c + Vector3(s * 3.6, 14.0, -2.03)), false)
-		# The great door between the towers.
-		EnvMesh.add(self, EnvMesh.box(Vector3(2.4, 4.2, 0.05), 0.0), dark, Transform3D(Basis(), c + Vector3(0, 2.1, 0.97)), false)
+		# The cathedral across the yard, for which the emperor's bell is cast: two spired towers with a
+		# portal and a rose between them before a long nave, all of sandstone. Like the church of the
+		# bell foundry it stands to the right of the gate, where its left flank catches the sun.
+		ChurchKit.church(self, Vector3(9.5, 0, zf + 22.0), {key = key + "_dom", towers = 2, tower_w = 5.2, tower_h = 23.0, spire_h = 15.0,
+			nave_w = 13.0, nave_h = 12.0, nave_len = 22.0, bays = 5, plaster = false, rose = true})
 		# Works chimney behind the hall.
 		var brick := EnvMesh.scan("chimney_brick", "red_brick_03", {drift = 0.2})
 		EnvMesh.add(self, EnvMesh.cylinder(0.8, 1.3, 22.0, 16), brick, Transform3D(Basis(), Vector3(-12.0, 11.0, -12.0)))
@@ -263,9 +252,10 @@ func _outside() -> void:
 	TownBlock.block(self, Vector3(-25.0, 0, zf + 4.0), 12.0, 16.0, {key = key + "_n1", scan = "red_brick_03", storeys = 3})
 	TownBlock.block(self, Vector3(25.0, 0, zf + 4.0), 12.0, 16.0, {key = key + "_n2", scan = "red_brick", storeys = 3})
 	TownBlock.block(self, Vector3(-22.0, 0, zf + 27.0), 14.0, 10.0, {key = key + "_n3", scan = "yellow_plaster", storeys = 4})
-	TownBlock.block(self, Vector3(20.0, 0, zf + 27.0), 14.0, 10.0, {key = key + "_n4", scan = "painted_worn_brick", storeys = 3})
+	TownBlock.block(self, Vector3(27.0, 0, zf + 26.0), 14.0, 10.0, {key = key + "_n4", scan = "painted_worn_brick", storeys = 3})
 	TownBlock.block(self, Vector3(0.0, 0, -24.0), 13.0, 8.0, {key = key + "_n5", scan = "red_brick", storeys = 3})
 	TownBlock.block(self, Vector3(16.0, 0, -23.5), 12.0, 8.0, {key = key + "_n6", scan = "red_brick_03", storeys = 4})
+	TownBlock.block(self, Vector3(-8.0, 0, zf + 32.0), 13.0, 9.0, {key = key + "_n7", scan = "yellow_plaster", storeys = 3})
 	prop("kaykit_city/streetlight.gltf", Vector3(-8.0, 0, zf + 5.0), 0.0, {scale = 0.95, solid = PropKit.Solid.CYLINDER})
 	prop("kaykit_city/streetlight.gltf", Vector3(8.0, 0, zf + 5.0), 180.0, {scale = 0.95, solid = PropKit.Solid.CYLINDER})
 	# The works yard: brick walls and the works gate.

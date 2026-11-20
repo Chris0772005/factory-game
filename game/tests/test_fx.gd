@@ -1,6 +1,7 @@
 extends Node
 ## Foundry FX checks (headless): spec API, alloy materials, effect lifecycles,
-## auto-free, collision setup and a showcase smoke run.
+## auto-free, collision setup and a showcase smoke run; and that the hint bubble over a
+## station keeps clear of the HUD's panels.
 
 
 ## Collects engine errors so the test can fail on any of them.
@@ -37,6 +38,7 @@ func _run() -> void:
 	_test_spec_api()
 	_test_alloys()
 	_test_materials()
+	_test_prompt_bubble()
 	await _test_bursts()
 	await _test_burst_placement()
 	await _test_pour_stream()
@@ -119,6 +121,33 @@ func _test_materials() -> void:
 		and switched.get_shader_parameter(&"patina_amount") > 0.0 and switched.get_meta(&"alloy") == &"verdigris", "set_alloy switches colour, roughness and patina")
 	MetalMaterial.set_alloy(switched, &"gold")
 	_check(switched.get_shader_parameter(&"patina_amount") == 0.0, "set_alloy clears the patina again")
+
+
+## The hint over a station follows a point in the world: it must not come to lie over the orders
+## panel or the task card (seen in a picture of the bell foundry, a mould box low on the right).
+func _test_prompt_bubble() -> void:
+	var vp := Vector2(1920, 1080)
+	var bubble := PromptBubble.new()
+	bubble.anchor = PromptBubble.Anchor.WORLD
+	add_child(bubble)
+	bubble.size = Vector2(560, 46)
+	var panel := Panel.new()
+	add_child(panel)
+	panel.position = Vector2(1450, 884)
+	panel.size = Vector2(434, 160)
+	bubble.avoid.append(panel)
+	var tall := bubble.size.y + PromptBubble.POINTER + 4.0
+	var wanted := Vector2(1530, 1010)
+	var moved := bubble.clear_of_panels(wanted, vp)
+	var box := Rect2(moved.x - bubble.size.x * 0.5, moved.y - tall, bubble.size.x, tall)
+	_check(not panel.get_global_rect().intersects(box), "hint bubble: steps aside for a panel it would lie under")
+	_check(moved.distance_to(wanted) < 260.0, "hint bubble: stays near its station (%d px away)" % int(moved.distance_to(wanted)))
+	_check(bubble.clear_of_panels(Vector2(900, 500), vp) == Vector2(900, 500), "hint bubble: stays put when nothing is in the way")
+	panel.visible = false
+	_check(bubble.clear_of_panels(wanted, vp) == wanted, "hint bubble: a hidden panel is no obstacle")
+	# (Gone at once: the checks that follow count the nodes in the tree.)
+	bubble.free()
+	panel.free()
 
 
 func _test_bursts() -> void:

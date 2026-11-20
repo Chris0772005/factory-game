@@ -59,6 +59,9 @@ func _ready() -> void:
 	var orders := OrdersPanel.new()
 	orders.world = world
 	_root.add_child(orders)
+	# The hint over a station follows that station on the screen: it steps aside for these two.
+	_station_bubble.avoid.append(card)
+	_station_bubble.avoid.append(orders)
 	# First person: a small dot marks where the worker looks and reaches.
 	if CameraRig.first_person_default:
 		var dot := Panel.new()

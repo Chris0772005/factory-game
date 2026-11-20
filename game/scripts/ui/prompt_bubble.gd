@@ -19,6 +19,9 @@ var world_point := Vector3.ZERO
 var bottom_margin := 70.0
 var key_size := 40.0
 var font_size := UITheme.SIZE_HINT
+## WORLD anchor: panels of the HUD the bubble keeps clear of. (It follows a point in the world and
+## would otherwise slide under the orders or the task card when that point lies behind them.)
+var avoid: Array[Control] = []
 
 var _row: HBoxContainer
 var _labels: Array[Label] = []
@@ -116,6 +119,8 @@ func _process(delta: float) -> void:
 	var half := size.x * 0.5
 	goal.x = clampf(goal.x, SAFE.x + half, vp.x - SAFE.x - half)
 	goal.y = clampf(goal.y, SAFE.y + size.y + POINTER, vp.y - SAFE.y)
+	if anchor == Anchor.WORLD:
+		goal = clear_of_panels(goal, vp)
 	if not _has_screen:
 		_screen = goal
 		_has_screen = true
@@ -127,6 +132,28 @@ func _process(delta: float) -> void:
 	scale = Vector2.ONE * (0.85 + 0.15 * v)
 	var lift := POINTER + 4.0 if anchor == Anchor.WORLD else 0.0
 	position = (_screen - Vector2(half, size.y + lift) + Vector2(0, (1.0 - clampf(_vis, 0.0, 1.0)) * 18.0)).round()
+
+
+## Where the pointer's tip may sit instead of `goal`, so that the bubble lies over none of the panels
+## in `avoid`: moved the shorter way, up or down past the panel or sideways toward the middle.
+func clear_of_panels(goal: Vector2, vp: Vector2) -> Vector2:
+	var half := size.x * 0.5
+	var tall := size.y + POINTER + 4.0
+	for panel in avoid:
+		if not is_instance_valid(panel) or not panel.is_visible_in_tree():
+			continue
+		var r := panel.get_global_rect().grow(10.0)
+		if not r.intersects(Rect2(goal.x - half, goal.y - tall, size.x, tall)):
+			continue
+		var past := r.position.y if r.get_center().y > vp.y * 0.5 else r.end.y + tall
+		var beside := r.position.x - half if r.get_center().x > vp.x * 0.5 else r.end.x + half
+		if absf(past - goal.y) <= absf(beside - goal.x):
+			goal.y = past
+		else:
+			goal.x = beside
+	goal.x = clampf(goal.x, SAFE.x + half, vp.x - SAFE.x - half)
+	goal.y = clampf(goal.y, SAFE.y + size.y + POINTER, vp.y - SAFE.y)
+	return goal
 
 
 func _draw() -> void:

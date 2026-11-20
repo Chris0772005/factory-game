@@ -182,34 +182,20 @@ func _outside() -> void:
 		_slab(yard, -half, -out_x, back, zf)
 		_slab(yard, out_x, half, back, zf)
 		_slab(yard, -out_x, out_x, back, inner_min.y - WALL)
-		# Church across the square: nave, tower with a pointed spire and a louvre. Sandstone and slate.
-		# (The scan is a dark, weathered stone: lifted to a pale sandstone. The slates are kept matt, or
-		# the whole roof glares in the sun.)
-		var stone := EnvMesh.scan("church_stone", "large_sandstone_blocks", {drift = 0.12, tint = EnvMesh.toward("large_sandstone_blocks", Color("#b3a384"), 0.85)})
-		var roof := EnvMesh.scan("church_roof", "roof_slates_03", {drift = 0.1, tint = Vector3(0.5, 0.53, 0.6), roughness_scale = 2.5})
-		var c := Vector3(3.0, 0, zf + 17.0)
-		EnvMesh.add(self, EnvMesh.box(Vector3(4.0, 14.0, 4.0), 0.05), stone, Transform3D(Basis(), c + Vector3(0, 7.0, 0)))
-		var spire := EnvMesh.cylinder(0.0, 2.9, 7.0, 4)
-		EnvMesh.add(self, spire, roof, Transform3D(Basis(Vector3.UP, PI * 0.25), c + Vector3(0, 17.5, 0)))
-		EnvMesh.add(self, EnvMesh.box(Vector3(12.0, 9.0, 7.0), 0.05), stone, Transform3D(Basis(), c + Vector3(-8.0, 4.5, 1.5)))
-		# The nave's roof: two slopes of slate.
-		for s: float in [-1.0, 1.0]:
-			EnvMesh.add(self, EnvMesh.box(Vector3(12.4, 0.18, 4.6), 0.0), roof,
-				Transform3D(Basis(Vector3.RIGHT, s * 0.72), c + Vector3(-8.0, 10.45, 1.5 + s * 1.72)))
-		var louvre := StandardMaterial3D.new()
-		louvre.albedo_color = Color("#1c1a18")
-		louvre.roughness = 0.8
-		EnvMesh.add(self, EnvMesh.box(Vector3(1.4, 2.0, 0.05), 0.0), louvre, Transform3D(Basis(), c + Vector3(0, 11.0, -2.03)), false)
-		# Tall dark windows along the nave.
-		for i in 4:
-			EnvMesh.add(self, EnvMesh.box(Vector3(0.9, 3.2, 0.05), 0.0), louvre, Transform3D(Basis(), c + Vector3(-12.5 + i * 3.0, 4.6, -2.03)), false)
+	# The town church across the square, for which the bells are cast: a stone tower with a slated spire
+	# before a rendered nave. It stands to the right of the gate with its length running away from the
+	# hall: the sun comes from the left, so the long flank is lit and the tower shows a lit and a shaded side.
+	ChurchKit.church(self, Vector3(7.0, 0, zf + 16.0), {key = key + "_church"})
+	TownBlock.street_tree(self, Vector3(-6.0, 0, zf + 19.0), 40.0, 1.1)
+	TownBlock.street_tree(self, Vector3(-11.5, 0, zf + 24.5), 190.0, 0.95)
 	# The houses round the square and behind the hall.
 	TownBlock.block(self, Vector3(-22.0, 0, zf + 6.0), 11.0, 14.0, {key = key + "_n1", scan = "red_brick", storeys = 3})
 	TownBlock.block(self, Vector3(23.0, 0, zf + 6.0), 11.0, 14.0, {key = key + "_n2", scan = "yellow_plaster", storeys = 3})
-	TownBlock.block(self, Vector3(18.0, 0, zf + 24.0), 14.0, 9.0, {key = key + "_n3", scan = "painted_worn_brick", storeys = 3})
+	TownBlock.block(self, Vector3(24.0, 0, zf + 24.0), 14.0, 9.0, {key = key + "_n3", scan = "painted_worn_brick", storeys = 3})
 	TownBlock.block(self, Vector3(-24.0, 0, zf + 26.0), 12.0, 9.0, {key = key + "_n4", scan = "yellow_plaster", storeys = 4})
 	TownBlock.block(self, Vector3(-13.0, 0, -22.0), 12.0, 8.0, {key = key + "_n5", scan = "red_brick_03", storeys = 3})
 	TownBlock.block(self, Vector3(12.0, 0, -21.5), 12.0, 8.0, {key = key + "_n6", scan = "red_brick", storeys = 3})
+	TownBlock.block(self, Vector3(-8.5, 0, zf + 30.0), 13.0, 9.0, {key = key + "_n7", scan = "red_brick", storeys = 3})
 	prop("kaykit_city/streetlight.gltf", Vector3(-6.5, 0, zf + 5.0), 0.0, {scale = 0.95, solid = PropKit.Solid.CYLINDER})
 	prop("kaykit_city/streetlight.gltf", Vector3(7.5, 0, zf + 5.0), 180.0, {scale = 0.95, solid = PropKit.Solid.CYLINDER})
 	for i in 6:
