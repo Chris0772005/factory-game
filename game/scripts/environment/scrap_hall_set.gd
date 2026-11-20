@@ -451,3 +451,9 @@ func _shop(base: Vector3) -> void:
 	lamp.omni_range = 9.0
 	lamp.position = base + Vector3(0, 2.6, 0.4)
 	add_child(lamp)
+	if EnvMesh.visual():
+		# Kowalski behind his counter, looking out at the street.
+		var dealer := TownNpc.make("Dealer")
+		dealer.position = base + Vector3(-1.1, 0, 2.25)
+		dealer.rotation.y = PI
+		add_child(dealer)

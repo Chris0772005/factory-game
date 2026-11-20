@@ -5,13 +5,15 @@ extends Node3D
 ##
 ## The people are generated figures of real-looking persons with their own skeleton and clips
 ## (AI-generated, see assets/models/people/NOTICE.txt; put together by tools/people.py;
-## docs/TECH_SPEC.md, Modul Y). Callers name the kind of person (Worker, Suit, Swat, Casual,
-## Casual_Woman): PEOPLE says who that is. Where a person's file is missing, the Quaternius figure
-## of that name stands in ("Ultimate Modular Men/Women", CC0), moved by the clips of the same rig
-## family and tinted by `recolor`.
+## docs/TECH_SPEC.md, Modul Y). Callers name the kind of person (Worker, Suit, Swat, Patrol, Dealer,
+## Casual, Casual_Woman): PEOPLE says who that is. Where a person's file is missing, a Quaternius
+## figure stands in ("Ultimate Modular Men/Women", CC0: the one of that name, or the one STAND_INS
+## names), moved by the clips of the same rig family and tinted by `recolor`.
 
 const PEOPLE_DIR := "res://assets/models/people/"
-const PEOPLE := {"Worker": "worker", "Suit": "broker", "Swat": "officer", "Casual": "youth", "Casual_Woman": "woman"}
+const PEOPLE := {"Worker": "worker", "Suit": "broker", "Swat": "officer", "Patrol": "patrol", "Dealer": "dealer",
+	"Casual": "youth", "Casual_Woman": "woman"}
+const STAND_INS := {"Patrol": "Swat", "Dealer": "Worker"}
 const DIR := "res://assets/models/quaternius/"
 const ANIM_SOURCE := "res://assets/models/quaternius/Anim_Character.glb"
 ## Stand-in figures: height of the head joint above the ground (m), the figure stands about 1.8 m.
@@ -30,7 +32,7 @@ const RUN_PACE := 4.6
 
 static var _library: AnimationLibrary
 
-## Kind of person (Swat, Suit, Worker, Casual, Casual_Woman).
+## Kind of person (a key of PEOPLE).
 var model := "Casual"
 ## Stand-ins only: material name -> colour, to turn e.g. the Swat suit navy.
 var recolor := {}
@@ -85,7 +87,7 @@ func _build_person(path: String) -> void:
 
 
 func _build_stand_in() -> void:
-	var packed := load(DIR + model + ".glb") as PackedScene
+	var packed := load(DIR + String(STAND_INS.get(model, model)) + ".glb") as PackedScene
 	if packed == null:
 		return
 	var scene := packed.instantiate() as Node3D

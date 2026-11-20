@@ -69,7 +69,7 @@ func _ready() -> void:
 	shape.position.y = 0.85
 	add_child(shape)
 	floor_snap_length = 0.3
-	_model = TownFigure.make("Swat", UNIFORM)
+	_model = TownFigure.make("Patrol", UNIFORM)
 	add_child(_model)
 	_net_pos = global_position
 

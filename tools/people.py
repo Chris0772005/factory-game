@@ -43,7 +43,7 @@ import sys
 
 import numpy as np
 from PIL import Image, ImageDraw
-from scipy import ndimage
+from scipy import ndimage, signal
 from scipy.cluster.vq import kmeans2
 from scipy.sparse import coo_matrix
 from scipy.sparse.csgraph import connected_components
@@ -52,7 +52,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 GAME = ROOT / "game/assets/models/people"
 # Where the figures are written: the game's folder, or the folder given second (to try something out).
 OUT = pathlib.Path(sys.argv[2]) if len(sys.argv) > 2 else GAME
-PEOPLE = ["worker", "broker", "officer", "woman", "youth"]
+PEOPLE = ["worker", "broker", "officer", "woman", "youth", "dealer", "patrol"]
 # Clips taken from the first figure's extra files: file suffix -> clip name in the game.
 SHARED = {"quick": "Walk", "run": "Run", "wave": "Wave"}
 DONOR = "worker"
@@ -64,10 +64,13 @@ MIRROR = np.array([1.0, -1.0, -1.0, 1.0], np.float32)
 # Standing still, the left arm's bones are rolled about their own length by these angles (degrees), so the
 # palms face the legs instead of the front as they do in the waving clip.
 ROLL = {"Arm": 25.0, "ForeArm": 45.0}
-# The maps' new layout: width (px), room between patches (px), groups of like colour, and the wider room
-# between two groups.
+# The maps' new layout: width (px), room between patches (px), the grid the patches are placed on (px),
+# groups of like colour, and the wider room between two groups.
 ATLAS_WIDTH = 3072
 GAP = 8
+CELL = 4
+# Patches whose box holds at least this many grid cells are fitted by their shape.
+NEST = 48
 GROUPS = 10
 GROUP_GAP = 24
 TYPES = {5120: np.int8, 5121: np.uint8, 5122: np.int16, 5123: np.uint16, 5125: np.uint32, 5126: np.float32}
@@ -308,25 +311,59 @@ def repacked(glb):
     rank = {k: r for r, k in enumerate(np.argsort(darkness))}
     for patch, k in zip(patches, group):
         patch["group"] = rank[int(k)]
-    patches.sort(key=lambda p: (p["group"], -p["h"], -p["w"]))
-    # Shelves: left to right, a new shelf when the row is full, a new one with more room for each group.
-    x = y = GAP
-    shelf = 0
+    patches.sort(key=lambda p: (p["group"], -p["h"] * p["w"]))
+    # Places: a grid of CELL px keeps what is taken (each patch's own shape, grown by the gap, not its
+    # box, so that small patches fit into the hollows of large ones). Every patch goes to the first
+    # free place, row by row from the top of its group's part of the picture; the next group starts
+    # below everything before it.
+    cells_wide = ATLAS_WIDTH // CELL
+    grow = int(np.ceil(GAP / CELL))
+    taken = np.zeros((4096, cells_wide), bool)
+    top = 0          # first row of this group's part
+    used = 0         # rows in use
     last_group = patches[0]["group"]
     for patch in patches:
         if patch["group"] != last_group:
-            x = GAP
-            y += shelf + GROUP_GAP
-            shelf = 0
+            top = used + int(np.ceil(GROUP_GAP / CELL))
             last_group = patch["group"]
-        elif x + patch["w"] + GAP > ATLAS_WIDTH:
-            x = GAP
-            y += shelf + GAP
-            shelf = 0
-        patch["x"], patch["y"] = x, y
-        x += patch["w"] + GAP
-        shelf = max(shelf, patch["h"])
-    new_height = int(np.ceil((y + shelf + GAP) / 8.0) * 8)
+        high = -(-patch["h"] // CELL)
+        wide = -(-patch["w"] // CELL)
+        shape = np.zeros((high * CELL, wide * CELL), bool)
+        shape[:patch["h"], :patch["w"]] = patch["mask"]
+        shape = shape.reshape(high, CELL, wide, CELL).any(axis=(1, 3))
+        own = shape
+        shape = ndimage.binary_dilation(np.pad(shape, grow), iterations=grow)
+        while True:
+            if used + high + 2 * grow + 8 > len(taken):
+                taken = np.concatenate([taken, np.zeros_like(taken)])
+            # Rows that can hold the patch's top edge: this group's part, and one patch below it.
+            rows = slice(top, max(used, top) + 1)
+            window = taken[top:rows.stop + high]
+            total = np.zeros((window.shape[0] + 1, cells_wide + 1), np.int32)
+            if high * wide < NEST:
+                total[1:, 1:] = window.cumsum(axis=0, dtype=np.int32).cumsum(axis=1, dtype=np.int32)
+            n = rows.stop - rows.start
+            if high * wide >= NEST:
+                # A large patch: its own shape must be free, not its whole box.
+                free = signal.fftconvolve(window.astype(np.float32), own[::-1, ::-1].astype(np.float32), mode="valid")[:n] < 0.5
+            else:
+                free = (total[high:high + n, wide:] - total[:n, wide:] - total[high:high + n, :cells_wide + 1 - wide] + total[:n, :cells_wide + 1 - wide]) == 0
+            # Keep the gap to the picture's edge too.
+            free[:, :grow] = False
+            free[:, free.shape[1] - grow:] = False
+            if free.any():
+                row, column = np.unravel_index(int(np.argmax(free)), free.shape)
+                row += top
+                break
+            used += high
+        patch["x"], patch["y"] = int(column) * CELL, int(row) * CELL + GAP
+        # What it takes: its shape with the gap around it.
+        y0, x0 = row - grow, column - grow
+        ys = slice(max(y0, 0), y0 + shape.shape[0])
+        xs = slice(max(x0, 0), min(x0 + shape.shape[1], cells_wide))
+        taken[ys, xs] |= shape[ys.start - y0:ys.stop - y0, xs.start - x0:xs.stop - x0]
+        used = max(used, row + high)
+    new_height = int(np.ceil((used * CELL + 2 * GAP) / 8.0) * 8)
     # The pictures.
     filled = np.zeros((new_height, ATLAS_WIDTH), bool)
     made = {i: np.zeros((new_height, ATLAS_WIDTH, 3), np.uint8) for i in pictures}
@@ -364,7 +401,10 @@ def build(name, source):
     for clip in g.get("animations", []):
         for s in clip["samplers"]:
             animated.update((s["input"], s["output"]))
+    # The figure's own walk, if it came with one (a figure generated without a clip holds one still picture).
     walk = clip_tracks(person) if g.get("animations") else None
+    if walk is not None and max(len(times) for _bone, _path, times, _values in walk) < 2:
+        walk = None
     coordinates, pictures = repacked(person)
     coordinates_at = g["meshes"][0]["primitives"][0]["attributes"]["TEXCOORD_0"]
     accessors = []

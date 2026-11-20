@@ -2,7 +2,7 @@ class_name TownWalkers
 extends Node3D
 ## People on the far pavement: each walks a fixed round between the shops, goes in, stands at a
 ## counter or a shop front for a while and comes out again. Looks only: they cannot be spoken to
-## and step aside for players instead of bumping into them.
+## and step aside for players and for the officer on the beat instead of bumping into them.
 ## Every round runs against one clock, so all players see the walkers in the same place; the host
 ## sends its clock round every few seconds.
 
@@ -47,7 +47,8 @@ func _physics_process(delta: float) -> void:
 		if _sync <= 0.0:
 			_sync = SYNC_EVERY
 			_set_clock.rpc(clock)
-	var players := get_tree().get_nodes_in_group(&"players")
+	# Whom the walkers give way to: the players and the officer on the beat.
+	var players := get_tree().get_nodes_in_group(&"players") + get_tree().get_nodes_in_group(PolicePatrol.GROUP)
 	for entry: Dictionary in _rounds:
 		var figure := entry.figure as TownFigure
 		if figure == null:
