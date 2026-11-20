@@ -45,7 +45,7 @@ no third-party rights, but this counts as AI-generated content and has to be dec
 
 Fünf Textursätze von [Poly Haven](https://polyhaven.com) (CC0, 1k): `concrete_floor_worn_001`, `painted_plaster_wall`, `weathered_brown_planks`, `rusty_metal_02`, `brown_mud_dry`. Sie liegen in `game/assets/textures/pbr/` und werden über `shaders/env_photo.gdshaderinc` auf Boden, Wände, Holz, Erde und Metall gelegt.
 
-Dazu `bark_brown_02` (Rinde) und `leafy_grass` (Laub).
+Dazu `bark_brown_02` (Rinde) und `leafy_grass` (Laub), sowie für Ärmel, Hosen, Handschuhe und Stiefel in der Ego-Sicht `denmin_fabric_02` (gewaschener Jeansstoff; der Name ist bei Poly Haven so geschrieben) und `brown_leather` (Leder): `cloth_*.jpg` und `leather_*.jpg`, die Farbkarte ohne Farbe gespeichert (`tools/fp_textures.py`), damit das Spiel sie einfärben kann.
 
 Zwölf weitere Sätze von Poly Haven (CC0) in `game/assets/textures/scan/`, die als ganze Oberfläche dienen (`shaders/env_scan.gdshader`, `EnvMesh.scan`): `asphalt_02` und `concrete_pavers` (2k), `concrete_tiles_02`, `dirty_concrete`, `red_brick_03`, `red_brick`, `painted_worn_brick`, `beige_wall_001`, `yellow_plaster`, `box_profile_metal_sheet`, `bitumen`, `green_metal_rust` (1k). Straße, Gehwege, Hof, Mauern, Hallenwände, die Häuser der Schrotthalle und der Müllcontainer bestehen daraus.
 

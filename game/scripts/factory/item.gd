@@ -23,7 +23,7 @@ static func create(kind_name: StringName, color: Color, size: Vector3 = Vector3.
 	mi.material_override = mat
 	if ScrapModels.has(kind_name):
 		mi.mesh = ScrapModels.mesh(kind_name)
-		mi.material_override = ScrapModels.material(color)
+		mi.material_override = ScrapModels.material(color, kind_name)
 	item.add_child(mi)
 	item.physics_material_override = PhysicsMaterial.new()
 	item.physics_material_override.friction = 0.9

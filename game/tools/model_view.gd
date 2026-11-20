@@ -1,7 +1,7 @@
 extends Node3D
 ## Art check: shows one model on the street's asphalt in the light of the first level (--plain: a plain sky and sun instead).
 ##   godot-render --path . res://tools/model_view.tscn -- --shot=out.png --model=res://...[,res://...] [--yaw=35] [--pitch=12] [--dist=9] [--h=1.4] [--dump]
-##   ... --finish applies VehicleFinish (gloss, glass, lamps, dust and mud); --rig=0,-30,90,60 instead of --model shows the excavator rig posed (swing, boom, stick, bucket in degrees), --lamps with its lamps on. --hide=a,b hides the nodes of those names. --heap=2.5,1.1,3.0,1.76,1.0,0.42,0.9 shows a load of scrap (floor, rim, height, crown, fill). --row=a,b,c stands those Poly Haven scans side by side at their real size. --anim=1.2 shows the model's first animation at that second (--clip=Run: that one; --clip=Run,Walk: one each for several models).
+##   ... --finish applies VehicleFinish (gloss, glass, lamps, dust and mud); --rig=0,-30,90,60 instead of --model shows the excavator rig posed (swing, boom, stick, bucket in degrees), --lamps with its lamps on. --hide=a,b hides the nodes of those names. --heap=2.5,1.1,3.0,1.76,1.0,0.42,0.9 shows a load of scrap (floor, rim, height, crown, fill). --row=a,b,c stands those Poly Haven scans side by side at their real size. --scrap=junk_gear,hot_pistol lays out things from the scrap. --anim=1.2 shows the model's first animation at that second (--clip=Run: that one; --clip=Run,Walk: one each for several models).
 
 func _ready() -> void:
 	var model := ""
@@ -17,6 +17,7 @@ func _ready() -> void:
 	var hide := PackedStringArray()
 	var heap := ""
 	var row := PackedStringArray()
+	var scrap := PackedStringArray()
 	var anim_at := -1.0
 	var clip_name := ""
 	for arg in OS.get_cmdline_user_args():
@@ -46,6 +47,8 @@ func _ready() -> void:
 			heap = arg.trim_prefix("--heap=")
 		elif arg.begins_with("--row="):
 			row = arg.trim_prefix("--row=").split(",")
+		elif arg.begins_with("--scrap="):
+			scrap = arg.trim_prefix("--scrap=").split(",")
 		elif arg.begins_with("--anim="):
 			anim_at = float(arg.trim_prefix("--anim="))
 		elif arg.begins_with("--clip="):
@@ -108,6 +111,17 @@ func _ready() -> void:
 		var load_art := ScrapLoadArt.pile(Vector2(dims[0], dims[1]), Vector2(dims[2], dims[3]), dims[4], dims[5])
 		ScrapLoadArt.reveal(load_art, dims[6] if dims.size() > 6 else 1.0)
 		add_child(load_art)
+	if not scrap.is_empty():
+		# --scrap=junk_gear,hot_pistol: those things from the scrap (ScrapModels) in rows of four, 30 cm
+		# apart, each lifted to stand on the ground and turned a little.
+		for i in scrap.size():
+			var kind := StringName(scrap[i])
+			var info: Dictionary = FoundryRules.JUNK.get(kind, FoundryRules.HOT.get(kind, FoundryRules.SCRAP.get(kind, {})))
+			if info.is_empty() or not ScrapModels.has(kind):
+				continue
+			var size: Vector3 = info.size
+			var at := Vector3((float(i % 4) - 1.5) * 0.36, size.y * 0.5 + 0.002, -float(i / 4) * 0.34)
+			StationKit.add(self, ScrapModels.mesh(kind), ScrapModels.material(info.color, kind), Transform3D(Basis(Vector3.UP, 0.5), at))
 	if not row.is_empty():
 		# --row=a,b,c: scans side by side, 15 cm apart, the row centred.
 		var total := -0.15

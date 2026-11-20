@@ -45,13 +45,13 @@ var _was_holding := false
 
 func _ready() -> void:
 	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
-	var leather := StationKit.leather("fp_glove2", {leather_color = Color("#6f5a47"), pleats = 0.0, stitches = 0.0, grain = 0.12})
-	var palm_mat := StationKit.leather("fp_palm2", {leather_color = Color("#94806a"), pleats = 0.0, stitches = 0.0, grain = 0.12})
-	var cuff := StationKit.leather("fp_cuff2", {leather_color = Color("#4f3f33"), pleats = 2.0, grain = 0.2})
-	var sleeve := StandardMaterial3D.new()
-	sleeve.albedo_color = (player.color if player else Color("#3e7bd6")).darkened(0.2)
-	sleeve.roughness = 0.9
-	sleeve.cull_mode = BaseMaterial3D.CULL_DISABLED
+	# Scanned leather and cloth (FpMaterials): a tan work glove with a lighter palm, dark straps and
+	# a stiff canvas cuff, and a sleeve of washed cloth in the player's colour.
+	var leather := FpMaterials.scan("leather", Color("#96754f"))
+	var palm_mat := FpMaterials.scan("leather", Color("#b3946b"))
+	var cuff := FpMaterials.scan("leather", Color("#5a4332"))
+	var gauntlet := FpMaterials.scan("cloth", Color("#8a8271"), 0.8)
+	var sleeve := FpMaterials.scan("cloth", FpMaterials.workwear(player.color if player else Color("#3e7bd6")), 1.0, true)
 	for side: float in [-1.0, 1.0]:
 		var hand := Node3D.new()
 		add_child(hand)
@@ -101,13 +101,14 @@ func _ready() -> void:
 			t_parent = joint
 			t_at = Vector3(0, 0, -l)
 		_joints.append(joints)
-		# Gauntlet cuff with a strap, then the overall sleeve.
+		# Gauntlet cuff with a strap, then the sleeve: it bunches in folds behind its hemmed end.
 		StationKit.add(geo, StationKit.lathe(PackedVector2Array([Vector2(0, 0), Vector2(0.034, 0), Vector2(0.037, 0.012), Vector2(0.044, 0.05), Vector2(0.053, 0.085), Vector2(0.057, 0.094),
-			Vector2(0.055, 0.101), Vector2(0.047, 0.101), Vector2(0, 0.094)]), 20, 50.0), cuff, Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(0, 0, 0.02)), false)
-		StationKit.add(geo, StationKit.lathe(PackedVector2Array([Vector2(0.038, 0.0), Vector2(0.041, 0.002), Vector2(0.042, 0.014), Vector2(0.039, 0.016)]), 20, 30.0), palm_mat,
+			Vector2(0.055, 0.101), Vector2(0.047, 0.101), Vector2(0, 0.094)]), 20, 50.0), gauntlet, Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(0, 0, 0.02)), false)
+		StationKit.add(geo, StationKit.lathe(PackedVector2Array([Vector2(0.038, 0.0), Vector2(0.041, 0.002), Vector2(0.042, 0.014), Vector2(0.039, 0.016)]), 20, 30.0), cuff,
 			Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(0, 0, 0.04)), false)
-		StationKit.add(geo, StationKit.lathe(PackedVector2Array([Vector2(0, 0), Vector2(0.04, 0), Vector2(0.045, 0.04), Vector2(0.042, 0.09), Vector2(0.048, 0.15), Vector2(0.047, 0.22),
-			Vector2(0.056, 0.34), Vector2(0.062, 0.6), Vector2(0.066, 0.95), Vector2(0, 0.95)]), 18, 50.0), sleeve, Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(0, -0.003, 0.095)), false)
+		StationKit.add(geo, StationKit.lathe(PackedVector2Array([Vector2(0, 0), Vector2(0.041, 0), Vector2(0.0445, 0.004), Vector2(0.0445, 0.026), Vector2(0.042, 0.03), Vector2(0.0465, 0.055),
+			Vector2(0.0425, 0.085), Vector2(0.049, 0.125), Vector2(0.0455, 0.165), Vector2(0.052, 0.215), Vector2(0.0495, 0.27), Vector2(0.057, 0.36), Vector2(0.0555, 0.45),
+			Vector2(0.062, 0.6), Vector2(0.066, 0.95), Vector2(0, 0.95)]), 20, 50.0), sleeve, Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(0, -0.003, 0.095)), false)
 		_set_curl(_hands.size() - 1, 0.45)
 
 

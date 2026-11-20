@@ -22,11 +22,10 @@ var _air := 0.0
 
 
 func _ready() -> void:
-	var cloth := StandardMaterial3D.new()
-	cloth.albedo_color = (player.color if player else Color("#3e7bd6")).darkened(0.25)
-	cloth.roughness = 0.92
-	var leather := StationKit.leather("fp_boot", {leather_color = Color("#4a3120"), pleats = 0.0, stitches = 0.0, grain = 0.12})
-	var apron := StationKit.leather("fp_apron", {leather_color = Color("#6b4a2e"), pleats = 0.0, stitches = 0.0, grain = 0.12})
+	# Scanned cloth in the player's colour and scanned leather (FpMaterials), as on the arms.
+	var cloth := FpMaterials.scan("cloth", FpMaterials.workwear(player.color if player else Color("#3e7bd6")))
+	var leather := FpMaterials.scan("leather", Color("#4a3120"))
+	var apron := FpMaterials.scan("leather", Color("#6b4a2e"))
 	var sole := StandardMaterial3D.new()
 	sole.albedo_color = Color("#1d1a19")
 	sole.roughness = 0.95
