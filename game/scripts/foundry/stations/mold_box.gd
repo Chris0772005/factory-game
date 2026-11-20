@@ -242,7 +242,7 @@ func _catch_bystanders() -> void:
 		if absf(local.x) > BED.x * 0.5 or absf(local.z) > BED.z * 0.5 or local.y < BED.y - 0.25 or local.y > BED.y + 0.8:
 			continue
 		var data := {type = "statue", pos = p.global_position, yaw = p.facing, pose = PlayerModel.panic_pose(),
-			alloy = FoundryRules.alloy_for(cast_mix)}
+			alloy = FoundryRules.alloy_for(cast_mix), color = p.color}
 		world.spawn_entity(data)
 		world.popup_all(p.global_position + Vector3(0, 2.4, 0), "BRONZEFREUND!", Color("#ffb347"))
 		_fx_all(&"sparks", p.global_position + Vector3(0, 1.0, 0))

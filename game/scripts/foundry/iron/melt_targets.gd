@@ -62,7 +62,7 @@ static func _spill(tree: SceneTree, point: Vector3, mix: Dictionary, delta: floa
 		var local := point - p.global_position
 		if Vector2(local.x, local.z).length() < 0.45 and local.y > 0.2 and local.y < 2.2:
 			world.spawn_entity({type = "statue", pos = p.global_position, yaw = p.facing, pose = PlayerModel.panic_pose(),
-				alloy = FoundryRules.alloy_for(mix)})
+				alloy = FoundryRules.alloy_for(mix), color = p.color})
 			world.popup_all(p.global_position + Vector3(0, 2.4, 0), "BRONZEFREUND!", Color("#ffb347"))
 			FoundryFX.sparks(world, p.global_position + Vector3(0, 1.0, 0), 30)
 			Sfx.play(&"statue_gong", p.global_position)

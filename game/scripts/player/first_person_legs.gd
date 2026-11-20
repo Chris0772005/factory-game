@@ -1,10 +1,10 @@
 class_name FirstPersonLegs
 extends Node3D
-## The local worker's own body below the eyes in first person: belly with
-## apron and belt, trouser legs and work boots. Looking down shows where the
-## feet stand; the legs step with the walk and tuck in the air. The full
-## worker model stays hidden from the own lens (it only casts the shadow).
-## Pure presentation, local only. The worker faces +Z.
+## The local worker's own body below the eyes in first person: belly in the warning vest with
+## its reflective band, trouser legs and work boots, in the colours of the figure the others see
+## (PlayerModel.LOOKS). Looking down shows where the feet stand; the legs step with the walk and
+## tuck in the air. The full worker model stays hidden from the own lens (it only casts the
+## shadow). Pure presentation, local only. The worker faces +Z.
 
 const HIP_HEIGHT := 0.88
 const THIGH := 0.42
@@ -22,27 +22,31 @@ var _air := 0.0
 
 
 func _ready() -> void:
-	# Scanned cloth in the player's colour and scanned leather (FpMaterials), as on the arms.
-	var cloth := FpMaterials.scan("cloth", FpMaterials.workwear(player.color if player else Color("#3e7bd6")))
-	var leather := FpMaterials.scan("leather", Color("#4a3120"))
-	var apron := FpMaterials.scan("leather", Color("#6b4a2e"))
+	# Scanned cloth and leather (FpMaterials), as on the arms, in the colours the figure wears.
+	var look := PlayerModel.look_of(player.color if player else Color("#3e7bd6"))
+	var cloth := FpMaterials.scan("cloth", look.trousers)
+	var vest := FpMaterials.scan("cloth", look.vest, 0.6)
+	var leather := FpMaterials.scan("leather", look.boots)
+	var band := StandardMaterial3D.new()
+	band.albedo_color = Color("#b9bbb8")
+	band.roughness = 0.38
+	band.metallic = 0.35
 	var sole := StandardMaterial3D.new()
 	sole.albedo_color = Color("#1d1a19")
 	sole.roughness = 0.95
 	var steel := MachineArt.steel_mat()
 	var squash := func(p: Vector3, _a: float) -> Vector3: return Vector3(p.x, p.y, p.z * 0.72)
-	# Belly: overall up to the chest, leather apron in front, belt.
+	# Belly: the trousers' waist with belt and buckle, and over it the warning vest, which hangs
+	# to the hips, with its reflective band.
 	var trunk := Node3D.new()
 	trunk.position = Vector3(0, 0, SET_BACK - 0.13)
 	add_child(trunk)
-	_add(trunk, StationKit.lathe(PackedVector2Array([Vector2(0, 0.8), Vector2(0.16, 0.8), Vector2(0.172, 0.9), Vector2(0.168, 1.0), Vector2(0.17, 1.08),
-		Vector2(0.155, 1.14), Vector2(0.09, 1.17), Vector2(0, 1.17)]), 22, 60.0, squash), cloth)
-	_add(trunk, StationKit.lathe(PackedVector2Array([Vector2(0.17, 0.97), Vector2(0.178, 0.975), Vector2(0.178, 1.015), Vector2(0.17, 1.02)]), 22, 30.0, squash), sole)
-	var front := func(p: Vector3, _a: float) -> Vector3:
-		var q := p.rotated(Vector3.UP, -1.1)
-		return Vector3(q.x, q.y, q.z * 0.72)
-	_add(trunk, StationKit.lathe(PackedVector2Array([Vector2(0.176, 0.6), Vector2(0.182, 0.61), Vector2(0.182, 1.13), Vector2(0.176, 1.14)]), 14, 30.0, front, 2.2), apron)
-	_add(trunk, MachineArt.loft([[-0.008, 0.05, 0.04, 0.0, 0.995, 3.5], [0.008, 0.05, 0.04, 0.0, 0.995, 3.5]], 12), steel, Transform3D(Basis(), Vector3(0, 0, 0.13)))
+	_add(trunk, StationKit.lathe(PackedVector2Array([Vector2(0, 0.8), Vector2(0.16, 0.8), Vector2(0.17, 0.9), Vector2(0.166, 0.99), Vector2(0, 0.99)]), 22, 60.0, squash), cloth)
+	_add(trunk, StationKit.lathe(PackedVector2Array([Vector2(0.166, 0.9), Vector2(0.174, 0.905), Vector2(0.174, 0.945), Vector2(0.166, 0.95)]), 22, 30.0, squash), sole)
+	_add(trunk, MachineArt.loft([[-0.008, 0.05, 0.04, 0.0, 0.925, 3.5], [0.008, 0.05, 0.04, 0.0, 0.925, 3.5]], 12), steel, Transform3D(Basis(), Vector3(0, 0, 0.127)))
+	_add(trunk, StationKit.lathe(PackedVector2Array([Vector2(0.17, 0.955), Vector2(0.18, 0.96), Vector2(0.181, 1.0), Vector2(0.18, 1.08), Vector2(0.164, 1.14), Vector2(0.095, 1.17),
+		Vector2(0, 1.17)]), 22, 60.0, squash), vest)
+	_add(trunk, StationKit.lathe(PackedVector2Array([Vector2(0.18, 1.0), Vector2(0.184, 1.004), Vector2(0.184, 1.05), Vector2(0.18, 1.054)]), 22, 30.0, squash), band)
 	# Seat of the overall: closes the gap over both thighs.
 	_add(self, StationKit.lathe(PackedVector2Array([Vector2(0, 0.72), Vector2(0.14, 0.74), Vector2(0.185, 0.82), Vector2(0.19, 0.9), Vector2(0.16, 0.97), Vector2(0, 0.99)]), 22, 60.0,
 		func(p: Vector3, _a: float) -> Vector3: return Vector3(p.x, p.y, p.z * 0.68)), cloth, Transform3D(Basis(), Vector3(0, 0, SET_BACK - 0.02)))

@@ -13,18 +13,23 @@ This script (Python without Blender) writes game/assets/models/people/<name>.glb
     the person's size, and every other bone keeps the place it has in the person's own skeleton;
   - a clip of standing still, made from the waving clip (the library's own standing clip is a fighter's
     stance): the body as it stands while waving, the waving arm replaced by the mirror image of the
-    other one half a clip later, both arms rolled so the palms face the legs, the head's turn softened,
-    the end led back into the start;
+    other one half a clip later, both arms rolled so the palms face the legs, the hands brought in line
+    with the forearms, the head's turn softened, the end led back into the start;
   - every clip set on the ground: the hips are raised or lowered by what the soles of the person's own
     feet are off it in that clip (the clips come a few centimetres too high or too low);
-  - clips named Stroll, Idle_Neutral, Walk, Run and Wave (the names TownFigure plays);
+  - clips named Stroll, Idle_Neutral, Walk, Run and Wave (the names TownFigure plays), and for the players'
+    workers (PlayerModel blends them) WalkCycle and RunCycle, one step pair each that starts as the left
+    heel comes down, and Air, the pose of the run's flight;
+  - for the figures in a sleeveless warning vest (the players' workers), the trunk taken off the arms'
+    bones, so a raised arm does not spread the vest like a wing (see VESTS);
   - the maps laid out anew. The generator cuts the skin into thousands of small patches and packs them
     edge to edge, whatever their colour; from a few metres away the colours of neighbouring patches run
     into each other and the figure looks speckled. Here every patch keeps its size, its direction and its
     picture (so the normal map stays right) but moves: patches of like colour lie together, with GAP
     pixels between them, and the room between is filled with the nearest patch's colour;
   - the colour map at that full size, normal and roughness at half of it, as JPEG files beside the model
-    (<name>_colour.jpg, <name>_normal.jpg, <name>_rough.jpg).
+    (<name>_colour.jpg, <name>_normal.jpg, <name>_rough.jpg); the colour map's brightest colours are
+    taken back to what a surface can reflect (see KNEE).
 
 Needs numpy, scipy and Pillow.
 
@@ -47,12 +52,15 @@ from scipy import ndimage, signal
 from scipy.cluster.vq import kmeans2
 from scipy.sparse import coo_matrix
 from scipy.sparse.csgraph import connected_components
+from scipy.spatial import cKDTree
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 GAME = ROOT / "game/assets/models/people"
 # Where the figures are written: the game's folder, or the folder given second (to try something out).
 OUT = pathlib.Path(sys.argv[2]) if len(sys.argv) > 2 else GAME
-PEOPLE = ["worker", "broker", "officer", "woman", "youth", "dealer", "patrol"]
+PEOPLE = ["worker", "broker", "officer", "woman", "youth", "dealer", "patrol", "mate_a", "mate_b"]
+# Clips are sampled at this rate.
+RATE = 30.0
 # Clips taken from the first figure's extra files: file suffix -> clip name in the game.
 SHARED = {"quick": "Walk", "run": "Run", "wave": "Wave"}
 DONOR = "worker"
@@ -64,6 +72,28 @@ MIRROR = np.array([1.0, -1.0, -1.0, 1.0], np.float32)
 # Standing still, the left arm's bones are rolled about their own length by these angles (degrees), so the
 # palms face the legs instead of the front as they do in the waving clip.
 ROLL = {"Arm": 25.0, "ForeArm": 45.0}
+# ... and the hands are led this far (0..1) from the waving clip's hold, bent outwards at the wrist, to the
+# rig's own rest hold, in line with the forearm.
+HAND_REST = 0.85
+# Colours brighter than a surface can be (the generator paints warning vests and white cloth at full
+# brightness, and in sunlight they glow): in linear light, a colour's brightest channel between KNEE and 1
+# is led into KNEE up to CEILING; the hue stays.
+KNEE = 0.55
+CEILING = 0.8
+# Figures in a sleeveless warning vest: the generator's skin runs from the vest's side straight into the
+# sleeve (there is no gap under the arm), and it hangs the vest's sides on the upper arms as well, so a
+# raised arm spreads the vest like a wing. On these figures the vest gives all its arm weight to the trunk's
+# bones, and so do the points of the trunk under it: all of it where they are TRUNK_IN (m) or more inside
+# the shoulder joint and TRUNK_BELOW[1] or more below it, none at the joint. What stretches under a raised
+# arm is then the shirt's sleeve, as cloth does. The vest is found by its colour (VEST_HUES: degrees, with at
+# least VEST_VIVID of saturation and brightness) on the trunk, its grey reflective bands by lying within
+# BAND_NEAR (m) of that colour.
+VESTS = ("mate_a", "mate_b")
+TRUNK_IN = 0.04
+TRUNK_BELOW = (0.02, 0.12)
+VEST_HUES = ((8.0, 35.0), (48.0, 80.0))
+VEST_VIVID = (0.55, 0.45)
+BAND_NEAR = 0.03
 # The maps' new layout: width (px), room between patches (px), the grid the patches are placed on (px),
 # groups of like colour, and the wider room between two groups.
 ATLAS_WIDTH = 3072
@@ -159,6 +189,9 @@ def idle_tracks(wave, hips_scale):
 
     def left_arm(part):
         values = closed(tracks[("Left" + part, "rotation")][1])
+        if part == "Hand":
+            rest = np.array(wave.json["nodes"][wave.names.index("LeftHand")].get("rotation", [0.0, 0.0, 0.0, 1.0]), np.float32)
+            values = mix(values, np.where((values @ rest)[:, None] < 0.0, -rest, rest), HAND_REST).astype(np.float32)
         return rolled(values, ROLL[part]) if part in ROLL else values
 
     out = []
@@ -383,6 +416,154 @@ def repacked(glb):
     return moved.astype(np.float32), out
 
 
+def vest_points(glb, position, shoulder_height, shoulder_out):
+    """Which of the mesh's points are the warning vest (see VESTS)."""
+    g = glb.json
+    prim = g["meshes"][0]["primitives"][0]
+    material = g["materials"][prim["material"]]
+    source = g["textures"][material["pbrMetallicRoughness"]["baseColorTexture"]["index"]]["source"]
+    picture = np.asarray(Image.open(io.BytesIO(glb.view(g["images"][source]["bufferView"]))).convert("RGB")).astype(np.float64) / 255.0
+    uv = glb.array(prim["attributes"]["TEXCOORD_0"]).astype(np.float64)
+    high, wide = picture.shape[:2]
+    colour = picture[np.clip((uv[:, 1] % 1.0) * high, 0, high - 1).astype(int), np.clip((uv[:, 0] % 1.0) * wide, 0, wide - 1).astype(int)]
+    top, low = colour.max(axis=1), colour.min(axis=1)
+    spread = np.maximum(top - low, 1e-6)
+    r, gr, b = colour[:, 0], colour[:, 1], colour[:, 2]
+    hue = np.where(top == r, (gr - b) / spread % 6.0, np.where(top == gr, (b - r) / spread + 2.0, (r - gr) / spread + 4.0)) * 60.0
+    vivid = (spread / np.maximum(top, 1e-6) > VEST_VIVID[0]) & (top > VEST_VIVID[1]) & np.any([(hue > a) & (hue < z) for a, z in VEST_HUES], axis=0)
+    # On the trunk only: gloves and faces have such colours too.
+    on_trunk = (np.abs(position[:, 0]) < shoulder_out + 0.1) & (position[:, 1] < shoulder_height + 0.12) & (position[:, 1] > shoulder_height - 0.65)
+    vest = vivid & on_trunk
+    # The reflective bands: light grey, with the vest's colour close by.
+    grey = on_trunk & ~vest & (spread / np.maximum(top, 1e-6) < 0.25) & (top > 0.5)
+    if vest.any() and grey.any():
+        near = cKDTree(position[vest]).query_ball_point(position[grey], BAND_NEAR, return_length=True)
+        vest[np.nonzero(grey)[0][near >= 3]] = True
+    return vest
+
+
+def settled(glb, body):
+    """Bone weights that leave the vest and the trunk under it on the trunk's bones (see VESTS):
+    (JOINTS_0, WEIGHTS_0) and how many points changed."""
+    prim = glb.json["meshes"][0]["primitives"][0]
+    position = glb.array(prim["attributes"]["POSITION"]).astype(np.float64)
+    joints = glb.array(prim["attributes"]["JOINTS_0"]).copy()
+    weights = glb.array(prim["attributes"]["WEIGHTS_0"]).astype(np.float64)
+    names = [body.names[j] for j in body.joints]
+    rest = body.world({}, 0)
+    trunk = [names.index(n) for n in ("Hips", "Spine02", "Spine01", "Spine")]
+    back = [(rest[body.names.index(n)][1, 3], names.index(n)) for n in ("Spine02", "Spine01", "Spine")]
+
+    def smooth(t):
+        t = np.clip(t, 0.0, 1.0)
+        return t * t * (3.0 - 2.0 * t)
+
+    changed = np.zeros(len(position), bool)
+    left = rest[body.names.index("LeftArm")][:3, 3]
+    vest = vest_points(glb, position, left[1], abs(left[0]))
+    for side in ("Left", "Right"):
+        shoulder = rest[body.names.index(side + "Arm")][:3, 3]
+        arm = [names.index(side + part) for part in ("Arm", "ForeArm", "Hand")]
+        inside = abs(shoulder[0]) - position[:, 0] * np.sign(shoulder[0])
+        below = shoulder[1] - position[:, 1]
+        share = smooth(inside / TRUNK_IN) * smooth((below - TRUNK_BELOW[0]) / (TRUNK_BELOW[1] - TRUNK_BELOW[0]))
+        share = np.where(vest, 1.0, share)
+        on_arm = np.isin(joints, arm)
+        gone = (weights * on_arm).sum(axis=1) * share
+        for v in np.nonzero(gone > 1e-4)[0]:
+            weights[v, on_arm[v]] *= 1.0 - share[v]
+            on_trunk = np.isin(joints[v], trunk)
+            held = weights[v, on_trunk].sum()
+            if held > 0.05:
+                weights[v, on_trunk] *= (held + gone[v]) / held
+            else:
+                # No trunk bone holds this point yet: the back bone at its height takes it, in its own
+                # slot if it has one, else in the slot that carries least.
+                bone = min(back, key=lambda b: abs(b[0] - position[v, 1]))[1]
+                own = np.nonzero(joints[v] == bone)[0]
+                slot = int(own[0]) if len(own) else int(np.argmin(weights[v]))
+                weights[v, slot] += gone[v]
+                joints[v, slot] = bone
+            changed[v] = True
+    weights /= weights.sum(axis=1, keepdims=True)
+    return joints, weights.astype(np.float32), int(changed.sum())
+
+
+def tamed(picture):
+    """A colour map without colours brighter than a surface can be (see KNEE)."""
+    rgb = np.asarray(picture.convert("RGB")).astype(np.float32) / 255.0
+    linear = np.where(rgb <= 0.04045, rgb / 12.92, ((rgb + 0.055) / 1.055) ** 2.4)
+    top = linear.max(axis=2, keepdims=True)
+    led = np.where(top > KNEE, KNEE + (top - KNEE) * (CEILING - KNEE) / (1.0 - KNEE), top)
+    linear = linear * (led / np.maximum(top, 1e-6))
+    out = np.where(linear <= 0.0031308, linear * 12.92, 1.055 * np.maximum(linear, 0.0) ** (1.0 / 2.4) - 0.055)
+    return Image.fromarray((np.clip(out, 0.0, 1.0) * 255.0 + 0.5).astype(np.uint8), "RGB")
+
+
+def feet(body, tracks):
+    """Where the two ankles are key by key: (left, right), each keys x 3, metres."""
+    by_name = {(bone, path): values for bone, path, _times, values in tracks}
+    count = max(len(values) for values in by_name.values())
+    left, right = body.names.index("LeftFoot"), body.names.index("RightFoot")
+    out = ([], [])
+    for key in range(count):
+        world = body.world(by_name, key)
+        out[0].append(world[left][:3, 3])
+        out[1].append(world[right][:3, 3])
+    return np.array(out[0]), np.array(out[1])
+
+
+def timed(tracks, values_of):
+    """Tracks with new values (values_of(old values)) at RATE keys per second from 0, the first key
+    once more at the end: a clip that repeats cleanly."""
+    out = []
+    for bone, path, _times, values in tracks:
+        values = values_of(values)
+        values = np.concatenate([values, values[:1]]).astype(np.float32)
+        out.append((bone, path, (np.arange(len(values)) / RATE).astype(np.float32), values))
+    return out
+
+
+def cycles(body, walk, run):
+    """WalkCycle, RunCycle and Air (see build)."""
+    # Walking: from one moment the left ankle is furthest ahead to the next.
+    ahead = feet(body, walk)[0][:, 2]
+    peaks = [k for k in range(1, len(ahead) - 1) if ahead[k] >= ahead[k - 1] and ahead[k] > ahead[k + 1] and ahead[k] > 0.6 * ahead.max()]
+    first, second = peaks[0], next(k for k in peaks if k - peaks[0] > 0.6 * RATE)
+
+    def one_step_pair(values):
+        cut = values[first:second].copy()
+        # The pair's last keys are led into its first, so it repeats without a jump.
+        ends = steady(np.concatenate([cut, values[first:first + 1]])) if values.shape[1] == 4 else np.concatenate([cut, values[first:first + 1]])
+        goal = ends[-1]
+        for i in range(4):
+            cut[len(cut) - 4 + i] = mix(ends[len(cut) - 4 + i], goal, (i + 1) / 5.0)
+        return cut
+
+    # Running: the clip is one step pair already; turned round so that it starts the same way.
+    start = int(np.argmax(feet(body, run)[0][:, 2]))
+    turned = lambda values: np.roll(values, -start, axis=0)
+    run_cycle = timed(run, turned)
+    # In the air: the key of the run at which the lower ankle is highest.
+    left, right = feet(body, [(b, p, t, v[:-1]) for b, p, t, v in run_cycle])
+    flight = int(np.argmax(np.minimum(left[:, 1], right[:, 1])))
+    air = [(bone, path, np.array([0.0, 0.5], np.float32), np.stack([values[flight], values[flight]])) for bone, path, _times, values in run_cycle]
+    return {"WalkCycle": timed(walk, one_step_pair), "RunCycle": run_cycle, "Air": air}
+
+
+def head_box(glb, body):
+    """The box round the skin that hangs on the head bone, in that bone's own space (cm), for fitting a hat."""
+    prim = glb.json["meshes"][0]["primitives"][0]
+    position = glb.array(prim["attributes"]["POSITION"]).astype(np.float64)
+    bones = glb.array(prim["attributes"]["JOINTS_0"]).astype(np.int64)
+    weights = glb.array(prim["attributes"]["WEIGHTS_0"]).astype(np.float64)
+    head = body.joints.index(body.names.index("Head"))
+    on_head = (weights * (bones == head)).sum(axis=1) > 0.6
+    rest = body.world({}, 0)[body.names.index("Head")]
+    local = (np.linalg.inv(rest) @ np.concatenate([position[on_head], np.ones((int(on_head.sum()), 1))], axis=1).T).T[:, :3]
+    return local.min(axis=0), local.max(axis=0), int(on_head.sum())
+
+
 def build(name, source):
     person = Glb(source / ("%s_walk.glb" % name))
     g = person.json
@@ -406,7 +587,15 @@ def build(name, source):
     if walk is not None and max(len(times) for _bone, _path, times, _values in walk) < 2:
         walk = None
     coordinates, pictures = repacked(person)
-    coordinates_at = g["meshes"][0]["primitives"][0]["attributes"]["TEXCOORD_0"]
+    attributes = dict(g["meshes"][0]["primitives"][0]["attributes"])
+    coordinates_at = attributes["TEXCOORD_0"]
+    # Other data of the mesh that is written anew: accessor -> bytes.
+    renewed = {}
+    if name in VESTS:
+        bones, bone_weights, count = settled(person, Body(person))
+        assert g["accessors"][attributes["JOINTS_0"]]["componentType"] == 5121 and g["accessors"][attributes["WEIGHTS_0"]]["componentType"] == 5126
+        renewed = {attributes["JOINTS_0"]: bones.astype(np.uint8).tobytes(), attributes["WEIGHTS_0"]: bone_weights.tobytes()}
+        print("  vest: %d points of the vest and the trunk taken off the arms" % count)
     accessors = []
     remap = {}
     for i, a in enumerate(g["accessors"]):
@@ -422,6 +611,9 @@ def build(name, source):
             data = coordinates.tobytes()
             made["min"] = coordinates.min(axis=0).tolist()
             made["max"] = coordinates.max(axis=0).tolist()
+        elif i in renewed:
+            assert len(renewed[i]) == size and v.get("byteStride", 0) in (0, size // a["count"])
+            data = renewed[i]
         made["bufferView"] = push(data, v.get("target"))
         remap[i] = len(accessors)
         accessors.append(made)
@@ -446,6 +638,8 @@ def build(name, source):
         role = roles[index]
         if role != "colour":
             picture = picture.resize((picture.size[0] // 2, picture.size[1] // 2), Image.LANCZOS)
+        else:
+            picture = tamed(picture)
         file_name = "%s_%s.jpg" % (name, role)
         picture.save(OUT / file_name, "JPEG", quality=88 if role == "colour" else 90)
         g["images"][index] = {"uri": file_name, "name": "%s_%s" % (name, role)}
@@ -469,12 +663,15 @@ def build(name, source):
     off = {}
     keys = {}
 
+    made = {}
+
     def clip(label, tracks):
         if label != "Wave":
             tracks = looping(tracks)
         tracks, off[label] = body.grounded(tracks)
         clips.append(add_clip(label, tracks))
         keys[label] = len(tracks[0][2])
+        made[label] = tracks
 
     extra = {suffix: source / ("%s_%s.glb" % (DONOR, suffix)) for suffix in SHARED}
     if all(path.exists() for path in extra.values()) and walk is not None:
@@ -493,6 +690,12 @@ def build(name, source):
         clip("Stroll", walk if walk is not None else clip_tracks(donor, size, "Stroll"))
         for label in list(SHARED.values()) + ["Idle_Neutral"]:
             clip(label, clip_tracks(donor, size, label))
+    # For figures driven by a blend of clips (the players' workers): one walking step pair and the
+    # running one, both starting as the left heel comes down, and the pose of the run's flight.
+    for label, tracks in cycles(body, made["Walk"], made["Run"]).items():
+        clips.append(add_clip(label, tracks))
+        keys[label] = len(tracks[0][2])
+        off[label] = 0.0
     g["animations"] = clips
     g["accessors"] = accessors
     g["bufferViews"] = views
@@ -508,6 +711,8 @@ def build(name, source):
         f.write(struct.pack("<4sII", b"glTF", 2, 12 + 8 + len(text) + 8 + len(blob)))
         f.write(struct.pack("<I4s", len(text), b"JSON") + text)
         f.write(struct.pack("<I4s", len(blob), b"BIN\0") + bytes(blob))
+    low, high, count = head_box(person, body)
+    print("  head (bone space, cm): x %.1f..%.1f, y %.1f..%.1f, z %.1f..%.1f from %d points" % (low[0], high[0], low[1], high[1], low[2], high[2], count))
     print(name, "hips %.1f cm," % person.hips(), out.stat().st_size, "bytes; clips and what their soles were off the ground (cm):",
         ", ".join("%s %+.1f (%d keys)" % (label, value * 100.0, keys[label]) for label, value in off.items()))
 

@@ -67,6 +67,10 @@ Kenney Starter Kit 3D Platformer (`kenney_platformer/LICENSE.md` = MIT für den 
 
 ## 3. Figuren – KayKit Adventurers
 
+> Stand November 2026: Die Spielerfigur ist nicht mehr die KayKit-Figur. Mitspieler sehen einander als KI-erzeugte Arbeiter
+> (`assets/models/people/mate_a.glb`, `mate_b.glb`; `docs/TECH_SPEC.md`, Modul Y, „Arbeiter der Spieler“). Dieser Abschnitt
+> beschreibt den früheren Stand; die vier Figuren liegen noch im Paket, genutzt werden daraus nur Waffen und Becher als Requisiten.
+
 ### 3.1 Dateien und Szenenaufbau
 `kaykit_adventurers/{Barbarian,Knight,Mage,Rogue}.glb`. Importierte Szene (alle vier gleich):
 

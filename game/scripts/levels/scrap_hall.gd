@@ -69,6 +69,30 @@ func _build_town() -> void:
 	cop.max_z = ScrapHallSet.FRONT_Z - 0.8
 	add_child(cop)
 	_build_walkers()
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--mates="):
+			_debug_mates(arg.trim_prefix("--mates="))
+
+
+## Art check: `--mates=x,z,yaw,x,z,yaw` stands two fellow players' workers there (place and turn in
+## degrees of each), as the others see them: the first digs with the bare hands, the second
+## carries a find at a walk.
+func _debug_mates(spots: String) -> void:
+	_stand_mates(spots.split_floats(","), 1.33)
+
+
+## Two workers without players (WorkerStandIn), for pictures: `spots` holds place (x, z) and turn
+## (degrees) of each; the first digs in the heap, the second holds a find and goes at `pace` m/s
+## on the spot (0: stands).
+func _stand_mates(spots: Array, pace: float) -> void:
+	var states := [{working = true}, {hold = Vector3(0, 1.14, 0.8), find = &"scrap_kettle", vel = pace}]
+	for i in mini(states.size(), spots.size() / 3):
+		var mate := WorkerStandIn.new()
+		mate.color = GameWorld.PLAYER_COLORS[i + 1]
+		mate.state = states[i]
+		mate.position = Vector3(spots[i * 3], 0.0, spots[i * 3 + 1])
+		mate.rotation.y = deg_to_rad(spots[i * 3 + 2])
+		add_child(mate)
 
 
 ## Three people who go about their business on the far pavement: from the station to the pawnbroker
@@ -192,6 +216,8 @@ func attract_show() -> void:
 	skip.worth = 40 * FoundryRules.raw_price(&"scrap")
 	skip._update_look()
 	_add_truck()
+	# Two mates at the heap: one digs with the bare hands, one has found a copper kettle.
+	_stand_mates([0.9, 1.5, 212.0, 2.7, 2.7, -18.0], 0.0)
 
 
 func _announce(title: String, subtitle: String) -> void:

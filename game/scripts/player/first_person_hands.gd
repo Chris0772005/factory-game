@@ -46,12 +46,13 @@ var _was_holding := false
 func _ready() -> void:
 	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	# Scanned leather and cloth (FpMaterials): a tan work glove with a lighter palm, dark straps and
-	# a stiff canvas cuff, and a sleeve of washed cloth in the player's colour.
+	# a stiff canvas cuff, and a sleeve of washed cloth in the colour of the shirt the player's
+	# figure wears (PlayerModel.LOOKS), so the own arms are the ones the others see.
 	var leather := FpMaterials.scan("leather", Color("#96754f"))
 	var palm_mat := FpMaterials.scan("leather", Color("#b3946b"))
 	var cuff := FpMaterials.scan("leather", Color("#5a4332"))
 	var gauntlet := FpMaterials.scan("cloth", Color("#8a8271"), 0.8)
-	var sleeve := FpMaterials.scan("cloth", FpMaterials.workwear(player.color if player else Color("#3e7bd6")), 1.0, true)
+	var sleeve := FpMaterials.scan("cloth", PlayerModel.look_of(player.color if player else Color("#3e7bd6")).shirt, 1.0, true)
 	for side: float in [-1.0, 1.0]:
 		var hand := Node3D.new()
 		add_child(hand)

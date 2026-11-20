@@ -47,6 +47,9 @@ var strength := STRENGTH
 var held_local_point := Vector3.ZERO
 ## Host-side: the use button is held down (pouring, pumping).
 var using := false
+## At something with the bare hands: holding the interact key at a station (digging in the heap,
+## turning a wheel). Set by the owning peer and replicated, so every peer shows the worker at it.
+var working := false
 ## Host-side: the station F went down at, for stations that take a held F.
 var _station: Node3D = null
 ## First person: this worker aims with the eyes (set by the owning peer and
@@ -124,7 +127,8 @@ func _ready() -> void:
 		_name_tag.outline_size = 12
 		_name_tag.outline_modulate = Color(0.1, 0.08, 0.12, 0.9)
 		_name_tag.modulate = color.lightened(0.55)
-		_name_tag.position = Vector3(0, 2.12, 0)
+		# Well clear of the figure's hard hat.
+		_name_tag.position = Vector3(0, PlayerModel.height_of(color) + 0.3, 0)
 		_name_tag.text = display_name
 		add_child(_name_tag)
 	if is_local():
@@ -215,6 +219,7 @@ func _physics_process(delta: float) -> void:
 			_station.interact_tick(self, delta)
 	_update_carry_exception()
 	_update_grips()
+	_model.working = working
 	_model.animate(delta, velocity, is_on_floor(), holding, _hand_target())
 	_update_hold_sounds(delta)
 
@@ -248,6 +253,7 @@ func _read_input() -> void:
 	if ui_locked:
 		input_dir = Vector2.ZERO
 		wants_sprint = false
+		working = false
 		return
 	input_dir = Input.get_vector(&"move_left", &"move_right", &"move_forward", &"move_back")
 	wants_sprint = Input.is_action_pressed(&"sprint")
@@ -266,6 +272,7 @@ func _read_input() -> void:
 		_request(&"use_start")
 	if Input.is_action_just_released(&"interact"):
 		_request(&"use_end")
+	working = not holding and Input.is_action_pressed(&"interact") and nearest_interactable() != null
 
 
 func _move(delta: float) -> void:
@@ -761,14 +768,15 @@ func _broadcast_state(delta: float) -> void:
 	if _net_accum < 1.0 / NET_RATE:
 		return
 	_net_accum = 0.0
-	_state.rpc(global_position, facing, velocity, holding, held_name, aims, look_pitch)
+	_state.rpc(global_position, facing, velocity, holding, held_name, aims, look_pitch, working)
 
 
 @rpc("authority", "call_remote", "unreliable_ordered")
-func _state(pos: Vector3, yaw: float, vel: Vector3, is_holding: bool, item_name: String, aiming: bool, pitch: float) -> void:
+func _state(pos: Vector3, yaw: float, vel: Vector3, is_holding: bool, item_name: String, aiming: bool, pitch: float, at_work: bool) -> void:
 	_net_target = pos
 	aims = aiming
 	look_pitch = pitch
+	working = at_work
 	if not _snapshots.is_empty() and (_snapshots[-1][1] as Vector3).distance_to(pos) > 3.0:
 		# Teleport or respawn: jump there instead of flying across the yard.
 		_snapshots.clear()

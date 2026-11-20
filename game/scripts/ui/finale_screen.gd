@@ -61,7 +61,7 @@ func _ready() -> void:
 	lines.append(_label("Vom Eimerofen im Hinterhof über Garage und Glockengießerei\nbis zur größten Glocke der Stadt – gegossen von:", UITheme.SIZE_TEXT, UITheme.MUTED))
 	lines.append(_label(" · ".join(crew) if not crew.is_empty() else "euch", UITheme.SIZE_H2, UITheme.ACCENT, true))
 	lines.append(_label("Danke fürs Spielen!", UITheme.SIZE_TEXT, UITheme.PAPER))
-	lines.append(_label("3D-Modelle: KayKit von Kay Lousberg und Kenney (CC0) · Schriften: Fredoka, Lilita One (OFL)\nGeräusche und Glockenklang: eigene Synthese · Engine: Godot", UITheme.SIZE_SMALL, UITheme.MUTED))
+	lines.append(_label("3D-Modelle: KayKit von Kay Lousberg, Kenney, Poly Haven (CC0) · Figuren: KI-erzeugt · Schriften: Fredoka, Lilita One (OFL)\nGeräusche und Glockenklang: eigene Synthese · Engine: Godot · alle Quellen unter „Lizenzen“ im Hauptmenü", UITheme.SIZE_SMALL, UITheme.MUTED))
 	var button := Button.new()
 	button.text = "Weiterspielen"
 	button.custom_minimum_size = Vector2(360, 72)

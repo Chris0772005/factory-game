@@ -1,5 +1,7 @@
 worker.glb, broker.glb, officer.glb, woman.glb, youth.glb, dealer.glb, patrol.glb: the townspeople of MOLTEN MATES.
-These seven figures are AI-GENERATED CONTENT. Nobody modelled or painted them by hand, and they show no real person: each face and
+mate_a.glb, mate_b.glb: the players' own workers, as the other players see them (a man in an orange warning vest, a woman in
+a yellow one; the hard hat in the player's colour is added by the game).
+These nine figures are AI-GENERATED CONTENT. Nobody modelled or painted them by hand, and they show no real person: each face and
 outfit was invented by the image model from a written description.
 
 How they were made (all through the owner's Higgsfield account, https://higgsfield.ai, in November 2026):
@@ -7,17 +9,24 @@ How they were made (all through the owner's Higgsfield account, https://higgsfie
      (Higgsfield image model "GPT Image 2.6").
   2. From that picture a textured, rigged 3D figure with one clip, a slow walk
      (Higgsfield 3D model "Meshy 7 image-to-3D": about 25,000 triangles, PBR maps, 24-joint skeleton,
-     clip "Casual_Walk" of Meshy's animation library). The dealer and the patrol officer were generated
-     without a clip: all their clips are the first figure's.
+     clip "Casual_Walk" of Meshy's animation library). The dealer, the patrol officer and the two players' workers
+     were generated without a clip: all their clips are the first figure's.
   3. For the first figure (worker) further clips of the same library on the same skeleton
      (Higgsfield "Meshy rigging"): "Quick_Walk", "Run_02", "Wave_One_Hand"; also "Idle" and
      "Confident_Walk", which are not used.
   4. tools/people.py put each figure together for the game: its own mesh, skeleton and slow walk (clip Stroll),
      the first figure's clips carried over to the others (Walk, Run, Wave), a clip of standing still made from the
-     waving clip (Idle_Neutral), every clip set on the ground, and the maps laid out anew: the generator packs
-     thousands of small patches edge to edge, whose colours run into each other from a few metres away; the
-     tool moves the patches (each keeps its size and picture) so that like colours lie together with room
-     between. Colour map 3072 px wide, normal and roughness maps half that, saved as JPEG files beside the models.
+     waving clip (Idle_Neutral, the hands brought in line with the forearms), one step pair of the walk and of the
+     run and the pose of the run's flight (WalkCycle, RunCycle, Air: the players' workers blend them), every clip
+     set on the ground, and the maps laid out anew: the generator packs thousands of small patches edge to edge,
+     whose colours run into each other from a few metres away; the tool moves the patches (each keeps its size and
+     picture) so that like colours lie together with room between. Colour map 3072 px wide, normal and roughness
+     maps half that, saved as JPEG files beside the models. The colour maps' brightest colours are taken back to
+     what a surface can reflect (the generator paints warning vests and white cloth at full brightness, which
+     glows in sunlight).
+  5. On the two players' workers the tool also takes the warning vest, and the trunk under it, off the arms'
+     bones: the generator's skin runs from the vest's side straight into the sleeve and hangs the vest on the
+     upper arms, so a raised arm would spread the vest like a wing.
 
 Import settings that matter (the *.import files beside the models): the maps are compressed for the graphics card
 with mipmaps (compress/mode=2, the normal maps in high quality), and animation/remove_immutable_tracks is off,
@@ -34,6 +43,8 @@ Higgsfield job ids (they identify the generations in the owner's account):
   youth    picture cb12c4ef-581d-4c0c-8f55-c7b939aad98f   figure 2283e621-5f80-4ac7-a5d5-dd7444ee9e70
   dealer   picture 4109d5fa-2774-413a-825b-4ada64c76e5b   figure 48c0ec64-5143-47b0-9edb-554144dbd5db
   patrol   picture 6f5baf35-f94b-4198-99f2-0a916ee55a3e   figure 4ae1e0af-7f2c-4a25-9d47-1d63d75e1685
+  mate_a   picture fb73ba7c-767c-4679-9caf-bf1a0d13bb67   figure e53db038-10f2-416f-ab6f-2ce59454d7c4
+  mate_b   picture ae378fda-54a0-4c47-8124-fceb3a480edb   figure e0abca5b-8aff-49de-98dc-3aedf93dd8b6
 
 The generated source files (10 to 13 MB each) are not in this repository; they can be downloaded again from the
 owner's Higgsfield account under the ids above.

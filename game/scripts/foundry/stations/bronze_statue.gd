@@ -32,6 +32,7 @@ static func from_data(data: Dictionary) -> BronzeStatue:
 	s.rotation.y = data.get("yaw", 0.0)
 	s.pose = data.get("pose", PlayerModel.panic_pose())
 	s.alloy = data.get("alloy", &"bronze")
+	s.suit_color = data.get("color", Color.WHITE)
 	var shape := CollisionShape3D.new()
 	var box := BoxShape3D.new()
 	box.size = Vector3(0.75, 1.9, 0.55)
@@ -50,6 +51,8 @@ static func from_data(data: Dictionary) -> BronzeStatue:
 
 func _ready() -> void:
 	var model := PlayerModel.new()
+	# The figure of the worker it was (the colour picks it; the bronze covers the colour itself).
+	model.suit_color = suit_color
 	# Posed before it enters the tree: the rigged worker is built frozen, without
 	# animation tree or IK; its skinned meshes keep this pose for good.
 	model.apply_pose(pose)

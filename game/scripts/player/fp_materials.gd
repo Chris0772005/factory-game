@@ -40,9 +40,3 @@ static func scan(kind: String, colour: Color, relief := 1.0, two_sided := false)
 		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	_made[key] = mat
 	return mat
-
-
-## A player's colour as worn work cloth: less loud and darker than the colour itself.
-static func workwear(colour: Color) -> Color:
-	var grey := colour.get_luminance()
-	return colour.lerp(Color(grey, grey, grey), 0.3).darkened(0.3)
