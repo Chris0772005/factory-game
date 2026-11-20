@@ -24,6 +24,10 @@ func _run() -> void:
 		_finish()
 		return
 	heap.hot_share = 0.0
+	# No cars on the street here: the truck's trip is timed below.
+	var traffic := get_tree().get_first_node_in_group(TownTraffic.GROUP) as TownTraffic
+	if traffic:
+		traffic.free()
 	# Three missions run side by side.
 	var first := missions.current(0)
 	_check(first.stat == &"dig" and first.goal == 15 and missions.current(1).stat == &"earned" and missions.current(2).stat == &"hot_sold", "three tracks: dig, earn, sell under the counter")

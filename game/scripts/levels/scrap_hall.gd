@@ -48,6 +48,13 @@ func build_stations() -> void:
 ## officer on the beat.
 func _build_town() -> void:
 	add_child(TownLaw.new())
+	add_child(CrewBoost.new())
+	# The diner's two places to order: coffee by the till, the stew next to it.
+	for order: Array in [[&"coffee", ScrapHallSet.DINER_COFFEE_X], [&"meal", ScrapHallSet.DINER_MEAL_X]]:
+		var place := DinerCounter.new()
+		place.kind = order[0]
+		place.position = ScrapHallSet.DINER + Vector3(order[1], 0, ScrapHallSet.COUNTER_Z - 0.3)
+		add_child(place)
 	add_child(Missions.new())
 	var fence := FenceCounter.new()
 	fence.position = ScrapHallSet.PAWN + Vector3(0, 0, ScrapHallSet.COUNTER_Z)
@@ -69,9 +76,27 @@ func _build_town() -> void:
 	cop.max_z = ScrapHallSet.FRONT_Z - 0.8
 	add_child(cop)
 	_build_walkers()
+	# The town's cars drive down the street.
+	var traffic := TownTraffic.new()
+	add_child(traffic)
+	traffic.setup(ScrapHallSet.TRAFFIC_LANE_Z, ScrapHallSet.SIDE_X, ScrapHallSet.SIDE_END)
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--mates="):
 			_debug_mates(arg.trim_prefix("--mates="))
+		elif arg.begins_with("--cars="):
+			# Art check: cars standing on the street, each so many metres along their way (TownTraffic).
+			traffic.frozen = true
+			var parked := 0
+			for at in arg.trim_prefix("--cars=").split_floats(","):
+				traffic.send_car(parked % TownTraffic.MODELS.size(), at)
+				parked += 1
+		elif arg.begins_with("--walk="):
+			# Art check: the people on the pavement as they are that many seconds into their rounds
+			# (a picture is taken some twenty seconds of play later).
+			(get_node(^"TownWalkers") as TownWalkers).clock = float(arg.trim_prefix("--walk="))
+		elif arg == "--boost":
+			# Art check: the crew has had coffee and stew at the diner (the pills on the HUD).
+			CrewBoost.of(get_tree()).left = {&"coffee": 152.0, &"meal": 221.0}
 
 
 ## Art check: `--mates=x,z,yaw,x,z,yaw` stands two fellow players' workers there (place and turn in
@@ -95,9 +120,10 @@ func _stand_mates(spots: Array, pace: float) -> void:
 		add_child(mate)
 
 
-## Three people who go about their business on the far pavement: from the station to the pawnbroker
-## and the dealer and back, between the empty shop, the dealer and the bench, and from the kiosk to
-## the pawnbroker's window.
+## Five people who go about their business on the far pavement: from the station to the pawnbroker
+## and the dealer and back, between the diner, the dealer and the bench, from the kiosk to the
+## pawnbroker's window, an old woman from the corner to the diner and the pawnbroker's window, and a
+## mechanic from the dealer's to his coffee.
 func _build_walkers() -> void:
 	var walkers := TownWalkers.new()
 	walkers.name = "TownWalkers"
@@ -129,16 +155,22 @@ func _build_walkers() -> void:
 		[Vector3(police.x, 0, front - 0.6), 0.0],
 		[Vector3(police.x, 0, front + 1.3), 0.0],
 	])
+	var diner := ScrapHallSet.DINER
+	var diner_door := diner.x + ScrapHallSet.DINER_DOOR_X
 	walkers.add_round("Casual_Woman", {}, [
-		[Vector3(-21.0, 0, front - 1.0), 8.0, Vector3(-21.0, 0, front)],
-		[Vector3(-20.0, 0, east), 0.0],
+		[Vector3(diner.x + 0.95, 0, front + counter - 0.85), 10.0, diner + Vector3(ScrapHallSet.DINER_COOK_X, 0, counter + 1.1)],
+		[Vector3(diner_door, 0, front + 1.0), 0.0],
+		[Vector3(diner_door, 0, front - 0.6), 0.0],
+		[Vector3(-16.0, 0, east), 0.0],
 		[Vector3(-0.2, 0, east), 0.0],
 		[Vector3(1.0, 0, front - 0.95), 6.0, Vector3(1.0, 0, front + 2.0)],
 		[Vector3(2.2, 0, east), 0.0],
 		[Vector3(13.0, 0, east), 0.0],
 		[Vector3(14.0, 0, front - 1.25), 12.0, Vector3(14.0, 0, front - 6.0)],
 		[Vector3(12.8, 0, west), 0.0],
-		[Vector3(-20.0, 0, west), 0.0],
+		[Vector3(diner_door + 1.2, 0, west), 0.0],
+		[Vector3(diner_door, 0, front - 0.6), 0.0],
+		[Vector3(diner_door, 0, front + 1.0), 0.0],
 	], 30.0)
 	# The old man strolls. He keeps to a lane of his own along the tree pits, so nobody has to pass
 	# through him.
@@ -151,6 +183,38 @@ func _build_walkers() -> void:
 		[Vector3(-7.4, 0, slow), 0.0],
 		[Vector3(23.2, 0, slow), 0.0],
 	], 55.0, 0.75)
+	# The old woman: from the western corner to her coffee at the diner, a look into the pawnbroker's
+	# window and home again, slowly, along the houses.
+	var by_wall := front - 1.45
+	walkers.add_round("Granny", {}, [
+		[Vector3(-25.6, 0, front - 1.0), 6.0, Vector3(-25.6, 0, front - 6.0)],
+		[Vector3(diner_door - 1.0, 0, by_wall), 0.0],
+		[Vector3(diner_door, 0, front - 0.6), 0.0],
+		[Vector3(diner_door, 0, front + 1.0), 0.0],
+		[Vector3(diner.x - 0.6, 0, front + counter - 0.85), 14.0, diner + Vector3(ScrapHallSet.DINER_COOK_X, 0, counter + 1.1)],
+		[Vector3(diner_door, 0, front + 1.0), 0.0],
+		[Vector3(diner_door, 0, front - 0.6), 0.0],
+		[Vector3(-13.0, 0, by_wall), 0.0],
+		[Vector3(-10.2, 0, front - 0.85), 7.0, Vector3(-10.2, 0, front + 2.0)],
+		[Vector3(-13.0, 0, by_wall), 0.0],
+		[Vector3(diner_door + 1.0, 0, by_wall), 0.0],
+		[Vector3(-24.5, 0, by_wall), 0.0],
+	], 12.0, 0.7)
+	# The mechanic from the workshop round the corner: something for the dealer, then his coffee.
+	walkers.add_round("Mechanic", {}, [
+		[Vector3(25.8, 0, front - 2.4), 5.0, Vector3(30.0, 0, front - 2.4)],
+		[Vector3(8.0, 0, west), 0.0],
+		[Vector3(4.4, 0, front - 0.95), 8.0, Vector3(4.4, 0, front + 2.0)],
+		[Vector3(3.0, 0, west), 0.0],
+		[Vector3(diner_door + 1.2, 0, west), 0.0],
+		[Vector3(diner_door, 0, front - 0.6), 0.0],
+		[Vector3(diner_door, 0, front + 1.0), 0.0],
+		[Vector3(diner.x + 0.2, 0, front + counter - 0.85), 12.0, diner + Vector3(ScrapHallSet.DINER_COOK_X, 0, counter + 1.1)],
+		[Vector3(diner_door, 0, front + 1.0), 0.0],
+		[Vector3(diner_door, 0, front - 0.6), 0.0],
+		[Vector3(diner_door + 1.4, 0, east), 0.0],
+		[Vector3(24.0, 0, east), 0.0],
+	], 80.0)
 
 
 func is_scrap_hall() -> bool:
@@ -201,6 +265,8 @@ func _add_truck() -> void:
 	truck.park = ScrapHallSet.TRUCK_PARK
 	truck.dock = ScrapHallSet.TRUCK_DOCK
 	truck.lane_z = ScrapHallSet.TRUCK_LANE_Z
+	truck.turn_x = ScrapHallSet.SIDE_X
+	truck.turn_z = ScrapHallSet.SIDE_END
 	truck.skip = get_tree().get_first_node_in_group(ScrapSkip.GROUP) as ScrapSkip
 	add_child(truck)
 

@@ -6,8 +6,11 @@ one mesh in eight materials, lying on its side (the prepared copies are Z-up ins
 and dashboard behind tinted panes. This script puts each together the way the game needs it:
 
   - X forward, Y left, Z up, standing on the ground, centred;
-  - three parts: car_body (paint, underside, lamps and their lenses, tyres, plates), car_inside (seats and
+  - three parts: car_body (paint, underside, lamps and their lenses, plates), car_inside (seats and
     trim) and car_glass (the panes), so the game's road dirt stays outside and the sun falls in;
+  - four wheels of their own (wheel_fl, wheel_fr, wheel_rl, wheel_rr: tyre and rim, the origin in the hub,
+    the axle along the car's width), so they turn when the car drives (the source has them as loose
+    pieces of the one mesh, all in the tyre material);
   - the panes get a material of their own called "glass", which the game's vehicle finish makes clear (in the
     source they share one dark, nearly opaque material with the lamp lenses and are told apart only by their
     place on the map);
@@ -23,6 +26,7 @@ import pathlib
 import sys
 
 import bpy
+import bmesh  # (comes with bpy: after it)
 from mathutils import Matrix, Vector
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
@@ -45,7 +49,7 @@ PARTS = {
     "UCB_Lights_and_Glass": ("car_lights", "car_body"),
     "UCB_Interior_Trim": ("car_trim", "car_inside"),
     "Numberplates_Misk_U": ("car_plates", "car_body"),
-    "RB1c_Tire_1k": ("car_tyre", "car_body"),
+    "RB1c_Tire_1k": ("car_tyre", "wheels"),
 }
 # Turned half round where the source's nose points the other way (seen in the model viewer).
 FLIP = set(sys.argv[1:])
@@ -109,6 +113,30 @@ for name, (title, url) in CARS.items():
         used.name = target[0]
         groups.setdefault(target[1], []).append(ob)
     car = K.empty("car_" + name)
+    # The wheels: every piece in the tyre material belongs to the wheel in its quarter of the car.
+    for tyres in groups.pop("wheels", []):
+        centres = [p.center for p in tyres.data.polygons]
+        mid_x = (min(c.x for c in centres) + max(c.x for c in centres)) * 0.5
+        for front, left, wheel_name in ((True, True, "wheel_fl"), (True, False, "wheel_fr"), (False, True, "wheel_rl"), (False, False, "wheel_rr")):
+            wheel = tyres.copy()
+            wheel.data = tyres.data.copy()
+            bpy.context.collection.objects.link(wheel)
+            bm = bmesh.new()
+            bm.from_mesh(wheel.data)
+            away = [f for f in bm.faces if ((f.calc_center_median().x > mid_x) != front) or ((f.calc_center_median().y > 0.0) != left)]
+            bmesh.ops.delete(bm, geom=away, context="FACES")
+            pts = [v.co.copy() for v in bm.verts]
+            hub = Vector(((min(q[i] for q in pts) + max(q[i] for q in pts)) * 0.5 for i in range(3)))
+            bmesh.ops.translate(bm, verts=bm.verts, vec=-hub)
+            bm.to_mesh(wheel.data)
+            bm.free()
+            wheel.name = wheel_name
+            wheel.data.name = wheel_name
+            wheel.parent = car
+            wheel.location = hub
+            radius = max(max(abs(q.x - hub.x), abs(q.z - hub.z)) for q in pts)
+            print("  %s hub (%.3f, %.3f, %.3f), radius %.3f m, %d faces" % (wheel_name, hub.x, hub.y, hub.z, radius, len(wheel.data.polygons)))
+        bpy.data.objects.remove(tyres)
     for part_name, objects in sorted(groups.items()):
         for ob in bpy.data.objects:
             ob.select_set(False)
@@ -127,5 +155,5 @@ for name, (title, url) in CARS.items():
     out = OUT / ("car_%s.glb" % name)
     K.export_glb(out, 'Based on "%s" (%s) by Daniel Zhabotinsky (https://sketchfab.com/DanielZhabotinsky), licensed under '
         "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/); prepared copy from raisimTech/raisim2Lib (one mesh, 1K maps, "
-        "plain body paint). Changed for MOLTEN MATES: turned upright and centred, split into body and inside, badges left out." % (title, url))
+        "plain body paint). Changed for MOLTEN MATES: turned upright and centred, split into body, inside and four wheels, badges left out." % (title, url))
     print("WROTE", out, out.stat().st_size)

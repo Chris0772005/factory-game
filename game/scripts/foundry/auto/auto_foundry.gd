@@ -106,8 +106,12 @@ func _enabled_sync(i: int, on: bool) -> void:
 	enabled[i] = on
 
 
-func _on_peer_ready(id: int) -> void:
-	if not Network.is_sim_authority():
+## A player has arrived in this hall: which machines are switched off goes to that one too.
+func _on_peer_ready(id: int, level: String) -> void:
+	if not is_inside_tree() or not Network.is_sim_authority():
+		return
+	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
+	if world == null or level != world.level_path():
 		return
 	for i in enabled.size():
 		if not enabled[i]:

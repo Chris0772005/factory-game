@@ -33,7 +33,15 @@ static func place(set: Node3D, model: String, at: Vector3, yaw := 0.0, paint := 
 	var node := packed.instantiate() as Node3D
 	node.transform = Transform3D(basis, at)
 	set.add_child(node)
-	# Road dirt up to the sills: less of it on a low car than on the van.
+	dress(node, model, paint, finish)
+	return node
+
+
+## The project's vehicle finish on a car or van that stands in the tree, on the ground, as it
+## rests: road dirt up to the sills, the lamps dark (it is day), and for `paint` with alpha above
+## 0 a body colour of its own. Also what TownTraffic's cars wear.
+static func dress(node: Node3D, model: String, paint := Color(0, 0, 0, 0), finish := {}) -> void:
+	# Less dirt on a low car than on the van.
 	var dirt := {mud = 0.45, mud_height = 0.55, dust = 0.3} if model == VAN else {mud = 0.35, mud_height = 0.3, dust = 0.25}
 	dirt.merge(finish, true)
 	VehicleFinish.apply(node, dirt)
@@ -43,11 +51,10 @@ static func place(set: Node3D, model: String, at: Vector3, yaw := 0.0, paint := 
 			var mat := mi.mesh.surface_get_material(s) as BaseMaterial3D
 			if mat == null:
 				continue
-			# Parked: the lamps its maps would light stay dark.
+			# The lamps its maps would light stay dark.
 			if mat.emission_enabled:
 				mat.emission_enabled = false
 			if paint.a > 0.0 and mat.resource_name.to_lower().contains("paint"):
 				var own := mat.duplicate() as BaseMaterial3D
 				own.albedo_color = Color(paint, 1.0)
 				mi.set_surface_override_material(s, own)
-	return node

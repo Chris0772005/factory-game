@@ -22,6 +22,7 @@ const TRACKS := [
 	{name = "Betrieb", color = Color("#5bb8e8"), list = [
 		{stat = &"earned", goal = 100, reward = 25, text = "Geld verdienen ($)"},
 		{stat = &"upgrade", goal = 1, reward = 30, text = "Ausbau kaufen"},
+		{stat = &"diner", goal = 1, reward = 15, text = "Bei Molly stärken (Diner)"},
 		{stat = &"digger_grab", goal = 30, reward = 80, text = "Bagger: Schaufeln laden", needs = &"excavator"},
 		{stat = &"earned", goal = 400, reward = 60, text = "Geld verdienen ($)"},
 		{stat = &"truck_load", goal = 3, reward = 120, text = "LKW: Ladungen wegfahren", needs = &"truck"},

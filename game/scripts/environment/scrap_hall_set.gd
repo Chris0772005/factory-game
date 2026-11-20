@@ -17,6 +17,9 @@ const FRONT_Z := 22.12
 const HOUSE_D := 6.6
 const PAWN := Vector3(-11.0, 0, FRONT_Z)
 const POLICE := Vector3(17.0, 0, FRONT_Z)
+## The diner: ten metres of front, the door towards the pawnbroker's.
+const DINER := Vector3(-21.0, 0, FRONT_Z)
+const DINER_DOOR_X := 3.0
 ## Depth of the counters inside, from the front.
 const COUNTER_Z := 3.5
 ## The scrap truck: lane on the street, parking spot and the spot at the
@@ -32,10 +35,26 @@ const BRICK_TOP := 2.2
 ## What stands on the shelves of the two open houses (scans from Poly Haven; TownBlock.shelves).
 const PAWN_GOODS := ["boombox", "brass_vase_02", "television_02", "american_football", "alarm_clock_01", "vintage_electric_kettle",
 	"marble_bust_01", "Megaphone_01", "metal_toolbox", "Ukulele_01", "horse_statue_01", "Drill_01", "small_oil_can_01", "oil_tin"]
+## What stands on the diner's shelf behind the counter.
+## Where things are along the diner's counter (from its middle, m): the two places to order and Molly;
+## and where its two tables stand along the front.
+const DINER_COFFEE_X := 2.9
+const DINER_MEAL_X := 1.7
+const DINER_COOK_X := 2.2
+const DINER_TABLES: Array[float] = [-3.3, 0.25]
+## The diner's board on the pavement (from the middle of its front).
+const DINER_SIGN := Vector3(1.25, 0, -0.48)
+const DINER_GOODS := ["jug_01", "pot_enamel_01", "vintage_electric_kettle", "hamburger_buns", "carrot_cake", "brass_pan_01@90", "croissant"]
 const POLICE_FILES := ["book_encyclopedia_set_01", "cardboard_box_01@90", "clipboard@90", "book_encyclopedia_set_01", "metal_toolbox",
 	"cardboard_box_01@90", "book_encyclopedia_set_01"]
 ## Where the street is closed off, left and right.
 const TOWN_X := 27.0
+## Beyond the barriers the street meets a side street at each end (their middle, and how far they
+## run): the cars of the town come up the western one, drive down the street and leave by the
+## eastern one (TownTraffic), in the lane at TRAFFIC_LANE_Z, between the near kerb and the parked cars.
+const SIDE_X := 44.5
+const SIDE_END := 47.0
+const TRAFFIC_LANE_Z := 12.9
 ## The pavement the patrol walks.
 const BEAT_Z := 18.6
 
@@ -53,7 +72,7 @@ static func build_hall(world: Node3D, level_stations: Array) -> ScrapHallSet:
 	set.height = 8.5
 	set.window = Vector4(-9.0, 9.0, 4.4, 7.4)
 	set.bay_line_x = -100.0
-	set.ground_size = Vector2(80.0, 80.0)
+	set.ground_size = Vector2(130.0, 80.0)
 	set.ground_z = 8.0
 	set.floor_params = {concrete = Color("#84807a"), concrete_dark = Color("#5a5650"), paver = Color("#77726a")}
 	world.add_child(set)
@@ -220,7 +239,13 @@ func _outside() -> void:
 	var shop_z := zf + SHOP_Z
 	if EnvMesh.visual():
 		var asphalt := EnvMesh.scan("street_asphalt", "asphalt_02", {drift = 0.22, tint = Vector3(0.7, 0.7, 0.72)})
-		EnvMesh.add(self, EnvMesh.box(Vector3(80.0, 0.04, ROAD), 0.0), asphalt, Transform3D(Basis(), Vector3(0, 0.0, road_z)), false)
+		# The street runs on to the side streets at both ends, which lead away behind the far blocks.
+		var roads := [EnvMesh.piece(EnvMesh.box(Vector3(SIDE_X * 2.0 + ROAD, 0.04, ROAD), 0.0), Transform3D(Basis(), Vector3(0, 0.0, road_z)))]
+		var side_from := road_z + ROAD * 0.5
+		var side_to := ground_z + ground_size.y * 0.5
+		for s: float in [-1.0, 1.0]:
+			roads.append(EnvMesh.piece(EnvMesh.box(Vector3(ROAD, 0.04, side_to - side_from), 0.0), Transform3D(Basis(), Vector3(s * SIDE_X, 0.0, (side_from + side_to) * 0.5))))
+		EnvMesh.add(self, EnvMesh.merge(roads), asphalt, Transform3D(), false)
 		var paint := EnvMesh.surface("street_paint", {base_color = Color("#d9d4c4"), roughness_base = 0.8})
 		var marks := []
 		for i in 14:
@@ -250,6 +275,15 @@ func _outside() -> void:
 	TownBlock.block(self, Vector3(20.0, 0, -22.0), 12.0, 8.0, {key = "far_d", scan = "red_brick_03", storeys = 4})
 	TownBlock.block(self, Vector3(-24.5, 0, -4.0), 9.0, 9.0, {key = "far_e", plaster = Color("#b9b2a2"), storeys = 3})
 	TownBlock.block(self, Vector3(25.0, 0, -4.0), 9.0, 9.0, {key = "far_f", scan = "red_brick", storeys = 3})
+	# Round the two junctions: a house across each end of the street, one on the corner this side of
+	# it and one down the side street, so that no view runs out into nothing.
+	var beyond := SIDE_X + ROAD * 0.5 + 2.4
+	TownBlock.block(self, Vector3(-(beyond + 6.5), 0, zf - 3.0), 13.0, 17.0, {key = "end_a", scan = "yellow_plaster", storeys = 4})
+	TownBlock.block(self, Vector3(beyond + 6.5, 0, zf - 3.0), 13.0, 17.0, {key = "end_b", scan = "red_brick_03", storeys = 3})
+	TownBlock.block(self, Vector3(-(beyond + 6.5), 0, FRONT_Z + 4.0), 13.0, 14.0, {key = "end_c", scan = "red_brick", storeys = 3})
+	TownBlock.block(self, Vector3(beyond + 6.5, 0, FRONT_Z + 4.0), 13.0, 14.0, {key = "end_d", plaster = Color("#b9b2a2"), storeys = 4})
+	TownBlock.block(self, Vector3(-35.4, 0, zf - 12.6), 12.4, 12.0, {key = "end_e", scan = "painted_worn_brick", storeys = 3})
+	TownBlock.block(self, Vector3(35.4, 0, zf - 12.6), 12.4, 12.0, {key = "end_f", scan = "yellow_plaster", storeys = 3})
 
 
 ## Photographed paving over the plain ground outside: pavers on the apron, slabs on the pavement across
@@ -292,8 +326,14 @@ func _town() -> void:
 	TownBlock.counter(self, POLICE + Vector3(0, 0, COUNTER_Z), 8.4, "police_desk", Color("#5a5348"))
 	TownBlock.shelves(self, POLICE + Vector3(1.6, 0, HOUSE_D - TownBlock.WALL - 0.24), 4.6, "police_shelf", 11, POLICE_FILES)
 	WorldBuilder.add_collider(self, Vector3(0.5, 0.5, 2.0), Transform3D(Basis(), POLICE + Vector3(-3.9, 0.25, 1.7)))
-	# Shut for now: the houses that fill the row.
-	TownBlock.closed(self, Vector3(-21.0, 0, FRONT_Z), 10.0, HOUSE_D, {key = "let", scan = "painted_worn_brick", sign = "FOR RENT", graffiti = true})
+	# The diner: cream render over a red brick foot, two wide windows, the door on the right.
+	TownBlock.house(self, DINER, 10.0, HOUSE_D, {key = "diner", plaster = Color("#d9d0b8"), brick = Color("#7a3b30"), door_x = DINER_DOOR_X,
+		windows = [[-4.3, -1.3], [-0.5, 1.9]], sign = "MOLLY'S DINER", sign_back = Color("#7a1f1c"), sign_color = Color("#f4e7c8"),
+		floor_scan = "floor_tiles_06", floor_tile = 1.6, lining = Color("#e3dccb"), trim = Color("#7a1f1c"), lamp = Color("#ffe2b0"), strips = false})
+	TownBlock.counter(self, DINER + Vector3(0, 0, COUNTER_Z), 9.4, "diner_counter", Color("#6a2a24"))
+	TownBlock.shelves(self, DINER + Vector3(-1.9, 0, HOUSE_D - TownBlock.WALL - 0.24), 5.2, "diner_shelf", 5, DINER_GOODS)
+	_diner_room()
+	# Shut for now: the house that ends the row.
 	TownBlock.closed(self, Vector3(24.3, 0, FRONT_Z), 4.6, HOUSE_D, {key = "kiosk", scan = "yellow_plaster", sign = "KIOSK"})
 	# The yard wall behind the row and the walls beside the hall.
 	var brick := EnvMesh.scan("town_yardwall", "red_brick_03", {foot = 0.6, drift = 0.22})
@@ -359,6 +399,160 @@ func _town() -> void:
 	PhotoProp.stand(self, "classic_laptop", POLICE + Vector3(-2.9, top, COUNTER_Z + 0.05), 15.0, 0.5)
 
 
+## The diner's room: a chequered floor and tiled walls, stools at the counter and two tables by the
+## windows, lamps hanging over the counter, the stove and a worktop behind it, cake and coffee on it,
+## the day's menu on a blackboard, and Molly behind it all.
+func _diner_room() -> void:
+	var top := 1.03
+	var back := HOUSE_D - TownBlock.WALL
+	var side := 5.0 - TownBlock.WALL
+	var wood := Color("#6a2a24")
+	# What is solid first (colliders are wanted on a headless host too).
+	for x: float in [-4.2, -3.25, -2.3, -1.35]:
+		PhotoProp.place(self, "bar_chair_round_01", DINER + Vector3(x, 0, COUNTER_Z - 0.62), 180.0 + x * 9.0)
+	PhotoProp.place(self, "electric_stove", DINER + Vector3(2.9, 0, back - 0.38), 180.0)
+	TownBlock.counter(self, DINER + Vector3(1.6, 0, back - 0.37), 1.5, "diner_counter", wood)
+	TownBlock.counter(self, DINER + Vector3(4.0, 0, back - 0.37), 1.2, "diner_counter", wood)
+	for table: float in DINER_TABLES:
+		WorldBuilder.add_collider(self, Vector3(0.9, 0.78, 0.9), Transform3D(Basis(), DINER + Vector3(table, 0.39, 1.25)))
+		PhotoProp.place(self, "painted_wooden_chair_01", DINER + Vector3(table - 0.95, 0, 1.3), 90.0)
+		PhotoProp.place(self, "painted_wooden_chair_01", DINER + Vector3(table + 0.95, 0, 1.2), -95.0)
+	PhotoProp.place(self, "standing_chalkboard_01", DINER + DINER_SIGN, 170.0)
+	if not EnvMesh.visual():
+		return
+	# Tiles up to the shoulder on the back and side walls, a painted rail on top.
+	var tiles := EnvMesh.scan("diner_tiles", "long_white_tiles", {drift = 0.06})
+	var rail := EnvMesh.wood("town_trim_diner", {})
+	var tiled := []
+	var rails := []
+	var up := 1.42
+	tiled.append(EnvMesh.piece(EnvMesh.box(Vector3(side * 2.0, up, 0.02)), Transform3D(Basis(), DINER + Vector3(0, up * 0.5, back - 0.04))))
+	rails.append(EnvMesh.piece(EnvMesh.box(Vector3(side * 2.0, 0.07, 0.04)), Transform3D(Basis(), DINER + Vector3(0, up + 0.035, back - 0.05))))
+	for s: float in [-1.0, 1.0]:
+		tiled.append(EnvMesh.piece(EnvMesh.box(Vector3(0.02, up, back - TownBlock.WALL)), Transform3D(Basis(), DINER + Vector3(s * (side - 0.04), up * 0.5, (back + TownBlock.WALL) * 0.5))))
+		rails.append(EnvMesh.piece(EnvMesh.box(Vector3(0.04, 0.07, back - TownBlock.WALL)), Transform3D(Basis(), DINER + Vector3(s * (side - 0.05), up + 0.035, (back + TownBlock.WALL) * 0.5))))
+	EnvMesh.add(self, EnvMesh.merge(tiled), tiles)
+	EnvMesh.add(self, EnvMesh.merge(rails), rail)
+	# (The scan of the round table is a standing table of a metre: here it is one to sit at.)
+	for table: float in DINER_TABLES:
+		PhotoProp.stand(self, "round_wooden_table_01", DINER + Vector3(table, 0, 1.25), 20.0 + table * 30.0, 0.75)
+	PhotoProp.stand(self, "croissant", DINER + Vector3(DINER_TABLES[0] + 0.15, 0.752, 1.15), 40.0)
+	PhotoProp.stand(self, "jug_01", DINER + Vector3(DINER_TABLES[1] - 0.1, 0.752, 1.3), 120.0)
+	# Along the counter, from the till: the coffee, the two places to order with their cards, the stew, cake and rolls.
+	PhotoProp.stand(self, "CashRegister_01", DINER + Vector3(4.05, top, COUNTER_Z + 0.05), 0.0)
+	PhotoProp.stand(self, "vintage_electric_kettle", DINER + Vector3(3.42, top, COUNTER_Z + 0.12), 200.0)
+	_table_card(DINER + Vector3(DINER_COFFEE_X, top, COUNTER_Z - 0.2), "COFFEE", "4 $")
+	_table_card(DINER + Vector3(DINER_MEAL_X, top, COUNTER_Z - 0.2), "HOT STEW", "12 $")
+	PhotoProp.stand(self, "pot_enamel_01", DINER + Vector3(DINER_MEAL_X - 0.42, top, COUNTER_Z + 0.1), 30.0)
+	PhotoProp.stand(self, "carrot_cake", DINER + Vector3(0.35, top, COUNTER_Z + 0.08), 0.0)
+	PhotoProp.stand(self, "croissant", DINER + Vector3(-1.5, top, COUNTER_Z - 0.05), 70.0)
+	PhotoProp.stand(self, "croissant", DINER + Vector3(-1.72, top, COUNTER_Z + 0.08), 15.0)
+	PhotoProp.stand(self, "hamburger_buns", DINER + Vector3(-2.9, top, COUNTER_Z + 0.05), 0.0)
+	PhotoProp.stand(self, "potted_plant_04", DINER + Vector3(-4.3, top, COUNTER_Z + 0.05), 40.0)
+	# Behind the counter: the stew and a pan on the stove (its top is 0.86 m up), the worktop with
+	# the coffee jug and the day's baking, the microwave on the cupboard.
+	PhotoProp.stand(self, "pot_enamel_01", DINER + Vector3(2.75, 0.862, back - 0.42), 10.0)
+	PhotoProp.stand(self, "brass_pan_01", DINER + Vector3(3.1, 0.862, back - 0.3), 150.0)
+	PhotoProp.stand(self, "jug_01", DINER + Vector3(1.15, top, back - 0.34), 200.0)
+	PhotoProp.stand(self, "hamburger_buns", DINER + Vector3(1.75, top, back - 0.36), 90.0)
+	PhotoProp.stand(self, "croissant", DINER + Vector3(2.15, top, back - 0.28), 130.0)
+	PhotoProp.stand(self, "vintage_microwave", DINER + Vector3(4.0, top, back - 0.34), 180.0)
+	# Lamps hang over the counter (the house has no strip lights), a strip lights the tables.
+	for x: float in [-3.6, -1.2, 1.2, 3.6]:
+		PhotoProp.hang(self, "hanging_industrial_lamp", DINER + Vector3(x, TownBlock.ROOM_H, COUNTER_Z), x * 40.0)
+	for x: float in [-2.4, 2.4]:
+		var glow := OmniLight3D.new()
+		glow.light_color = Color("#ffd9a0")
+		glow.light_energy = 1.3
+		glow.omni_range = 4.5
+		glow.omni_attenuation = 1.2
+		glow.shadow_enabled = false
+		glow.position = DINER + Vector3(x, 2.0, COUNTER_Z - 0.2)
+		add_child(glow)
+	TownBlock.strip_light(self, DINER + Vector3(-1.5, TownBlock.ROOM_H - 0.02, 1.5), Color("#fff1d6"))
+	# On the walls: the clock and a painting over the tables, darts by the door, a painting behind the counter.
+	PhotoProp.mount(self, "wall_clock", DINER + Vector3(-side + 0.03, 2.2, 0.95), Vector3.RIGHT)
+	PhotoProp.mount(self, "fancy_picture_frame_01", DINER + Vector3(-side + 0.03, 1.62, 2.05), Vector3.RIGHT)
+	PhotoProp.mount(self, "hanging_picture_frame_02", DINER + Vector3(-side + 0.03, 1.7, 5.0), Vector3.RIGHT)
+	PhotoProp.mount(self, "dartboard", DINER + Vector3(side - 0.03, 1.5, 1.75), Vector3.LEFT)
+	var cook := TownNpc.make("Cook")
+	cook.position = DINER + Vector3(DINER_COOK_X, 0, COUNTER_Z + 1.1)
+	cook.rotation.y = PI
+	add_child(cook)
+	# The day's menu in chalk on a blackboard behind the counter.
+	var board := DINER + Vector3(2.2, 2.3, back - 0.045)
+	var slate := StandardMaterial3D.new()
+	slate.albedo_color = Color("#1b2420")
+	slate.roughness = 0.92
+	EnvMesh.add(self, EnvMesh.box(Vector3(2.3, 1.08, 0.03)), slate, Transform3D(Basis(), board), false)
+	var frame := []
+	for s: float in [-1.0, 1.0]:
+		frame.append(EnvMesh.piece(EnvMesh.box(Vector3(0.06, 1.2, 0.05)), Transform3D(Basis(), board + Vector3(s * 1.18, 0, -0.005))))
+		frame.append(EnvMesh.piece(EnvMesh.box(Vector3(2.42, 0.06, 0.05)), Transform3D(Basis(), board + Vector3(0, s * 0.57, -0.005))))
+	frame.append(EnvMesh.piece(EnvMesh.box(Vector3(2.3, 0.025, 0.09)), Transform3D(Basis(), board + Vector3(0, -0.6, -0.04))))
+	EnvMesh.add(self, EnvMesh.merge(frame), EnvMesh.wood("diner_board_frame", {base_color = Color("#6b4a2f"), grain_color = Color("#3a2617"), weathering = 0.3, roughness_base = 0.6}))
+	var wall := Transform3D(Basis(Vector3.UP, PI), board + Vector3(0, 0, -0.022))
+	var chalk := Color(0.95, 0.93, 0.86)
+	StationKit.label(self, "TODAY", wall * Transform3D(Basis(), Vector3(0, 0.36, 0)), 96, Color("#f0c05a"), 700, 0.0028, StationKit.chalk_font())
+	StationKit.label(self, "COFFEE · 4 $", wall * Transform3D(Basis(), Vector3(0, 0.1, 0)), 78, chalk, 700, 0.0028, StationKit.chalk_font())
+	StationKit.label(self, "HOT STEW · 12 $", wall * Transform3D(Basis(), Vector3(0, -0.15, 0)), 78, chalk, 700, 0.0028, StationKit.chalk_font())
+	StationKit.label(self, "one order treats the whole crew", wall * Transform3D(Basis(), Vector3(0, -0.38, 0)), 44, chalk, 500, 0.0028, StationKit.hand_font())
+	StationKit.label(self, "HOME COOKING · ALL DAY", Transform3D(Basis(Vector3.UP, PI), DINER + Vector3(-1.9, 2.72, back - 0.04)), 80, Color("#7a1f1c"), 700, 0.0032)
+	# The board on the pavement by the door.
+	var face := Transform3D(Basis(Vector3.UP, deg_to_rad(170.0)), DINER + DINER_SIGN) * Transform3D(Basis(Vector3.RIGHT, -0.21), Vector3(0.0, 0.88, 0.188))
+	StationKit.label(self, "OPEN", face * Transform3D(Basis(), Vector3(0, 0.34, 0)), 112, Color(0.95, 0.82, 0.4, 0.92), 700, 0.0022, StationKit.chalk_font())
+	StationKit.label(self, "COFFEE 4 $", face * Transform3D(Basis(), Vector3(0, 0.1, 0)), 72, Color(chalk, 0.92), 700, 0.0022, StationKit.chalk_font())
+	StationKit.label(self, "HOT STEW 12 $", face * Transform3D(Basis(), Vector3(0, -0.1, 0)), 62, Color(chalk, 0.92), 700, 0.0022, StationKit.chalk_font())
+	StationKit.label(self, "come in!", face * Transform3D(Basis(), Vector3(0, -0.3, 0)), 56, Color(chalk, 0.92), 500, 0.0022, StationKit.hand_font())
+	# The awning over the two windows: striped cloth on two iron arms.
+	var stripes := Image.create(2, 1, false, Image.FORMAT_RGB8)
+	stripes.set_pixel(0, 0, Color("#a3221d"))
+	stripes.set_pixel(1, 0, Color("#efe6d2"))
+	var cloth := StandardMaterial3D.new()
+	cloth.albedo_texture = ImageTexture.create_from_image(stripes)
+	cloth.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+	cloth.roughness = 0.92
+	cloth.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var span := Vector2(-4.55, 2.15)
+	var width := span.y - span.x
+	var reach := 0.9
+	var drop := 0.42
+	var slope := Vector2(reach, drop).length()
+	var top_y := 2.78
+	var mid_x := (span.x + span.y) * 0.5
+	var tilt := Basis(Vector3.RIGHT, -atan2(drop, reach))
+	cloth.uv1_scale = Vector3(width / 0.5, 1.0, 1.0)
+	var sheet := PlaneMesh.new()
+	sheet.size = Vector2(width, slope)
+	EnvMesh.add(self, sheet, cloth, Transform3D(tilt, DINER + Vector3(mid_x, top_y - drop * 0.5, -reach * 0.5)))
+	var skirt := PlaneMesh.new()
+	skirt.size = Vector2(width, 0.2)
+	EnvMesh.add(self, skirt, cloth, Transform3D(Basis(Vector3.RIGHT, -PI * 0.5), DINER + Vector3(mid_x, top_y - drop - 0.1, -reach)))
+	var iron := StandardMaterial3D.new()
+	iron.albedo_color = Color("#2a2a2c")
+	iron.roughness = 0.6
+	iron.metallic = 0.6
+	for x: float in [span.x + 0.02, span.y - 0.02]:
+		EnvMesh.add(self, EnvMesh.box(Vector3(0.03, 0.03, slope)), iron, Transform3D(tilt, DINER + Vector3(x, top_y - drop * 0.5 - 0.025, -reach * 0.5)))
+
+
+## A folded card on a counter at `at` (the middle of its foot), facing the customers: what is ordered
+## here and what it costs.
+func _table_card(at: Vector3, title: String, price: String) -> void:
+	var size := Vector2(0.3, 0.19)
+	var card := Transform3D(Basis(Vector3.UP, PI), at) * Transform3D(Basis(Vector3.RIGHT, -0.26), Vector3(0, size.y * 0.5, 0))
+	var paper := StandardMaterial3D.new()
+	paper.albedo_color = Color("#efe6cf")
+	paper.roughness = 0.85
+	EnvMesh.add(self, EnvMesh.box(Vector3(size.x, size.y, 0.006)), paper, card, false)
+	# Its back leg.
+	EnvMesh.add(self, EnvMesh.box(Vector3(size.x, size.y, 0.006)), paper,
+		Transform3D(Basis(Vector3.UP, PI), at) * Transform3D(Basis(Vector3.RIGHT, 0.26), Vector3(0, size.y * 0.5, -0.05)), false)
+	var ink := Color("#7a1f1c")
+	StationKit.label(self, title, card * Transform3D(Basis(), Vector3(0, 0.042, 0.005)), 64, ink, 700, 0.0006)
+	StationKit.label(self, price, card * Transform3D(Basis(), Vector3(0, -0.04, 0.005)), 84, ink, 800, 0.0006)
+
+
 ## What stands and hangs about the street: a van and three cars (ParkedVehicle), three trees and, all scanned
 ## (Poly Haven, CC0), bins and bags, a switch box, a bench, a car under a tarpaulin, the dealer's
 ## chalkboard, a barrel stove with cans, concrete blocks where the street ends, manhole covers, a lamp
@@ -373,7 +567,8 @@ func _street_dressing(zf: float) -> void:
 	# Parked at the far kerb, noses the way the street runs (the truck's lane stays free): a delivery
 	# van, a small saloon and a big one. An estate car stands on the apron.
 	var kerb := zf + APRON + ROAD - 0.15
-	ParkedVehicle.place(self, ParkedVehicle.VAN, Vector3(-20.6, 0, kerb - 1.15), 0.0)
+	# (The van stands clear of the diner's door and its right window.)
+	ParkedVehicle.place(self, ParkedVehicle.VAN, Vector3(-23.3, 0, kerb - 1.15), 0.0)
 	ParkedVehicle.place(self, ParkedVehicle.CAR_SMALL, Vector3(13.4, 0, kerb - 0.9), 0.0)
 	ParkedVehicle.place(self, ParkedVehicle.CAR_SALOON, Vector3(21.2, 0, kerb - 0.93), 0.0, Color("#1f2c47"))
 	ParkedVehicle.place(self, ParkedVehicle.CAR_ESTATE, Vector3(24.1, 0, zf + 1.55), 180.0, Color("#b7ab8c"))
@@ -402,13 +597,13 @@ func _street_dressing(zf: float) -> void:
 		PhotoProp.place(self, "concrete_road_barrier", Vector3(s * (TOWN_X + 0.9), 0, zf + 1.5), 90.0, false)
 		PhotoProp.place(self, "concrete_road_barrier", Vector3(s * (TOWN_X + 0.9), 0, FRONT_Z - 2.0), 90.0, false)
 	PhotoProp.place(self, "trashbag", Vector3(-5.2, 0, FRONT_Z - 0.4), 40.0, false)
-	PhotoProp.place(self, "trashbag", Vector3(-16.4, 0, FRONT_Z - 0.4), 200.0, false)
-	PhotoProp.place(self, "trashbag", Vector3(-16.95, 0, FRONT_Z - 0.55), 75.0, false)
+	PhotoProp.place(self, "trashbag", Vector3(-15.7, 0, FRONT_Z - 0.4), 200.0, false)
+	PhotoProp.place(self, "trashbag", Vector3(-15.25, 0, FRONT_Z - 0.55), 75.0, false)
 	PhotoProp.place(self, "water_manhole_cover", Vector3(-7.5, 0.021, road_z + 0.9), 0.0, false)
 	PhotoProp.place(self, "water_manhole_cover", Vector3(11.0, 0.021, road_z - 1.1), 30.0, false)
 	PhotoProp.mount(self, "industrial_wall_lamp", Vector3(PAWN.x - 2.6, TownBlock.DOOR_H + 0.1, FRONT_Z), Vector3.FORWARD)
 	PhotoProp.mount(self, "exterior_aircon_unit:0", Vector3(PAWN.x + 3.0, 2.75, FRONT_Z), Vector3.FORWARD)
-	PhotoProp.mount(self, "exterior_aircon_unit:1", Vector3(-24.6, 2.45, FRONT_Z), Vector3.FORWARD)
+	PhotoProp.mount(self, "industrial_wall_lamp", Vector3(DINER.x + DINER_DOOR_X, TownBlock.DOOR_H + 0.1, FRONT_Z), Vector3.FORWARD)
 
 
 ## The dealer's shop: a small brick building with an open counter, an awning

@@ -152,7 +152,9 @@ func _draw() -> void:
 		var shine := PackedVector2Array([Vector2(x, band.position.y), Vector2(x + 70.0, band.position.y),
 			Vector2(x + 10.0, band.end.y), Vector2(x - 60.0, band.end.y)])
 		for piece in Geometry2D.intersect_polygons(shine, _rect_poly(band.grow(-4.0))):
-			draw_colored_polygon(piece, Color(1, 1, 1, 0.38))
+			# (Where the sweep only just touches the band, a sliver is left that cannot be filled.)
+			if piece.size() >= 3 and not Geometry2D.triangulate_polygon(piece).is_empty():
+				draw_colored_polygon(piece, Color(1, 1, 1, 0.38))
 	for s in _sparks:
 		var k: float = 1.0 - s.age / s.life
 		_star(s.pos, s.size * (0.4 + 0.6 * k), s.age * s.spin, Color(s.color, minf(1.0, k * 1.6)))

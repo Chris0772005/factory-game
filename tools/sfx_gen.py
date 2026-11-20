@@ -198,6 +198,19 @@ def main():
     d = 2.6
     blast = high(noise(d), 1800) * env(d, 0.01, 0.9) + low(noise(d), 180, 3) * env(d, 0.02, 0.5) * 2.0
     save("steam_blast", blast, 0.85)
+    # A car driving past: the engine's low hum (a few overtones that waver a little) under tyre and
+    # wind noise. A loop; the game sets its pitch and loudness by the car's speed.
+    d = 3.0
+    x = t(d)
+    hum = sum(np.sin(2 * np.pi * 46.0 * k * x + 0.6 * np.sin(2 * np.pi * (0.7 + 0.3 * k) * x)) / k ** 1.3 for k in range(1, 7))
+    road = band(noise(d), 180, 1100) * 0.55 + low(noise(d), 140, 3) * 1.4
+    save("car_loop", loopable(hum * 0.5 + road), 0.5)
+    # A car's horn: two notes a third apart with their overtones, short.
+    d = 0.42
+    x = t(d)
+    shape = np.clip(x / 0.012, 0, 1) * np.clip((d - x) / 0.05, 0, 1)
+    horn = sum(np.sin(2 * np.pi * f * k * x) / k for f in (410.0, 518.0) for k in (1, 2, 3, 4, 5))
+    save("car_horn", horn * shape, 0.7)
 
 
 if __name__ == "__main__":

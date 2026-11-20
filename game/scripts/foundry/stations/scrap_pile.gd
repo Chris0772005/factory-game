@@ -85,7 +85,8 @@ func dig_speed() -> float:
 	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
 	if world == null:
 		return 1.0
-	return (1.3 if world.has_upgrade(&"gloves") else 1.0) * (2.0 if world.has_upgrade(&"shovel") else 1.0)
+	# Tools, and what the crew has had at the diner.
+	return (1.3 if world.has_upgrade(&"gloves") else 1.0) * (2.0 if world.has_upgrade(&"shovel") else 1.0) * CrewBoost.dig(get_tree())
 
 
 func hint(_player: Node) -> String:

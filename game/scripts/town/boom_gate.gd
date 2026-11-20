@@ -1,7 +1,8 @@
 class_name BoomGate
 extends Node3D
 ## The boom across the street where the quarter ends. People stay inside
-## (the collider never opens); the pole lifts for the scrap truck.
+## (the collider never opens); the pole lifts for the scrap truck and for the
+## cars that drive through (TownTraffic).
 
 const OPEN_RANGE := 13.0
 
@@ -44,5 +45,8 @@ func _process(delta: float) -> void:
 	var open := false
 	for node in get_tree().get_nodes_in_group(ScrapTruck.GROUP):
 		if (node as ScrapTruck).busy() and (node as Node3D).global_position.distance_to(global_position) < OPEN_RANGE:
+			open = true
+	for node in get_tree().get_nodes_in_group(TownTraffic.CAR_GROUP):
+		if (node as Node3D).global_position.distance_to(global_position) < OPEN_RANGE:
 			open = true
 	_pole.rotation.x = lerp_angle(_pole.rotation.x, -1.35 if open else 0.0, 1.0 - exp(-3.5 * delta))

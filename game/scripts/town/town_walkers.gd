@@ -6,6 +6,8 @@ extends Node3D
 ## Every round runs against one clock, so all players see the walkers in the same place; the host
 ## sends its clock round every few seconds.
 
+## The walkers' figures are in this group.
+const GROUP := &"town_walkers"
 const SPEED := 1.3
 const SYNC_EVERY := 4.0
 ## Within this distance of a player a walker gives way (m), and by how much at most.
@@ -36,6 +38,8 @@ func add_round(model: String, colors: Dictionary, stops: Array, offset := 0.0, p
 	if DisplayServer.get_name() != "headless":
 		var figure := TownFigure.make(model, colors)
 		add_child(figure)
+		# Cars stop for them (TownTraffic).
+		figure.add_to_group(GROUP)
 		entry.figure = figure
 	_rounds.append(entry)
 

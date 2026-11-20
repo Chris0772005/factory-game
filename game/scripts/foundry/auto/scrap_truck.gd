@@ -11,6 +11,8 @@ const LOAD_TIME := 3.0
 const AWAY_TIME := 8.0
 const MODEL := "res://assets/models/machinery/dump_truck.glb"
 const WHEEL_RADIUS := 0.554
+## On one trip the truck waits at most this long (s) for cars in its way, all told.
+const PATIENCE := 6.0
 
 ## Parking spot, the spot at the skip, the lane on the street and how far
 ## out the street leaves the map (the truck goes out one end and comes back
@@ -19,6 +21,11 @@ var park := Vector3.ZERO
 var dock := Vector3.ZERO
 var lane_z := 0.0
 var far_x := 42.0
+## Where the street meets the side streets (their middle) and how far those run: the truck leaves
+## round the eastern corner and comes back round the western one. 0: it leaves and comes back
+## straight along the street, at `far_x`.
+var turn_x := 0.0
+var turn_z := 0.0
 var skip: ScrapSkip
 ## Trip clock in seconds, < 0 = parked.
 var trip := -1.0
@@ -29,6 +36,7 @@ var _wheels: Array = []
 var _roll := 0.0
 var _last_pos := Vector3.ZERO
 var _paid := false
+var _patience := 0.0
 var _lamps: Array[BaseMaterial3D] = []
 var _beams: Array[SpotLight3D] = []
 var _lit := false
@@ -62,10 +70,16 @@ func busy() -> bool:
 
 
 func _out_path() -> Array[Vector3]:
+	if turn_x > 0.0:
+		return [dock, Vector3(dock.x + 6.5, 0, lane_z), Vector3(turn_x - 6.0, 0, lane_z), Vector3(turn_x - 1.8, 0, lane_z + 1.8),
+			Vector3(turn_x, 0, lane_z + 6.0), Vector3(turn_x, 0, turn_z)]
 	return [dock, Vector3(dock.x + 6.5, 0, lane_z), Vector3(far_x, 0, lane_z)]
 
 
 func _back_path() -> Array[Vector3]:
+	if turn_x > 0.0:
+		return [Vector3(-turn_x, 0, turn_z), Vector3(-turn_x, 0, lane_z + 6.0), Vector3(-turn_x + 1.8, 0, lane_z + 1.8),
+			Vector3(-turn_x + 6.0, 0, lane_z), Vector3(park.x - 7.0, 0, lane_z), park]
 	return [Vector3(-far_x, 0, lane_z), Vector3(park.x - 7.0, 0, lane_z), park]
 
 
@@ -88,6 +102,10 @@ func _physics_process(delta: float) -> void:
 			_start_remote.rpc()
 	if not busy():
 		return
+	# A car right ahead in its way (TownTraffic): the truck waits a moment instead of driving through it.
+	if _patience > 0.0 and _held_up():
+		_patience -= delta
+		return
 	trip += delta
 	var legs := _legs()
 	var t := trip
@@ -105,7 +123,8 @@ func _physics_process(delta: float) -> void:
 	elif t < legs[0] + legs[1] + legs[2]:
 		_drive(_out_path(), (t - legs[0] - legs[1]) / legs[2])
 	elif t < legs[0] + legs[1] + legs[2] + legs[3]:
-		global_position = Vector3(-far_x, 0, lane_z)
+		# Round the block, out of sight.
+		global_position = _back_path()[0]
 		loaded = false
 	elif t < legs[0] + legs[1] + legs[2] + legs[3] + legs[4]:
 		_drive(_back_path(), (t - legs[0] - legs[1] - legs[2] - legs[3]) / legs[4])
@@ -113,6 +132,8 @@ func _physics_process(delta: float) -> void:
 		trip = -1.0
 		global_position = park
 		rotation.y = PI * 0.5
+	if visible != (t < legs[0] + legs[1] + legs[2] or t >= legs[0] + legs[1] + legs[2] + legs[3]):
+		visible = not visible
 	if _load:
 		_load.visible = loaded
 	_light(busy())
@@ -123,6 +144,20 @@ func _start() -> void:
 	trip = 0.0
 	_paid = false
 	loaded = false
+	_patience = PATIENCE
+
+
+## Whether a car of the traffic is close in front of the truck, in its way.
+func _held_up() -> bool:
+	var forward := global_transform.basis.z
+	var right := forward.cross(Vector3.UP)
+	for node in get_tree().get_nodes_in_group(TownTraffic.CAR_GROUP):
+		var rel := (node as Node3D).global_position - global_position
+		rel.y = 0.0
+		var ahead := rel.dot(forward)
+		if ahead > 3.0 and ahead < 11.5 and absf(rel.dot(right)) < 2.3:
+			return true
+	return false
 
 
 @rpc("authority", "call_remote", "reliable")

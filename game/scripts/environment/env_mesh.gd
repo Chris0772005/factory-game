@@ -148,6 +148,8 @@ const SCANS := {
 	"box_profile_metal_sheet": [2.0, Color(0.145, 0.019, 0.009)],
 	"bitumen": [20.0, Color(0.043, 0.038, 0.035)],
 	"green_metal_rust": [1.0, Color(0.05, 0.074, 0.034)],
+	"floor_tiles_06": [3.0, Color(0.203, 0.168, 0.154)],
+	"long_white_tiles": [1.27, Color(0.614, 0.57, 0.472)],
 }
 
 

@@ -1,7 +1,9 @@
-worker.glb, broker.glb, officer.glb, woman.glb, youth.glb, dealer.glb, patrol.glb: the townspeople of MOLTEN MATES.
+worker.glb, broker.glb, officer.glb, woman.glb, youth.glb, dealer.glb, patrol.glb, cook.glb, granny.glb, mechanic.glb:
+the townspeople of MOLTEN MATES (cook: Molly behind the diner's counter, in a red apron; granny: an old woman
+with a green headscarf; mechanic: a man in blue overalls).
 mate_a.glb, mate_b.glb: the players' own workers, as the other players see them (a man in an orange warning vest, a woman in
 a yellow one; the hard hat in the player's colour is added by the game).
-These nine figures are AI-GENERATED CONTENT. Nobody modelled or painted them by hand, and they show no real person: each face and
+These twelve figures are AI-GENERATED CONTENT. Nobody modelled or painted them by hand, and they show no real person: each face and
 outfit was invented by the image model from a written description.
 
 How they were made (all through the owner's Higgsfield account, https://higgsfield.ai, in November 2026):
@@ -9,8 +11,8 @@ How they were made (all through the owner's Higgsfield account, https://higgsfie
      (Higgsfield image model "GPT Image 2.6").
   2. From that picture a textured, rigged 3D figure with one clip, a slow walk
      (Higgsfield 3D model "Meshy 7 image-to-3D": about 25,000 triangles, PBR maps, 24-joint skeleton,
-     clip "Casual_Walk" of Meshy's animation library). The dealer, the patrol officer and the two players' workers
-     were generated without a clip: all their clips are the first figure's.
+     clip "Casual_Walk" of Meshy's animation library). The dealer, the patrol officer, the two players' workers, the
+     cook, the old woman and the mechanic were generated without a clip: all their clips are the first figure's.
   3. For the first figure (worker) further clips of the same library on the same skeleton
      (Higgsfield "Meshy rigging"): "Quick_Walk", "Run_02", "Wave_One_Hand"; also "Idle" and
      "Confident_Walk", which are not used.
@@ -45,6 +47,9 @@ Higgsfield job ids (they identify the generations in the owner's account):
   patrol   picture 6f5baf35-f94b-4198-99f2-0a916ee55a3e   figure 4ae1e0af-7f2c-4a25-9d47-1d63d75e1685
   mate_a   picture fb73ba7c-767c-4679-9caf-bf1a0d13bb67   figure e53db038-10f2-416f-ab6f-2ce59454d7c4
   mate_b   picture ae378fda-54a0-4c47-8124-fceb3a480edb   figure e0abca5b-8aff-49de-98dc-3aedf93dd8b6
+  cook     picture 45047b5a-fb6f-45d3-a263-91d87ae50534   figure daeb216a-8c83-410b-8369-67bf12d41a48
+  granny   picture 2824c978-a800-4c0f-842b-87110b549f01   figure 537c2575-2688-4086-9fe7-fb1e2db6f0ad
+  mechanic picture e9821db0-72ad-4387-84b1-270018a169c7   figure d1d01d8c-0e20-4733-a59e-1e30c7a8b04c
 
 The generated source files (10 to 13 MB each) are not in this repository; they can be downloaded again from the
 owner's Higgsfield account under the ids above.

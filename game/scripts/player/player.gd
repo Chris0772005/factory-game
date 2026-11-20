@@ -290,7 +290,7 @@ func _move(delta: float) -> void:
 		velocity.y -= _gravity * pull * delta
 	var yaw := _camera_rig.yaw if _camera_rig else 0.0
 	var dir := Vector3(input_dir.x, 0, input_dir.y).rotated(Vector3.UP, yaw)
-	var speed := (SPRINT_SPEED if wants_sprint and not holding else WALK_SPEED) * _load_factor()
+	var speed := (SPRINT_SPEED if wants_sprint and not holding else WALK_SPEED) * _load_factor() * CrewBoost.walk(get_tree())
 	var target := dir * speed
 	var accel := ACCEL if is_on_floor() else AIR_ACCEL
 	var horizontal := Vector3(velocity.x, 0, velocity.z).move_toward(target, accel * speed * delta)

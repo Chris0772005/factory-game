@@ -57,6 +57,6 @@ func _sync(list: Array) -> void:
 	load_save(list)
 
 
-func _on_peer_ready(id: int) -> void:
+func _on_peer_ready(id: int, _level: String) -> void:
 	if Network.is_sim_authority() and not found.is_empty():
 		_sync.rpc_id(id, to_save())

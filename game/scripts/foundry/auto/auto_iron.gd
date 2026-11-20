@@ -48,8 +48,11 @@ func _ready() -> void:
 	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	add_to_group(&"auto_irons")
 	add_to_group(&"interactable")
-	Network.peer_ready.connect(func(id: int) -> void:
-		if Network.is_sim_authority():
+	Network.peer_ready.connect(func(id: int, level: String) -> void:
+		if not is_inside_tree() or not Network.is_sim_authority():
+			return
+		var world := get_tree().get_first_node_in_group(&"world") as GameWorld
+		if world and level == world.level_path():
 			_sync.rpc_id(id, enabled, flowing))
 	_build()
 

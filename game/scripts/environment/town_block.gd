@@ -16,7 +16,9 @@ const TREE := "res://assets/models/nature/street_tree.glb"
 
 ## opts: key (material key), brick/mortar or plaster (colours), door_x,
 ## windows = [[x0, x1], ...] (offsets from the middle), sign, sign_color,
-## sign_back, floor (colour), lining (colour), lamp (colour).
+## sign_back, floor (colour of a wooden floor) or floor_scan (a photo scan of EnvMesh.SCANS, laid
+## floor_tile metres wide), lining (colour), lamp (colour), strips (false: no strip lights under the
+## ceiling, the house brings lamps of its own).
 static func house(set: Node3D, base: Vector3, w: float, d: float, opts := {}) -> void:
 	var key: String = opts.get("key", "house")
 	var door_x: float = opts.get("door_x", 0.0)
@@ -66,8 +68,13 @@ static func house(set: Node3D, base: Vector3, w: float, d: float, opts := {}) ->
 		inner.append(EnvMesh.piece(EnvMesh.box(Vector3(0.03, ROOM_H, id)), Transform3D(Basis(), base + Vector3(s * (iw * 0.5 - 0.015), ROOM_H * 0.5, d * 0.5))))
 	inner.append(EnvMesh.piece(EnvMesh.box(Vector3(iw, 0.08, id)), Transform3D(Basis(), base + Vector3(0, ROOM_H + 0.04, d * 0.5))))
 	EnvMesh.add(set, EnvMesh.merge(inner), lining)
-	var floor_mat := EnvMesh.wood("town_floor_" + key, {base_color = opts.get("floor", Color("#7a5a3c")), grain_color = Color("#4a3423"),
-		weathering = 0.35, roughness_base = 0.6})
+	var floor_mat: ShaderMaterial
+	if opts.has("floor_scan"):
+		var scan_name: String = opts.floor_scan
+		floor_mat = EnvMesh.scan("town_floor_" + key, scan_name, {tile = float(opts.get("floor_tile", EnvMesh.SCANS[scan_name][0]))})
+	else:
+		floor_mat = EnvMesh.wood("town_floor_" + key, {base_color = opts.get("floor", Color("#7a5a3c")), grain_color = Color("#4a3423"),
+			weathering = 0.35, roughness_base = 0.6})
 	EnvMesh.add(set, EnvMesh.box(Vector3(iw, 0.03, id), 0.0), floor_mat, Transform3D(Basis(), base + Vector3(0, 0.015, d * 0.5)), false)
 	# Door frame, the door leaf standing open, window frames and glass.
 	var trim := EnvMesh.wood("town_trim_" + key, {base_color = opts.get("trim", Color("#2f3a35")), grain_color = Color("#1c2320"),
@@ -109,8 +116,9 @@ static func house(set: Node3D, base: Vector3, w: float, d: float, opts := {}) ->
 		StationKit.label(set, opts.sign, Transform3D(Basis(Vector3.UP, PI), base + Vector3(0, DOOR_H + 0.95, -0.08)), 150,
 			opts.get("sign_color", Color("#f2e6c8")), 800, 0.0038)
 	# Strip lights under the ceiling (scans), and the light they give.
-	for lamp_x: float in [-iw * 0.28, 0.0, iw * 0.28]:
-		strip_light(set, base + Vector3(lamp_x, ROOM_H, d * 0.5), opts.get("lamp", Color("#ffdcae")))
+	if opts.get("strips", true):
+		for lamp_x: float in [-iw * 0.28, 0.0, iw * 0.28]:
+			strip_light(set, base + Vector3(lamp_x, ROOM_H, d * 0.5), opts.get("lamp", Color("#ffdcae")))
 	var lamp := OmniLight3D.new()
 	lamp.light_color = opts.get("lamp", Color("#ffdcae"))
 	lamp.light_energy = 2.4
