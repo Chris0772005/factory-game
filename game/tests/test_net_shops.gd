@@ -28,7 +28,9 @@ func _run() -> void:
 		if (node as ToolOffer).upgrade == &"gloves":
 			gloves = node
 	var bank := world.bank
-	if stall == null or loans == null or gloves == null or bank == null:
+	var unit := world.get_node_or_null(^"Lockup_1") as StorageLockup
+	var post := get_tree().get_first_node_in_group(PostOffice.GROUP) as PostOffice
+	if stall == null or loans == null or gloves == null or bank == null or unit == null or post == null:
 		_check(false, "the quarter has the store's bench, the bank's counter and the stall")
 		_done()
 		return
@@ -46,6 +48,10 @@ func _run() -> void:
 		world.add_money(120 - world.money)
 		bucket.contents = [&"junk_bolt", &"scrap_can", &"hot_pistol"] as Array[StringName]
 		bucket._changed()
+		# A lot the test knows behind the first shutter (nobody else bids), and three mail orders.
+		unit.stock(1, 9)
+		unit._rival_limit = 0
+		post.set_orders([&"scrap_kettle", &"scrap_can", &"scrap_ring"])
 		if world.entities.get_children().filter(func(n): return n is Player).size() > 1:
 			# He was quicker than this test: tell him the usual way.
 			world.upgrades._broadcast()
@@ -55,6 +61,11 @@ func _run() -> void:
 		_check(world.money == 30, "host: paid from the crew's money (%d $)" % world.money)
 		_check(await _until(func(): return bank.debt == 230, 30.0), "host: the client took the loan")
 		_check(world.money == 230 and bank.owed == 230, "host: 200 $ paid out, 230 $ owed (%d $)" % world.money)
+		# The client bids at the lock-up; the test calls the lot back before the hammer falls.
+		_check(await _until(func(): return unit.state == StorageLockup.State.BIDDING and unit.ours, 30.0), "host: the client's bid is in (%d $)" % unit.bid)
+		_check(world.money == 230, "host: nothing is paid before the hammer falls")
+		await _frames(30)
+		unit.rest(1000.0)
 		# A kettle on the stall, and the first customer takes it.
 		await _frames(30)
 		var info: Dictionary = FoundryRules.find_info(&"scrap_kettle")
@@ -96,6 +107,18 @@ func _run() -> void:
 		await _press()
 		_check(await _until(func(): return loans.hint(me).begins_with("[F] Sicher? 230 $ zahlen"), 6.0), "client: a third F only asks whether to pay it back (%s)" % loans.hint(me))
 		_check(bank.debt == 230 and world.money == 230, "client: the loan stands")
+		# What he found when he came: the lot behind the first shutter and the mail orders.
+		_check(unit.state == StorageLockup.State.SHUT and unit.pieces == 9 and unit.theme == 1, "client: sees the lot that waited when he joined (%d pieces)" % unit.pieces)
+		_check(post.orders.size() == 3 and post.orders[0].kind == &"scrap_kettle" and int(post.orders[1].count) == 3, "client: and the three mail orders")
+		me._do_teleport(unit.global_position + Vector3(0, 0.06, -1.6))
+		me.facing = 0.0
+		await _frames(40)
+		_check(me.nearest_interactable() == unit and unit.hint(me).begins_with("[F] Mitbieten"), "client: stands at the lock-up (%s)" % unit.hint(me))
+		await _press()
+		_check(await _until(func(): return unit.state == StorageLockup.State.BIDDING and unit.ours and unit.bid == unit.opening, 6.0),
+			"client: F at the shutter reaches the host, the crew leads with %d $" % unit.bid)
+		_check(unit.hint(me).begins_with("Ihr bietet") and world.money == 230, "client: the sign says so, nothing is paid yet (%s)" % unit.hint(me))
+		_check(await _until(func(): return unit.state == StorageLockup.State.RESTING, 15.0), "client: sees the lot called back")
 		# The host's sale at the stall.
 		_check(await _until(func(): return stall.goods().size() == 1, 15.0), "client: sees the kettle on the stall")
 		_check(await _until(func(): return world.money == 252 and bank.debt == 222, 15.0), "client: sees the sale and the bank's share (%d $, %d $ owed)" % [world.money, bank.debt])

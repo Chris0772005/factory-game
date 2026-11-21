@@ -302,7 +302,29 @@ func _metal_count() -> int:
 	return n
 
 
+## An open lock-up of the storage auctions with pieces in it, in reach of `player`.
+func _lockup_near(player: Node3D) -> StorageLockup:
+	for node in get_tree().get_nodes_in_group(StorageLockup.GROUP):
+		var unit := node as StorageLockup
+		if unit.state == StorageLockup.State.WON and unit.in_reach(player) and not unit.goods_inside().is_empty():
+			return unit
+	return null
+
+
+## The post office's counter, in reach of `player`.
+func _post_near(player: Node3D) -> PostOffice:
+	for node in get_tree().get_nodes_in_group(PostOffice.GROUP):
+		var post := node as PostOffice
+		if post.in_reach(player):
+			return post
+	return null
+
+
 func held_hint(player: Node) -> String:
+	# (Also with an empty bucket: this is where it gets filled.)
+	var unit := _lockup_near(player as Node3D)
+	if unit:
+		return unit.bucket_hint(self)
 	var load_text := "Eimer %d/%d · %d $" % [count, capacity(), worth]
 	if count == 0:
 		return "Eimer leer – neben den Schrottberg stellen (Linksklick) und wühlen"
@@ -318,6 +340,9 @@ func held_hint(player: Node) -> String:
 	var stall := _stall_near(player as Node3D)
 	if stall:
 		return stall.bucket_hint(self)
+	var post := _post_near(player as Node3D)
+	if post:
+		return post.bucket_hint(self)
 	if hot > 0:
 		load_text += " · %d× heiße Ware (im Eimer versteckt)" % hot
 	if _shop_near(player as Node3D):
@@ -332,7 +357,13 @@ func held_hint(player: Node) -> String:
 
 
 func use_start(player: Node) -> void:
-	if not Network.is_sim_authority() or count == 0:
+	if not Network.is_sim_authority():
+		return
+	var unit := _lockup_near(player as Node3D)
+	if unit:
+		unit.sweep(self)
+		return
+	if count == 0:
 		return
 	var counter := _counter_near(player as Node3D)
 	if counter and hot > 0:
@@ -358,6 +389,10 @@ func use_start(player: Node) -> void:
 	var stall := _stall_near(player as Node3D)
 	if stall:
 		stall.lay_out(self)
+		return
+	var post := _post_near(player as Node3D)
+	if post:
+		post.take_from(self)
 		return
 	var shop := _shop_near(player as Node3D)
 	if shop:

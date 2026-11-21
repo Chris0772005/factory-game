@@ -40,6 +40,30 @@ const VAULT_Y := 1.3
 const VAULT_R := 1.0
 
 
+# --- Post office (in its own frame, see post_lot) ----------------------------------------------------
+## Along the front, from its middle (+x is the end towards the main street): the door. Along the
+## counter (ScrapHallSet.COUNTER_Z deep in the room): where things are handed over, and behind it
+## the postmistress.
+const POST_DOOR_X := 3.1
+const POST_HAND_X := 1.7
+const POSTMISTRESS := Vector3(0.1, 0, 4.7)
+## Parcels on the shelves behind the counter (TownBlock.shelves).
+const POST_GOODS := ["cardboard_box_01", "cardboard_box_01@90", "book_encyclopedia_set_01", "cardboard_box_01@90", "cardboard_box_01",
+	"metal_toolbox", "cardboard_box_01@90"]
+
+
+## The post office's own frame: the middle of its front at the origin, +z into the house, +x along
+## the front towards the main street. It stands beyond the eastern side street and looks west
+## across it; everything of the post office is built and placed in this frame.
+static func post_lot() -> Transform3D:
+	return Transform3D(Basis(Vector3.UP, PI * 0.5), Vector3(TownStreets.FAR_X, 0, (TownStreets.POST_FROM + TownStreets.POST_TO) * 0.5))
+
+
+## Where mail orders are handed over (the level puts the PostOffice there, in the house's frame).
+static func post_spot() -> Transform3D:
+	return post_lot() * Transform3D(Basis(), Vector3(POST_HAND_X, 0, ScrapHallSet.COUNTER_Z - 0.3))
+
+
 ## Where on the bench tool `index` of OFFERS lies (the level puts a ToolOffer there, turned to the room).
 static func offer_spot(index: int) -> Vector3:
 	return ScrapHallSet.HARDWARE + Vector3(float(OFFERS[index][1]), TOP, ScrapHallSet.HOUSE_D - TownBlock.WALL - 0.37)
@@ -174,6 +198,154 @@ static func hardware(set: Node3D) -> void:
 	# Outside: a lamp over the door, a few goods by the wall.
 	PhotoProp.mount(set, "industrial_wall_lamp", at + Vector3(0, TownBlock.DOOR_H + 0.1, 0), Vector3.FORWARD)
 	PhotoProp.mount(set, "exterior_aircon_unit:0", at + Vector3(4.2, 2.75, 0), Vector3.FORWARD)
+
+
+# =====================================================================================================
+# Post office
+# =====================================================================================================
+
+## The post office, built into `lot` (a node at post_lot()): red brick under two more storeys, a
+## counter across the room with the scales and the till, parcels on the shelves and a sorting frame
+## behind it, a bench and a writing table for the customers, the postmistress, and outside a
+## mail box on the pavement. The board with the mail orders is PostOffice's own.
+static func post_office(lot: Node3D) -> void:
+	var w := TownStreets.POST_TO - TownStreets.POST_FROM
+	var d := ScrapHallSet.HOUSE_D
+	var back := d - TownBlock.WALL
+	var side := w * 0.5 - TownBlock.WALL
+	var counter_z := ScrapHallSet.COUNTER_Z
+	TownBlock.house(lot, Vector3.ZERO, w, d, {key = "post", scan = "red_brick", door_x = POST_DOOR_X, windows = [[-4.6, -1.7], [-0.9, 1.6]],
+		sign = "POST OFFICE", sign_back = Color("#1d2f4f"), sign_color = Color("#f0e2b8"), floor_scan = "wood_floor_worn",
+		lining = Color("#dfd8c6"), trim = Color("#1d2f4f"), lamp = Color("#ffe6c0"), storeys = 2})
+	# What is solid first (colliders are wanted on a headless host too).
+	TownBlock.counter(lot, Vector3(0, 0, counter_z), w - 0.6, "post_counter", Color("#4d3a2a"))
+	TownBlock.shelves(lot, Vector3(-3.1, 0, back - 0.24), 4.0, "post_shelf", 31, POST_GOODS)
+	# (The cabinet of drawers is 1.9 m high; the sorting frame hangs on the wall beside it.)
+	PhotoProp.place(lot, "drawer_cabinet", Vector3(4.55, 0, back - 0.27), 180.0)
+	PhotoProp.place(lot, "painted_wooden_bench", Vector3(-side + 0.3, 0, 2.45), 90.0)
+	PhotoProp.place(lot, "round_wooden_table_01", Vector3(-3.6, 0, 1.0), 0.0)
+	PhotoProp.place(lot, "painted_wooden_chair_01", Vector3(-2.55, 0, 1.15), 265.0)
+	PhotoProp.place(lot, "hand_truck", Vector3(side - 0.45, 0, 2.5), 268.0)
+	PhotoProp.place(lot, "vintage_suitcase", Vector3(side - 0.2, 0, 1.15), 90.0)
+	# The mail box on the pavement beside the door.
+	var box_at := Vector3(POST_DOOR_X - 1.75, 0, -0.62)
+	WorldBuilder.add_collider(lot, Vector3(0.6, 1.25, 0.5), Transform3D(Basis(), box_at + Vector3(0, 0.625, 0)))
+	if not EnvMesh.visual():
+		return
+	for x: float in [-side * 0.56, 0.0, side * 0.56]:
+		var tube := OmniLight3D.new()
+		tube.light_color = Color("#fff1d6")
+		tube.light_energy = 0.75
+		tube.omni_range = 6.5
+		tube.omni_attenuation = 1.1
+		tube.shadow_enabled = false
+		tube.position = Vector3(x, TownBlock.ROOM_H - 0.5, d * 0.5 + 0.4)
+		lot.add_child(tube)
+	# The sorting frame on the wall between the board and the drawers: pigeon-holes with letters in
+	# some, a clock on top, parcels under it.
+	_pigeon_holes(lot, Vector3(3.38, 1.05, back - 0.16))
+	PhotoProp.stand(lot, "mantel_clock_01", Vector3(3.38, 1.98, back - 0.14), 180.0)
+	PhotoProp.stand(lot, "cardboard_box_01", Vector3(3.2, 0, back - 0.32), 95.0)
+	PhotoProp.stand(lot, "cardboard_box_01", Vector3(3.62, 0, back - 0.3), 70.0, 0.8)
+	# On the counter: the scales where things are handed over, the till, a lamp, cards and forms.
+	_scales(lot, Vector3(POST_HAND_X - 0.75, TOP, counter_z - 0.02))
+	PhotoProp.stand(lot, "CashRegister_01", Vector3(-1.4, TOP, counter_z + 0.05), 0.0)
+	PhotoProp.stand(lot, "desk_lamp_arm_01", Vector3(-3.6, TOP, counter_z + 0.08), 150.0)
+	PhotoProp.stand(lot, "binder_notebook", Vector3(-2.5, TOP, counter_z - 0.05), 190.0)
+	PhotoProp.stand(lot, "clipboard", Vector3(4.2, TOP, counter_z - 0.05), 170.0)
+	# For the customers: picture postcards on the wall over the bench, forms on the writing table,
+	# a parcel on the hand truck, a fan under the ceiling.
+	PhotoProp.mount(lot, "postcard_set_01", Vector3(-side + 0.02, 1.45, 2.45), Vector3.RIGHT)
+	PhotoProp.stand(lot, "clipboard", Vector3(-3.5, 1.015, 0.9), 40.0)
+	PhotoProp.stand(lot, "binder_notebook", Vector3(-3.75, 1.015, 1.25), 200.0)
+	PhotoProp.stand(lot, "cardboard_box_01", Vector3(side - 0.47, 0.16, 2.52), 85.0, 0.8)
+	PhotoProp.hang(lot, "ceiling_fan", Vector3(0.6, TownBlock.ROOM_H, 1.9), 30.0)
+	PhotoProp.mount(lot, "hanging_picture_frame_02", Vector3(side - 0.02, 1.75, 1.2), Vector3.LEFT)
+	_ceiling_sign(lot, Vector3(POST_HAND_X, 2.72, counter_z - 0.3), "PARCELS & MAIL ORDERS", Color("#1d2f4f"))
+	StationKit.label(lot, "STAMPS · PARCELS · TELEGRAMS", Transform3D(Basis(Vector3.UP, PI), Vector3(-3.1, 2.72, back - 0.04)), 76, Color("#1d2f4f"), 700, 0.0032)
+	var clerk := TownNpc.make("Postmistress")
+	clerk.position = POSTMISTRESS
+	clerk.rotation.y = PI
+	lot.add_child(clerk)
+	# Outside: a lamp over the door and the mail box.
+	PhotoProp.mount(lot, "industrial_wall_lamp", Vector3(POST_DOOR_X, TownBlock.DOOR_H + 0.1, 0), Vector3.FORWARD)
+	_mail_box(lot, box_at)
+
+
+## The post office's scales: an enamelled foot, a steel pan on a short stem, a dial behind it.
+static func _scales(set: Node3D, at: Vector3) -> void:
+	var enamel := StationKit.metal("post_scales", {steel_color = Color("#6f7a70"), rust = 0.08, metallic_steel = 0.2, roughness_steel = 0.45})
+	var steel := StationKit.metal("post_scales_pan", {steel_color = Color("#b9bcbd"), rust = 0.03, metallic_steel = 0.85, roughness_steel = 0.3})
+	EnvMesh.add(set, EnvMesh.box(Vector3(0.36, 0.07, 0.3), 0.015), enamel, Transform3D(Basis(), at + Vector3(0, 0.035, 0)))
+	EnvMesh.add(set, EnvMesh.cylinder(0.025, 0.03, 0.07, 10), steel, Transform3D(Basis(), at + Vector3(0, 0.105, -0.02)))
+	EnvMesh.add(set, EnvMesh.box(Vector3(0.32, 0.012, 0.26), 0.004), steel, Transform3D(Basis(), at + Vector3(0, 0.146, -0.02)))
+	EnvMesh.add(set, EnvMesh.cylinder(0.1, 0.1, 0.05, 20), enamel, Transform3D(Basis(Vector3.RIGHT, PI * 0.5), at + Vector3(0, 0.26, 0.15)))
+	var face := StandardMaterial3D.new()
+	face.albedo_color = Color("#ece6d4")
+	face.roughness = 0.5
+	EnvMesh.add(set, EnvMesh.cylinder(0.085, 0.085, 0.004, 20), face, Transform3D(Basis(Vector3.RIGHT, PI * 0.5), at + Vector3(0, 0.26, 0.123)), false)
+	var hand := StandardMaterial3D.new()
+	hand.albedo_color = Color("#8a1f1a")
+	EnvMesh.add(set, EnvMesh.box(Vector3(0.006, 0.07, 0.003)), hand, Transform3D(Basis(Vector3.BACK, -0.7), at + Vector3(0.02, 0.28, 0.12)), false)
+	EnvMesh.add(set, EnvMesh.box(Vector3(0.05, 0.14, 0.04)), enamel, Transform3D(Basis(), at + Vector3(0, 0.13, 0.15)))
+
+
+## The sorting frame: a wooden case of pigeon-holes, `at` the middle of its foot on the wall.
+static func _pigeon_holes(set: Node3D, at: Vector3) -> void:
+	var wood := EnvMesh.wood("post_holes", {base_color = Color("#6b5234"), grain_color = Color("#3e2c1c"), weathering = 0.3, roughness_base = 0.6})
+	var cols := 4
+	var rows := 4
+	var w := 1.0
+	var h := 0.92
+	var deep := 0.26
+	var parts := [EnvMesh.piece(EnvMesh.box(Vector3(w, h, 0.02)), Transform3D(Basis(), at + Vector3(0, h * 0.5, 0.12)))]
+	for c in cols + 1:
+		parts.append(EnvMesh.piece(EnvMesh.box(Vector3(0.02, h, deep)), Transform3D(Basis(), at + Vector3(-w * 0.5 + c * w / cols, h * 0.5, 0))))
+	for r in rows + 1:
+		parts.append(EnvMesh.piece(EnvMesh.box(Vector3(w, 0.02, deep)), Transform3D(Basis(), at + Vector3(0, r * h / rows, 0))))
+	EnvMesh.add(set, EnvMesh.merge(parts), wood)
+	# Letters in some of the holes.
+	var paper := StandardMaterial3D.new()
+	paper.albedo_color = Color("#e9e2cf")
+	paper.roughness = 0.9
+	var letters := []
+	var pick := 7
+	for c in cols:
+		for r in rows:
+			pick = (pick * 1103515245 + 12345) & 0x7fffffff
+			if pick % 5 < 2:
+				continue
+			var n := 1 + pick % 3
+			letters.append(EnvMesh.piece(EnvMesh.box(Vector3(w / cols - 0.07, 0.012 * n, 0.2)), Transform3D(Basis(Vector3.UP, (pick % 7 - 3) * 0.03),
+				at + Vector3(-w * 0.5 + (c + 0.5) * w / cols, r * h / rows + 0.012 + 0.006 * n, -0.02))))
+	EnvMesh.add(set, EnvMesh.merge(letters), paper, Transform3D(), false)
+
+
+## A street mail box: a blue steel box with a rounded top on four legs, a flap and a white board.
+static func _mail_box(set: Node3D, at: Vector3) -> void:
+	var blue := StationKit.metal("post_mailbox", {steel_color = Color("#1f3f7a"), rust = 0.12, metallic_steel = 0.3, roughness_steel = 0.5})
+	var dark := StationKit.metal("post_mailbox_legs", {steel_color = Color("#22262b"), rust = 0.2, metallic_steel = 0.5, roughness_steel = 0.55})
+	var bw := 0.56
+	var bd := 0.46
+	# The body is the outline of its side (a box with a rounded top), drawn out to its width.
+	var outline := PackedVector2Array([Vector2(-bd * 0.5, 0), Vector2(bd * 0.5, 0)])
+	for k in 9:
+		var a := PI * k / 8.0
+		outline.append(Vector2(bd * 0.5 * cos(a), 0.62 + bd * 0.5 * sin(a)))
+	var body := ChurchKit.prism(outline, bw, true)
+	EnvMesh.add(set, body, blue, Transform3D(Basis(Vector3.UP, PI * 0.5), at + Vector3(-bw * 0.5, 0.32, 0)))
+	var legs := []
+	for sx: float in [-1.0, 1.0]:
+		for sz: float in [-1.0, 1.0]:
+			legs.append(EnvMesh.piece(EnvMesh.box(Vector3(0.05, 0.34, 0.05)), Transform3D(Basis(), at + Vector3(sx * (bw * 0.5 - 0.05), 0.17, sz * (bd * 0.5 - 0.05)))))
+	EnvMesh.add(set, EnvMesh.merge(legs), dark)
+	# The flap with its handle, and the board that says what this is (towards the street).
+	EnvMesh.add(set, EnvMesh.box(Vector3(bw - 0.1, 0.16, 0.02), 0.005), dark, Transform3D(Basis(Vector3.RIGHT, 0.5), at + Vector3(0, 0.98, -bd * 0.5 + 0.04)))
+	var plate := StandardMaterial3D.new()
+	plate.albedo_color = Color("#ece6d4")
+	plate.roughness = 0.5
+	EnvMesh.add(set, EnvMesh.box(Vector3(bw - 0.14, 0.2, 0.008)), plate, Transform3D(Basis(), at + Vector3(0, 0.6, -bd * 0.5 - 0.005)), false)
+	StationKit.label(set, "MAIL", Transform3D(Basis(Vector3.UP, PI), at + Vector3(0, 0.6, -bd * 0.5 - 0.012)), 72, Color("#1f3f7a"), 800, 0.0026)
 
 
 # =====================================================================================================

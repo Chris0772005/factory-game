@@ -20,6 +20,12 @@ func _ready() -> void:
 	_next = randf_range(4.0, 9.0)
 
 
+## A wave of the arm, now (the auctioneer when he calls a bid).
+func wave() -> void:
+	if _figure:
+		_figure.gesture(&"Wave")
+
+
 func _physics_process(delta: float) -> void:
 	if _figure == null:
 		return

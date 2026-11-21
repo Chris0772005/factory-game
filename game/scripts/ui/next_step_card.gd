@@ -126,6 +126,11 @@ static func _hall_step(w: GameWorld, goal: StringName, pile: ScrapPile, furnace:
 		if goal == &"foundry_corner" and w.money >= 150:
 			target = _of_class(tree, "UpgradeBoard")
 			return "150 $ sind da: Schmelzofen an der Werkstatt-Tafel kaufen."
+		# Something the post office has on order pays most of all (the host knows what is in the bucket).
+		var post := tree.get_first_node_in_group(PostOffice.GROUP) as PostOffice
+		if goal == &"foundry_corner" and bucket and post and post.wanted_in(bucket) > 0:
+			target = post
+			return "Im Eimer liegt etwas, das die Post bestellt hat: Das POST OFFICE zahlt am meisten (an der Bank vorbei um die Ecke, Eimer hintragen, F)."
 		# Something dear in the bucket (the host knows what is in it): the crew's stall pays more for it.
 		var stall := tree.get_first_node_in_group(YardStall.GROUP) as YardStall
 		if goal == &"foundry_corner" and bucket and stall and not stall.free_places().is_empty() \
@@ -135,6 +140,14 @@ static func _hall_step(w: GameWorld, goal: StringName, pile: ScrapPile, furnace:
 		if bucket and (bucket.is_full() or (goal == &"scrap_sold" and count >= 3)):
 			target = shop
 			return "Eimer über die Straße zum Scrap Dealer tragen, dort F."
+		# Money in hand and never bid yet: the storage auctions behind the row are worth a look.
+		var uncle := tree.get_first_node_in_group(&"guides") as Guide
+		if goal == &"foundry_corner" and Network.is_sim_authority() and uncle and int(uncle.stats.get("lot_bid", 0)) == 0 and w.money < 150:
+			for node in tree.get_nodes_in_group(StorageLockup.GROUP):
+				var unit := node as StorageLockup
+				if unit.state == StorageLockup.State.SHUT and w.money >= unit.opening + 30:
+					target = unit
+					return "Lager-Auktion unter dem Viadukt: Los %d ab %d $ – Fundstücke für euren Verkaufstisch (durch den Durchgang neben dem Scrap Dealer)." % [unit.number, unit.opening]
 		target = pile
 		if goal == &"foundry_corner":
 			if w.bank and w.bank.debt == 0:

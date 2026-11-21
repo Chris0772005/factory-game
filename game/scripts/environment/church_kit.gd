@@ -344,11 +344,19 @@ static func prism(points: PackedVector2Array, depth: float, back := false) -> Ar
 
 
 ## A frame between two outlines with the same number of points, `depth` proud of the wall: its face,
-## the reveal inside and the sides outside.
-static func ring(inner: PackedVector2Array, outer: PackedVector2Array, depth: float) -> ArrayMesh:
+## the reveal inside and the sides outside. With `open` the outlines are lines that do not close (the
+## band round an arch, from one springing to the other): no stretch from the last point back to the
+## first, and a face across either end instead.
+static func ring(inner: PackedVector2Array, outer: PackedVector2Array, depth: float, open := false) -> ArrayMesh:
 	var soup := Soup.new()
 	var turn := _winding(inner)
-	for i in inner.size():
+	if open:
+		for end: int in [0, inner.size() - 1]:
+			var a := inner[end]
+			var d := outer[end]
+			var off := inner[end] - inner[1 if end == 0 else end - 1]
+			soup.quad(Vector3(a.x, a.y, 0), Vector3(d.x, d.y, 0), Vector3(d.x, d.y, depth), Vector3(a.x, a.y, depth), Vector3(off.x, off.y, 0))
+	for i in (inner.size() - 1 if open else inner.size()):
 		var j := (i + 1) % inner.size()
 		var a := inner[i]
 		var b := inner[j]

@@ -59,7 +59,7 @@ GAME = ROOT / "game/assets/models/people"
 # Where the figures are written: the game's folder, or the folder given second (to try something out).
 OUT = pathlib.Path(sys.argv[2]) if len(sys.argv) > 2 else GAME
 PEOPLE = ["worker", "broker", "officer", "woman", "youth", "dealer", "patrol", "mate_a", "mate_b", "cook", "granny", "mechanic",
-          "clerk", "teller", "collector", "shopper"]
+          "clerk", "teller", "collector", "shopper", "auctioneer", "postmistress"]
 # Clips are sampled at this rate.
 RATE = 30.0
 # Clips taken from the first figure's extra files: file suffix -> clip name in the game.

@@ -40,8 +40,11 @@ const ABUT := 1.4
 const END_RUN := 14.0
 ## Half the length of the arcade between the two inner abutments.
 const ARCADE := GATE_X - GATE_W * 0.5 - ABUT
-## Where the houses beyond the side streets stand (their fronts on the side street).
+## Where the houses beyond the side streets stand (their fronts on the side street), and the
+## stretch of the eastern row that is the post office (z from, to).
 const FAR_X := 49.7
+const POST_FROM := 19.52
+const POST_TO := 30.5
 ## What is in the arches, from the west: "" bricked up, "lockup" a lock-up of the storage auctions
 ## (StorageLockup), "office", "garage" and "store" shut fronts.
 const USES := ["", "store", "", "", "", "store", "", "office", "lockup", "lockup", "lockup", "lockup", "", "garage", "garage", ""]
@@ -50,7 +53,7 @@ const PASSAGE := Vector2(-7.0, -1.5)
 const ALLEY_EAST := Vector2(26.6, 29.0)
 ## Whether the lock-ups are run by StorageLockup nodes (which bring their own shutters). False: their
 ## doorways are shut for good by the viaduct itself.
-const LOCKUPS_LIVE := false
+const LOCKUPS_LIVE := true
 ## Depth of a lock-up behind its front (m), and how far the front stands back in its arch.
 const LOCKUP_D := 5.6
 const INFILL := 0.45
@@ -291,7 +294,8 @@ static func _arch_ring(open: float, spring: float, rise: float, band: float, pro
 		centre = Vector2(0, spring + rise - r)
 	for point in inner:
 		outer.append(point + (point - centre).normalized() * band)
-	return ChurchKit.ring(inner, outer, proud)
+	# (An open band: closed, it would run back along the springing line right across the arch.)
+	return ChurchKit.ring(inner, outer, proud, true)
 
 
 ## A red-and-white barrier across a pavement under a street arch: `at` its middle on the ground,
@@ -427,13 +431,15 @@ static func dressing(set: ScrapHallSet, zf: float) -> void:
 	# of the garage under the arches.
 	ParkedVehicle.place(set, ParkedVehicle.CAR_SALOON, Vector3(-23.0, 0, BACK_KERB_S + 0.95), 180.0, Color("#5c5f52"))
 	ParkedVehicle.place(set, ParkedVehicle.CAR_SMALL, Vector3(15.0, 0, BACK_KERB_S + 0.92), 0.0, Color("#8a8f96"))
-	ParkedVehicle.place(set, ParkedVehicle.VAN, Vector3(bay_x(13) + pitch() * 0.5, 0, BACK_KERB_N - 1.2), 180.0)
+	# (The van stands clear of the crossing at the alley's end.)
+	ParkedVehicle.place(set, ParkedVehicle.VAN, Vector3(bay_x(14) + 1.0, 0, BACK_KERB_N - 1.2), 180.0)
 	TownBlock.dumpster(set, Vector3(-18.6, 0, BACK_NEAR + 0.6), 0.0)
 	TownBlock.dumpster(set, Vector3(20.4, 0, BACK_NEAR + 0.6), 0.0)
 	PhotoProp.place(set, "metal_trash_can", Vector3(PASSAGE.y + 0.9, 0, BACK_NEAR + 0.45), 0.0)
 	PhotoProp.place(set, "utility_box_01", Vector3(-36.0, 0, BACK_NEAR + 0.35), 0.0)
 	# On the pavements of the side streets, against the houses beyond them.
-	PhotoProp.place(set, "metal_trash_can", Vector3(FAR_X - 0.4, 0, 22.6), 270.0)
+	# (The bin stands clear of the post office's door and windows.)
+	PhotoProp.place(set, "metal_trash_can", Vector3(FAR_X - 0.4, 0, POST_TO + 1.2), 270.0)
 	PhotoProp.place(set, "utility_box_01", Vector3(-FAR_X + 0.35, 0, 33.4), 90.0)
 	PhotoProp.place(set, "painted_wooden_bench", Vector3(-FAR_X + 0.4, 0, 24.4), 90.0)
 	for x: float in [-ARCADE + pitch() * 3.0, -ARCADE + pitch() * 5.0, -ARCADE + pitch() * 13.0]:

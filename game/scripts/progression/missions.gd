@@ -16,6 +16,7 @@ const TRACKS := [
 		{stat = &"dig", goal = 15, reward = 20, text = "Schrott wühlen"},
 		{stat = &"scrap_sold", goal = 25, reward = 35, text = "Schrott verkaufen"},
 		{stat = &"handed_in", goal = 2, reward = 40, text = "Heiße Ware abgeben (Police)"},
+		{stat = &"parcel", goal = 2, reward = 45, text = "Bestellte Stücke zur Post bringen"},
 		{stat = &"cast_sold", goal = 3, reward = 80, text = "Gussstücke verkaufen", needs = &"foundry_corner"},
 		{stat = &"heap", goal = 1, reward = 150, text = "Schrottberg ganz abtragen"},
 	]},
@@ -24,6 +25,7 @@ const TRACKS := [
 		{stat = &"upgrade", goal = 1, reward = 30, text = "Ausbau kaufen"},
 		{stat = &"diner", goal = 1, reward = 15, text = "Bei Molly stärken (Diner)"},
 		{stat = &"stall_sold", goal = 3, reward = 40, text = "Am Verkaufstisch verkaufen"},
+		{stat = &"lot_won", goal = 1, reward = 40, text = "Ein Lager-Los ersteigern"},
 		{stat = &"digger_grab", goal = 30, reward = 80, text = "Bagger: Schaufeln laden", needs = &"excavator"},
 		{stat = &"earned", goal = 400, reward = 60, text = "Geld verdienen ($)"},
 		{stat = &"truck_load", goal = 3, reward = 120, text = "LKW: Ladungen wegfahren", needs = &"truck"},
@@ -39,7 +41,7 @@ const TRACKS := [
 
 ## Missions slotted into a track's list after save files were written: [track, place in the list,
 ## length of the list before]. A save from before keeps its mission and its round (see `_moved`).
-const ADDED := [[1, 3, 6]]
+const ADDED := [[1, 3, 6], [1, 4, 7], [0, 3, 5]]
 
 signal changed
 

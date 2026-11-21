@@ -56,8 +56,8 @@ offline test_sandbox 120 "ok |FAIL|TESTS|SCRIPT ERROR"
 echo "== Factory simulation =="
 offline test_factory 150 "ok |FAIL|TESTS|stress|SCRIPT ERROR"
 
-echo "== Drawing, FX, foundry round, garage, bells, Eisenhalle, scrap hall, quarter, crew, traffic, diner, shops =="
-for t in test_drawing test_fx test_foundry test_garage test_bells test_iron_hall test_search test_scrap test_scrap_hall test_town test_missions test_auto test_autofoundry test_autoiron test_crew test_traffic test_diner test_shops; do
+echo "== Drawing, FX, foundry round, garage, bells, Eisenhalle, scrap hall, quarter, crew, traffic, diner, shops, lots =="
+for t in test_drawing test_fx test_foundry test_garage test_bells test_iron_hall test_search test_scrap test_scrap_hall test_town test_missions test_auto test_autofoundry test_autoiron test_crew test_traffic test_diner test_shops test_lots; do
   offline $t 300 "FAIL|TESTS|SCRIPT ERROR"
 done
 

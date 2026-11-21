@@ -27,6 +27,6 @@ Steam-Passwort, Steam-Guard-Codes, Bankdaten. Für den Upload richten wir einen 
 Im Abschnitt „KI-generierte Inhalte“ gibst du an, was im Spiel von einer KI stammt und von Spielern gesehen oder gehört wird (vorab erzeugt, nicht während des Spielens):
 
 - Die Musik ist von einer KI komponiert.
-- Die Stadtbewohner (Passanten, Kunden am Verkaufstisch, Pfandleiher, Schrotthändler, Wirtin, Inhaber des Werkzeugladens, Bankangestellte, Polizei) und die Arbeiter der Spieler (so sehen die Mitspieler einen) sind KI-erzeugte 3D-Figuren (Higgsfield: GPT Image 2.6 und Meshy 7). Sie zeigen keine echten Personen.
+- Die Stadtbewohner (Passanten, Kunden am Verkaufstisch, Pfandleiher, Schrotthändler, Wirtin, Inhaber des Werkzeugladens, Bankangestellte, Auktionator, Postbeamtin, Polizei) und die Arbeiter der Spieler (so sehen die Mitspieler einen) sind KI-erzeugte 3D-Figuren (Higgsfield: GPT Image 2.6 und Meshy 7). Sie zeigen keine echten Personen.
 
 Steam zeigt diese Angabe auf der Shopseite an. Kommt später weiteres KI-Material dazu, steht es in `CREDITS.md` und muss hier ergänzt werden.

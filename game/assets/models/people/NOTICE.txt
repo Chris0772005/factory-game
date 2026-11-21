@@ -1,23 +1,25 @@
 worker.glb, broker.glb, officer.glb, woman.glb, youth.glb, dealer.glb, patrol.glb, cook.glb, granny.glb, mechanic.glb,
-clerk.glb, teller.glb, collector.glb, shopper.glb:
+clerk.glb, teller.glb, collector.glb, shopper.glb, auctioneer.glb, postmistress.glb:
 the townspeople of MOLTEN MATES (cook: Molly behind the diner's counter, in a red apron; granny: an old woman
 with a green headscarf; mechanic: a man in blue overalls; clerk: the hardware store's owner in a tan shop coat;
 teller: the bank's clerk in a teal blazer; collector: an old gentleman with a flat cap who buys at the crew's
-stall; shopper: a young woman in a denim jacket who buys there too).
+stall; shopper: a young woman in a denim jacket who buys there too; auctioneer: a bald man with a grey beard
+and red braces, who calls the bids at the storage auctions; postmistress: a woman in a navy cardigan behind the
+post office's counter).
 mate_a.glb, mate_b.glb: the players' own workers, as the other players see them (a man in an orange warning vest, a woman in
 a yellow one; the hard hat in the player's colour is added by the game).
-These sixteen figures are AI-GENERATED CONTENT. Nobody modelled or painted them by hand, and they show no real person: each face and
+These eighteen figures are AI-GENERATED CONTENT. Nobody modelled or painted them by hand, and they show no real person: each face and
 outfit was invented by the image model from a written description.
 
 How they were made (all through the owner's Higgsfield account, https://higgsfield.ai, in November 2026; the last
-four on 21 November 2026):
+six on 21 November 2026):
   1. A studio picture of each person, front view in an A-pose, from a written description
      (Higgsfield image model "GPT Image 2.6").
   2. From that picture a textured, rigged 3D figure with one clip, a slow walk
      (Higgsfield 3D model "Meshy 7 image-to-3D": about 25,000 triangles, PBR maps, 24-joint skeleton,
      clip "Casual_Walk" of Meshy's animation library). The dealer, the patrol officer, the two players' workers, the
-     cook, the old woman, the mechanic, the hardware store's owner, the bank's clerk and the two customers of the
-     stall were generated without a clip: all their clips are the first figure's.
+     cook, the old woman, the mechanic, the hardware store's owner, the bank's clerk, the two customers of the
+     stall, the auctioneer and the postmistress were generated without a clip: all their clips are the first figure's.
   3. For the first figure (worker) further clips of the same library on the same skeleton
      (Higgsfield "Meshy rigging"): "Quick_Walk", "Run_02", "Wave_One_Hand"; also "Idle" and
      "Confident_Walk", which are not used.
@@ -59,6 +61,8 @@ Higgsfield job ids (they identify the generations in the owner's account):
   teller   picture 6cee79c9-9a37-4d60-a1fe-6cb1568a66c4   figure df50517a-41ac-4373-9491-5bcb5195c614
   collector picture 054b0cba-0ed2-4987-a2d2-fa7cc91395a5  figure 891de90b-5bf3-4dab-9077-69f2dc00a63e
   shopper  picture 1993e0c5-e809-4815-8d8b-b6dc4571493e   figure 7050fdbc-1283-450c-b713-a86eb0d7dd3b
+  auctioneer picture e6c6ad5f-5bc8-4c0d-81d3-236198e6fea6 figure 9bd4a163-ad30-4ce5-96f8-5f4dcf6ff6ec
+  postmistress picture b652b967-ea33-4561-b099-6e5367645028 figure 28bd6a65-44a7-4fe0-8ad0-143f1e0bda36
 
 The generated source files (10 to 13 MB each) are not in this repository; they can be downloaded again from the
 owner's Higgsfield account under the ids above.

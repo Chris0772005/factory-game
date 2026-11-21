@@ -40,8 +40,10 @@ func _run() -> void:
 	_check(missions.current(0).stat == &"scrap_sold", "next on the track: sell scrap")
 	# What needs an upgrade is skipped until it is owned; rounds ask for more.
 	missions.done[0] = 3
+	_check(missions.current(0).stat == &"parcel", "after the police the post office's mail orders")
+	missions.done[0] = 4
 	_check(missions.current(0).stat == &"heap", "no foundry yet: the casting mission is skipped")
-	missions.done[0] = 5
+	missions.done[0] = 6
 	missions.progress[0] = 0
 	var again := missions.current(0)
 	_check(again.stat == &"dig" and again.goal == 24 and again.reward == 30, "second round: more to do, more pay (%d, %d $)" % [again.goal, again.reward])
@@ -49,7 +51,7 @@ func _run() -> void:
 	var saved := missions.to_save()
 	missions.done[0] = 0
 	missions.load_save(saved)
-	_check(missions.done[0] == 5, "missions survive saving")
+	_check(missions.done[0] == 6, "missions survive saving")
 	# Workbench: recipes.
 	var plan := Workbench.plan([&"junk_sheet", &"junk_sheet", &"junk_sheet", &"scrap_pipe", &"junk_spring", &"junk_bolt", &"scrap_can"])
 	_check(plan.made == [&"hot_zipgun", &"hot_shiv"] and plan.rest == [&"junk_sheet", &"scrap_can"], "the bench builds a pipe gun and a blade, the rest stays (%s)" % str(plan.made))

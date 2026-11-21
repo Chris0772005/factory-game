@@ -13,9 +13,11 @@ extends Node3D
 const PEOPLE_DIR := "res://assets/models/people/"
 const PEOPLE := {"Worker": "worker", "Suit": "broker", "Swat": "officer", "Patrol": "patrol", "Dealer": "dealer",
 	"Casual": "youth", "Casual_Woman": "woman", "Cook": "cook", "Granny": "granny", "Mechanic": "mechanic",
-	"Clerk": "clerk", "Teller": "teller", "Collector": "collector", "Shopper": "shopper"}
+	"Clerk": "clerk", "Teller": "teller", "Collector": "collector", "Shopper": "shopper", "Auctioneer": "auctioneer",
+	"Postmistress": "postmistress"}
 const STAND_INS := {"Patrol": "Swat", "Dealer": "Worker", "Cook": "Casual_Woman", "Granny": "Casual_Woman", "Mechanic": "Worker",
-	"Clerk": "Worker", "Teller": "Casual_Woman", "Collector": "Suit", "Shopper": "Casual_Woman"}
+	"Clerk": "Worker", "Teller": "Casual_Woman", "Collector": "Suit", "Shopper": "Casual_Woman", "Auctioneer": "Suit",
+	"Postmistress": "Casual_Woman"}
 const DIR := "res://assets/models/quaternius/"
 const ANIM_SOURCE := "res://assets/models/quaternius/Anim_Character.glb"
 ## Stand-in figures: height of the head joint above the ground (m), the figure stands about 1.8 m.

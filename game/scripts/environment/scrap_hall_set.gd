@@ -219,12 +219,18 @@ func _outside() -> void:
 	# they are solid.
 	var beyond := TownStreets.FAR_X + 6.5
 	var from_z := zf - 3.0
-	var mid_z := FRONT_Z - 2.6
-	var last_z := TownStreets.BACK_KERB_S - 0.9
+	var mid_z := TownStreets.POST_FROM
+	var last_z := TownStreets.POST_TO
 	TownBlock.block(self, Vector3(-beyond, 0, from_z), 13.0, mid_z - from_z, {key = "end_a", scan = "yellow_plaster", storeys = 4, solid = true})
 	TownBlock.block(self, Vector3(beyond, 0, from_z), 13.0, mid_z - from_z, {key = "end_b", scan = "red_brick_03", storeys = 3, solid = true})
 	TownBlock.block(self, Vector3(-beyond, 0, mid_z), 13.0, last_z - mid_z, {key = "end_c", scan = "red_brick", storeys = 3, solid = true})
-	TownBlock.block(self, Vector3(beyond, 0, mid_z), 13.0, last_z - mid_z, {key = "end_d", plaster = Color("#b9b2a2"), storeys = 4, solid = true})
+	# In the eastern row the middle house is the post office, built in a frame of its own that looks
+	# west across the side street (TownShops.post_lot).
+	var post := Node3D.new()
+	post.name = "PostLot"
+	post.transform = TownShops.post_lot()
+	add_child(post)
+	TownShops.post_office(post)
 	TownBlock.block(self, Vector3(-beyond, 0, last_z), 13.0, TownStreets.VIADUCT_Z - last_z, {key = "end_g", scan = "painted_worn_brick", storeys = 3, solid = true})
 	TownBlock.block(self, Vector3(beyond, 0, last_z), 13.0, TownStreets.VIADUCT_Z - last_z, {key = "end_h", scan = "yellow_plaster", storeys = 3, solid = true})
 	# (These stand back from the yard walls that run along the street in front of them.)

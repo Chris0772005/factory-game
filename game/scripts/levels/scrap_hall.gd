@@ -81,6 +81,31 @@ func _build_town() -> void:
 	var loans := BankCounter.new()
 	loans.position = TownShops.loan_spot()
 	add_child(loans)
+	# The storage auctions under the viaduct: four lock-ups and the auctioneer in front of them. Two
+	# lots wait from the start, the others come one after the other.
+	var bays := TownStreets.lockups()
+	for i in bays.size():
+		var unit := StorageLockup.new()
+		unit.bay = bays[i]
+		unit.number = i + 1
+		unit.name = "Lockup_%d" % (i + 1)
+		unit.position = TownStreets.door_spot(bays[i])
+		add_child(unit)
+		if Network.is_sim_authority() and not attract_mode:
+			if i < 2:
+				unit.stock()
+			else:
+				unit.rest(45.0 * (i - 1))
+	# The post office beyond the eastern side street: mail orders, handed over at its counter. The
+	# board hangs on the wall behind the postmistress.
+	var post := PostOffice.new()
+	post.transform = TownShops.post_spot()
+	post.board_at = Vector3(0, 1.92, ScrapHallSet.HOUSE_D - TownBlock.WALL - 0.03 - (ScrapHallSet.COUNTER_Z - 0.3))
+	post.board_yaw = 180.0
+	add_child(post)
+	var auction := StorageAuction.new()
+	auction.position = Vector3(-TownStreets.ARCADE + TownStreets.pitch() * (bays[1] + 1), 0, TownStreets.VIADUCT_Z - 1.25)
+	add_child(auction)
 	var cop := PolicePatrol.new()
 	cop.name = "Patrol"
 	cop.route = [Vector3(-ScrapHallSet.BEAT_X, 0, ScrapHallSet.BEAT_Z), Vector3(ScrapHallSet.BEAT_X, 0, ScrapHallSet.BEAT_Z)]
@@ -112,6 +137,16 @@ func _build_town() -> void:
 		elif arg.begins_with("--stall="):
 			# Art check: so many finds lie on the stall's table, and its first customer stands at it.
 			_debug_stall(int(arg.trim_prefix("--stall=")))
+		elif arg.begins_with("--lot="):
+			# Art check: lock-up N stands open with a won lot of that kind in it ("2,1": lock-up 2, workshop).
+			var lot := arg.trim_prefix("--lot=").split(",")
+			var unit := get_node_or_null("Lockup_%d" % int(lot[0])) as StorageLockup
+			if unit:
+				unit.stock(int(lot[1]) if lot.size() > 1 else 0, 11)
+				unit.bid = unit.opening
+				unit._lay_out()
+				unit.state = StorageLockup.State.WON
+				unit._publish()
 		elif arg.begins_with("--debt="):
 			# Art check: the crew owes the bank so much (the pill on the HUD).
 			bank.owed = maxi(int(arg.trim_prefix("--debt=")) * 2, 1)
@@ -245,9 +280,16 @@ func _build_walkers() -> void:
 		[Vector3(diner_door + 1.0, 0, by_wall), 0.0],
 		[Vector3(hardware.x - 1.5, 0, by_wall), 0.0],
 	], 12.0, 0.7)
-	# The mechanic from the workshop round the corner: something for the dealer, then his coffee.
+	# The mechanic from the workshop under the viaduct: a look at its shutter, through the alley beside
+	# the bank, something for the dealer, then his coffee, and back the same way.
+	var alley := (TownStreets.ALLEY_EAST.x + TownStreets.ALLEY_EAST.y) * 0.5
+	var garage := Vector3(TownStreets.bay_x(13), 0, TownStreets.VIADUCT_Z - 1.0)
 	walkers.add_round("Mechanic", {}, [
-		[Vector3(36.0, 0, front - 2.4), 5.0, Vector3(40.0, 0, front - 2.4)],
+		[garage, 8.0, garage + Vector3(0, 0, 2.0)],
+		[Vector3(alley, 0, TownStreets.BACK_KERB_N + 0.6), 0.0],
+		[Vector3(alley, 0, TownStreets.BACK_NEAR + 0.9), 0.0],
+		[Vector3(alley, 0, front - 0.6), 0.0],
+		[Vector3(alley - 1.6, 0, west), 0.0],
 		[Vector3(8.0, 0, west), 0.0],
 		[Vector3(4.4, 0, front - 0.95), 8.0, Vector3(4.4, 0, front + 2.0)],
 		[Vector3(3.0, 0, west), 0.0],
@@ -258,7 +300,10 @@ func _build_walkers() -> void:
 		[Vector3(diner_door, 0, front + 1.0), 0.0],
 		[Vector3(diner_door, 0, front - 0.6), 0.0],
 		[Vector3(diner_door + 1.4, 0, east), 0.0],
-		[Vector3(34.0, 0, east), 0.0],
+		[Vector3(alley - 1.6, 0, east), 0.0],
+		[Vector3(alley, 0, front - 0.6), 0.0],
+		[Vector3(alley, 0, TownStreets.BACK_NEAR + 0.9), 0.0],
+		[Vector3(alley, 0, TownStreets.BACK_KERB_N + 0.6), 0.0],
 	], 80.0)
 	_build_stall(walkers, west, east)
 
