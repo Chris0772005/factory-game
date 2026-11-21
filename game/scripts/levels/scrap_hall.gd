@@ -85,13 +85,16 @@ func _build_town() -> void:
 	cop.name = "Patrol"
 	cop.route = [Vector3(-ScrapHallSet.BEAT_X, 0, ScrapHallSet.BEAT_Z), Vector3(ScrapHallSet.BEAT_X, 0, ScrapHallSet.BEAT_Z)]
 	cop.position = Vector3(14.0, 0.05, ScrapHallSet.BEAT_Z)
-	cop.max_z = ScrapHallSet.FRONT_Z - 0.8
+	# He follows round the block and through the two passages, but not into the houses of the row.
+	var row := ScrapHallSet.BANK.x + ScrapHallSet.SHOP_W * 0.5 + 0.4
+	cop.keep_out = Rect2(-row, ScrapHallSet.FRONT_Z - 0.8, row * 2.0, TownStreets.BACK_NEAR + 0.5 - ScrapHallSet.FRONT_Z + 0.8)
+	cop.ways = [Vector2(TownStreets.PASSAGE.x + 0.6, TownStreets.PASSAGE.y - 0.6), Vector2(TownStreets.ALLEY_EAST.x + 0.35, TownStreets.ALLEY_EAST.y - 0.35)]
 	add_child(cop)
 	_build_walkers()
 	# The town's cars drive down the street.
 	var traffic := TownTraffic.new()
 	add_child(traffic)
-	traffic.setup(ScrapHallSet.TRAFFIC_LANE_Z, ScrapHallSet.SIDE_X, ScrapHallSet.SIDE_END)
+	traffic.setup(ScrapHallSet.TRAFFIC_LANE_Z, ScrapHallSet.SIDE_X, TownStreets.NORTH_Z, TownStreets.NORTH_RUN)
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--mates="):
 			_debug_mates(arg.trim_prefix("--mates="))
@@ -365,7 +368,8 @@ func _add_truck() -> void:
 	truck.dock = ScrapHallSet.TRUCK_DOCK
 	truck.lane_z = ScrapHallSet.TRUCK_LANE_Z
 	truck.turn_x = ScrapHallSet.SIDE_X
-	truck.turn_z = ScrapHallSet.SIDE_END
+	truck.turn_z = TownStreets.NORTH_Z
+	truck.turn_run = TownStreets.NORTH_RUN
 	truck.skip = get_tree().get_first_node_in_group(ScrapSkip.GROUP) as ScrapSkip
 	add_child(truck)
 

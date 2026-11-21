@@ -56,20 +56,45 @@ func _run() -> void:
 	_finish()
 
 
-## The street: free to both ends, shut just before the junctions, the alleys closed.
+## The streets: the main street free to the houses beyond both junctions, the side streets and the
+## back street free round the block, two ways through the row, and the viaduct shut to people.
 func _street(me: Player) -> void:
 	var front := ScrapHallSet.FRONT_Z
-	for side: float in [-1.0, 1.0]:
-		var from := Transform3D(Basis(), Vector3(side * 24.0, 0.06, front - 3.2))
-		_check(not me.test_move(from, Vector3(side * 13.0, 0, 0)), "the pavement is free where the %s barrier stood" % ("western" if side < 0.0 else "eastern"))
-		var near_end := Transform3D(Basis(), Vector3(side * (ScrapHallSet.TOWN_X - 1.5), 0.06, front - 3.2))
-		_check(me.test_move(near_end, Vector3(side * 3.0, 0, 0)), "and ends at the barrier before the junction")
-		var on_road := Transform3D(Basis(), Vector3(side * (ScrapHallSet.TOWN_X - 1.5), 0.06, 14.1))
-		_check(me.test_move(on_road, Vector3(side * 3.0, 0, 0)), "the road is shut there too")
+	var side := ScrapHallSet.SIDE_X
+	for dir: float in [-1.0, 1.0]:
+		var name := "western" if dir < 0.0 else "eastern"
+		var from := Transform3D(Basis(), Vector3(dir * 24.0, 0.06, front - 3.2))
+		_check(not me.test_move(from, Vector3(dir * 23.5, 0, 0)), "the pavement is free past where the %s barrier stood, into the junction" % name)
+		var at_end := Transform3D(Basis(), Vector3(dir * (TownStreets.FAR_X - 1.2), 0.06, front - 3.2))
+		_check(me.test_move(at_end, Vector3(dir * 3.0, 0, 0)), "the houses beyond the junction stop people")
+		var on_road := Transform3D(Basis(), Vector3(dir * (TownStreets.FAR_X - 1.2), 0.06, 14.1))
+		_check(me.test_move(on_road, Vector3(dir * 3.0, 0, 0)), "at the end of the road too")
+		var south := Transform3D(Basis(), Vector3(dir * side, 0.06, 9.4))
+		_check(me.test_move(south, Vector3(0, 0, -3.0)), "the yard wall runs on along the junction")
+		# Up the side street to the back street, and no further than the barrier under the viaduct.
+		var corner := Transform3D(Basis(), Vector3(dir * (side - 3.6), 0.06, front - 2.0))
+		_check(not me.test_move(corner, Vector3(0, 0, TownStreets.BACK_Z - front + 2.0)), "the %s side street is free up to the back street" % name)
+		var under := Transform3D(Basis(), Vector3(dir * side, 0.06, TownStreets.VIADUCT_Z - 1.0))
+		_check(me.test_move(under, Vector3(0, 0, 4.0)), "under the viaduct a barrier stops people")
+		var pavement := Transform3D(Basis(), Vector3(dir * (TownStreets.GATE_X + TownStreets.GATE_W * 0.5 - 0.8), 0.06, TownStreets.VIADUCT_Z - 1.0))
+		_check(me.test_move(pavement, Vector3(0, 0, 4.0)), "on the pavement beside the road too")
+	# The back street, from one side street to the other (between the parked cars and the van).
+	var back := Transform3D(Basis(), Vector3(-side + 3.6, 0.06, 34.0))
+	_check(not me.test_move(back, Vector3(side * 2.0 - 7.2, 0, 0)), "the back street is free from end to end")
+	var arch := Transform3D(Basis(), Vector3(TownStreets.bay_x(4), 0.06, TownStreets.VIADUCT_Z - 1.2))
+	_check(me.test_move(arch, Vector3(0, 0, 3.0)), "the arches of the viaduct are shut")
+	for index in TownStreets.lockups():
+		var door := Transform3D(Basis(), Vector3(TownStreets.bay_x(index), 0.06, TownStreets.VIADUCT_Z - 1.2))
+		_check(me.test_move(door, Vector3(0, 0, 3.0)), "lock-up %d is shut" % index)
+	# Two ways through the row: the passage beside the dealer's and the alley beside the bank.
+	var passage := Transform3D(Basis(), Vector3(TownStreets.PASSAGE.y - 1.5, 0.06, front - 1.0))
+	_check(not me.test_move(passage, Vector3(0, 0, TownStreets.BACK_Z - front + 1.0)), "the passage beside the dealer's leads through to the back street")
+	var alley := Transform3D(Basis(), Vector3((TownStreets.ALLEY_EAST.x + TownStreets.ALLEY_EAST.y) * 0.5, 0.06, front - 1.0))
+	_check(not me.test_move(alley, Vector3(0, 0, TownStreets.BACK_Z - front + 1.0)), "the alley beside the bank too")
 	var gate := Transform3D(Basis(), Vector3(-26.62, 0.06, front - 1.0))
 	_check(me.test_move(gate, Vector3(0, 0, 3.0)), "the alley beside the hardware store is shut by its gate")
-	var wall := Transform3D(Basis(), Vector3(27.8, 0.06, front - 1.0))
-	_check(me.test_move(wall, Vector3(0, 0, 3.0)), "the alley beside the bank is walled up")
+	var yard := Transform3D(Basis(), Vector3(10.0, 0.06, front + 4.0))
+	_check(me.test_move(yard, Vector3(0, 0, 4.0)), "elsewhere the yard wall behind the row is solid")
 	await _frames(1)
 
 

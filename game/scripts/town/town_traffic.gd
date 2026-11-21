@@ -1,8 +1,9 @@
 class_name TownTraffic
 extends Node3D
-## Cars that drive through the quarter. The street is one-way, west to east: they come round the
-## corner of the side street behind the far block, drive down the street in the lane the scrap
-## truck uses, and leave round the corner at the other end. They keep their distance from each
+## Cars that drive through the quarter. The street is one-way, west to east: they come along the
+## cross road beyond the viaduct, turn into the western side street and under the viaduct, drive
+## down the street in the lane the scrap truck uses, and leave up the eastern side street, under
+## the viaduct and away along the cross road. They keep their distance from each
 ## other and stop for people (players, the people on the pavement, the officer on the beat) and
 ## for the scrap truck. The boom gates lift for them, and their wheels turn with the way they go.
 ## The host drives them and tells the others a few times a second where each one is; in between
@@ -72,8 +73,10 @@ var frozen := false
 
 var _points := PackedVector3Array()
 var _along := PackedFloat32Array()
-## Where the two corners begin and end along the path (m).
+## Where the four corners begin and end along the path (m), and the stretch down the street between
+## the second and the third.
 var _corners: Array[Vector2] = []
+var _cruise := Vector2.ZERO
 var _total := 0.0
 var _cars: Array[Car] = []
 var _next_id := 1
@@ -94,26 +97,41 @@ func _ready() -> void:
 	add_to_group(GROUP)
 
 
-## The way the cars take: down the western side street from z = `side_end` to the street's lane at
-## z = `lane`, east along it from x = -`far` to x = `far`, and away down the eastern side street.
-func setup(lane: float, far: float, side_end: float) -> void:
+## The way the cars take: east along the cross road at z = `north` from `run` metres west of the
+## western side street (x = -`far`), round the corner and south down it to the street's lane at
+## z = `lane`, east along that to x = `far`, north up the eastern side street, round the corner and
+## away along the cross road for `run` metres.
+func setup(lane: float, far: float, north: float, run: float) -> void:
 	var r := CORNER_RADIUS
-	var points: Array[Vector3] = [Vector3(-far, 0, side_end), Vector3(-far, 0, lane + r)]
-	for i in range(1, 9):
-		var a := PI + PI * 0.5 * i / 8.0
-		points.append(Vector3(-far + r + r * cos(a), 0, lane + r + r * sin(a)))
-	points.append(Vector3(far - r, 0, lane))
-	for i in range(1, 9):
-		var a := -PI * 0.5 + PI * 0.5 * i / 8.0
-		points.append(Vector3(far - r + r * cos(a), 0, lane + r + r * sin(a)))
-	points.append(Vector3(far, 0, side_end))
+	# Each corner is a quarter circle: its middle, and the angles it runs from and to.
+	var turns := [
+		[Vector3(-far - r, 0, north - r), PI * 0.5, 0.0],
+		[Vector3(-far + r, 0, lane + r), PI, PI * 1.5],
+		[Vector3(far - r, 0, lane + r), -PI * 0.5, 0.0],
+		[Vector3(far + r, 0, north - r), PI, PI * 0.5],
+	]
+	var points: Array[Vector3] = [Vector3(-far - run, 0, north)]
+	var marks: Array[Vector2i] = []
+	for turn: Array in turns:
+		var mid: Vector3 = turn[0]
+		var from: float = turn[1]
+		var to: float = turn[2]
+		var first := points.size()
+		for i in 9:
+			var a := lerpf(from, to, i / 8.0)
+			points.append(mid + Vector3(r * cos(a), 0, r * sin(a)))
+		marks.append(Vector2i(first, points.size() - 1))
+	points.append(Vector3(far + run, 0, north))
 	_points = PackedVector3Array(points)
 	_along.resize(points.size())
 	_along[0] = 0.0
 	for i in range(1, points.size()):
 		_along[i] = _along[i - 1] + points[i - 1].distance_to(points[i])
 	_total = _along[points.size() - 1]
-	_corners = [Vector2(_along[1], _along[9]), Vector2(_along[10], _along[18])]
+	_corners.clear()
+	for mark in marks:
+		_corners.append(Vector2(_along[mark.x], _along[mark.y]))
+	_cruise = Vector2(_corners[1].y, _corners[2].x)
 
 
 ## How many cars are on their way.
@@ -252,11 +270,10 @@ func _show(car: Car, delta: float) -> void:
 
 
 func _limit(s: float) -> float:
-	if s < _corners[0].x or s > _corners[1].y:
-		return SIDE_STREET
-	if s < _corners[0].y or s > _corners[1].x:
-		return CORNER
-	return CRUISE
+	for corner in _corners:
+		if s >= corner.x and s <= corner.y:
+			return CORNER
+	return CRUISE if s > _cruise.x and s < _cruise.y else SIDE_STREET
 
 
 ## The place `s` metres along the path.

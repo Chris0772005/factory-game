@@ -47,7 +47,8 @@ const DINER_SIGN := Vector3(1.25, 0, -0.48)
 const DINER_GOODS := ["jug_01", "pot_enamel_01", "vintage_electric_kettle", "hamburger_buns", "carrot_cake", "brass_pan_01@90", "croissant"]
 const POLICE_FILES := ["book_encyclopedia_set_01", "cardboard_box_01@90", "clipboard@90", "book_encyclopedia_set_01", "metal_toolbox",
 	"cardboard_box_01@90", "book_encyclopedia_set_01"]
-## Where the street is closed off, left and right: just before the two junctions.
+## Where the row of houses ends, left and right: just before the two junctions. (Until U14 the
+## street was closed off here; now it runs on into the side streets, see TownStreets.)
 const TOWN_X := 39.0
 ## The two shops at the ends of the row (TownShops): the hardware store in the west, the bank in the
 ## east, eleven metres of front each.
@@ -56,11 +57,10 @@ const BANK := Vector3(34.5, 0, FRONT_Z)
 const SHOP_W := 11.0
 ## The crew's stall on the apron (YardStall), east of the zebra crossing.
 const STALL := Vector3(9.8, 0, 9.5)
-## Beyond the barriers the street meets a side street at each end (their middle, and how far they
-## run): the cars of the town come up the western one, drive down the street and leave by the
-## eastern one (TownTraffic), in the lane at TRAFFIC_LANE_Z, between the near kerb and the parked cars.
+## At each end the street meets a side street (their middle): the cars of the town come down the
+## western one from under the viaduct, drive down the street in the lane at TRAFFIC_LANE_Z (between
+## the near kerb and the parked cars) and leave by the eastern one (TownTraffic, TownStreets).
 const SIDE_X := 44.5
-const SIDE_END := 47.0
 const TRAFFIC_LANE_Z := 12.9
 ## The pavement the patrol walks, and how far along the street.
 const BEAT_Z := 18.6
@@ -82,8 +82,8 @@ static func build_hall(world: Node3D, level_stations: Array) -> ScrapHallSet:
 	set.height = 8.5
 	set.window = Vector4(-9.0, 9.0, 4.4, 7.4)
 	set.bay_line_x = -100.0
-	set.ground_size = Vector2(130.0, 80.0)
-	set.ground_z = 8.0
+	set.ground_size = Vector2(134.0, 100.0)
+	set.ground_z = 18.0
 	set.floor_params = {concrete = Color("#84807a"), concrete_dark = Color("#5a5650"), paver = Color("#77726a")}
 	world.add_child(set)
 	set._build()
@@ -194,27 +194,8 @@ func _outside() -> void:
 	var road_z := zf + APRON + ROAD * 0.5
 	var shop_z := zf + SHOP_Z
 	if EnvMesh.visual():
-		var asphalt := EnvMesh.scan("street_asphalt", "asphalt_02", {drift = 0.22, tint = Vector3(0.7, 0.7, 0.72)})
-		# The street runs on to the side streets at both ends, which lead away behind the far blocks.
-		var roads := [EnvMesh.piece(EnvMesh.box(Vector3(SIDE_X * 2.0 + ROAD, 0.04, ROAD), 0.0), Transform3D(Basis(), Vector3(0, 0.0, road_z)))]
-		var side_from := road_z + ROAD * 0.5
-		var side_to := ground_z + ground_size.y * 0.5
-		for s: float in [-1.0, 1.0]:
-			roads.append(EnvMesh.piece(EnvMesh.box(Vector3(ROAD, 0.04, side_to - side_from), 0.0), Transform3D(Basis(), Vector3(s * SIDE_X, 0.0, (side_from + side_to) * 0.5))))
-		EnvMesh.add(self, EnvMesh.merge(roads), asphalt, Transform3D(), false)
-		var paint := EnvMesh.surface("street_paint", {base_color = Color("#d9d4c4"), roughness_base = 0.8})
-		var marks := []
-		for i in 20:
-			marks.append(EnvMesh.piece(EnvMesh.box(Vector3(1.6, 0.012, 0.14)), Transform3D(Basis(), Vector3(-38.0 + i * 4.0, 0.025, road_z))))
-		# Zebra crossing from the hall door to the shop.
-		for i in 7:
-			marks.append(EnvMesh.piece(EnvMesh.box(Vector3(0.5, 0.012, ROAD - 0.6)), Transform3D(Basis(), Vector3(0.2 + i * 0.95, 0.026, road_z))))
-		EnvMesh.add(self, EnvMesh.merge(marks), paint, Transform3D(), false)
-		var kerb := EnvMesh.scan("street_kerb", "dirty_concrete", {tile = 1.6, tint = Vector3(0.85, 0.85, 0.85)})
-		var kerbs := []
-		for z: float in [road_z - ROAD * 0.5 - 0.1, road_z + ROAD * 0.5 + 0.1]:
-			kerbs.append(EnvMesh.piece(EnvMesh.box(Vector3(SIDE_X * 2.0 - ROAD, 0.12, 0.2)), Transform3D(Basis(), Vector3(0, 0.06, z))))
-		EnvMesh.add(self, EnvMesh.merge(kerbs), kerb)
+		# Asphalt, kerbs and paint of the street, the side streets and the back street.
+		TownStreets.surfaces(self, road_z)
 		_paving(zf)
 		_shop(Vector3(3.0, 0, shop_z))
 	prop("kaykit_city/streetlight.gltf", Vector3(-4.5, 0, zf + APRON - 0.6), 0.0, {scale = 1.0, solid = PropKit.Solid.CYLINDER})
@@ -233,16 +214,24 @@ func _outside() -> void:
 	TownBlock.block(self, Vector3(20.0, 0, -22.0), 12.0, 8.0, {key = "far_d", scan = "red_brick_03", storeys = 4})
 	TownBlock.block(self, Vector3(-24.5, 0, -4.0), 9.0, 9.0, {key = "far_e", plaster = Color("#b9b2a2"), storeys = 3})
 	TownBlock.block(self, Vector3(25.0, 0, -4.0), 9.0, 9.0, {key = "far_f", scan = "red_brick", storeys = 3})
-	# Round the two junctions: a house across each end of the street, one on the corner this side of
-	# it and one down the side street, so that no view runs out into nothing.
-	var beyond := SIDE_X + ROAD * 0.5 + 2.4
-	TownBlock.block(self, Vector3(-(beyond + 6.5), 0, zf - 3.0), 13.0, 17.0, {key = "end_a", scan = "yellow_plaster", storeys = 4})
-	TownBlock.block(self, Vector3(beyond + 6.5, 0, zf - 3.0), 13.0, 17.0, {key = "end_b", scan = "red_brick_03", storeys = 3})
-	TownBlock.block(self, Vector3(-(beyond + 6.5), 0, FRONT_Z + 4.0), 13.0, 14.0, {key = "end_c", scan = "red_brick", storeys = 3})
-	TownBlock.block(self, Vector3(beyond + 6.5, 0, FRONT_Z + 4.0), 13.0, 14.0, {key = "end_d", plaster = Color("#b9b2a2"), storeys = 4})
-	# (These two stand back from the yard walls that run along the street in front of them.)
+	# The far side of the two side streets: a row of houses from across the end of the street up to
+	# the viaduct, wall to wall, so that no view runs out into nothing. People walk past them now:
+	# they are solid.
+	var beyond := TownStreets.FAR_X + 6.5
+	var from_z := zf - 3.0
+	var mid_z := FRONT_Z - 2.6
+	var last_z := TownStreets.BACK_KERB_S - 0.9
+	TownBlock.block(self, Vector3(-beyond, 0, from_z), 13.0, mid_z - from_z, {key = "end_a", scan = "yellow_plaster", storeys = 4, solid = true})
+	TownBlock.block(self, Vector3(beyond, 0, from_z), 13.0, mid_z - from_z, {key = "end_b", scan = "red_brick_03", storeys = 3, solid = true})
+	TownBlock.block(self, Vector3(-beyond, 0, mid_z), 13.0, last_z - mid_z, {key = "end_c", scan = "red_brick", storeys = 3, solid = true})
+	TownBlock.block(self, Vector3(beyond, 0, mid_z), 13.0, last_z - mid_z, {key = "end_d", plaster = Color("#b9b2a2"), storeys = 4, solid = true})
+	TownBlock.block(self, Vector3(-beyond, 0, last_z), 13.0, TownStreets.VIADUCT_Z - last_z, {key = "end_g", scan = "painted_worn_brick", storeys = 3, solid = true})
+	TownBlock.block(self, Vector3(beyond, 0, last_z), 13.0, TownStreets.VIADUCT_Z - last_z, {key = "end_h", scan = "yellow_plaster", storeys = 3, solid = true})
+	# (These stand back from the yard walls that run along the street in front of them.)
 	TownBlock.block(self, Vector3(-35.4, 0, zf - 17.2), 12.4, 12.0, {key = "end_e", scan = "painted_worn_brick", storeys = 3})
 	TownBlock.block(self, Vector3(35.4, 0, zf - 17.2), 12.4, 12.0, {key = "end_f", scan = "yellow_plaster", storeys = 3})
+	TownBlock.block(self, Vector3(-45.7, 0, zf - 14.0), 7.6, 10.0, {key = "end_i", scan = "red_brick_03", storeys = 4})
+	TownBlock.block(self, Vector3(45.7, 0, zf - 14.0), 7.6, 10.0, {key = "end_j", scan = "painted_worn_brick", storeys = 4})
 
 
 ## Photographed paving over the plain ground outside: pavers on the apron, slabs on the pavement across
@@ -295,10 +284,17 @@ func _town() -> void:
 	# The yard wall behind the row and the walls beside the hall.
 	var brick := EnvMesh.scan("town_yardwall", "red_brick_03", {foot = 0.6, drift = 0.22})
 	var caps := []
-	var runs := [[Vector3(0, 1.5, back_z + 0.15), Vector3(TOWN_X * 2.0, 3.0, 0.3)]]
+	# (Behind the row it leaves two ways through to the back street: the passage beside the dealer's
+	# and the alley beside the bank.)
+	var runs := []
+	var row_end := BANK.x + SHOP_W * 0.5
+	for part: Array in [[-row_end, TownStreets.PASSAGE.x], [TownStreets.PASSAGE.y, TownStreets.ALLEY_EAST.x], [TownStreets.ALLEY_EAST.y, row_end]]:
+		var x0: float = part[0]
+		var x1: float = part[1]
+		runs.append([Vector3((x0 + x1) * 0.5, 1.5, back_z + 0.15), Vector3(x1 - x0, 3.0, 0.3)])
 	for s: float in [-1.0, 1.0]:
 		var from := inner_max.x + WALL
-		runs.append([Vector3(s * (from + TOWN_X) * 0.5, 1.2, zf - 0.15), Vector3(TOWN_X - from, 2.4, 0.3)])
+		runs.append([Vector3(s * (from + TownStreets.FAR_X) * 0.5, 1.2, zf - 0.15), Vector3(TownStreets.FAR_X - from, 2.4, 0.3)])
 	var walls := []
 	for r: Array in runs:
 		WorldBuilder.add_collider(self, r[1], Transform3D(Basis(), r[0]))
@@ -308,17 +304,9 @@ func _town() -> void:
 	if EnvMesh.visual():
 		EnvMesh.add(self, EnvMesh.merge(walls), brick)
 		EnvMesh.add(self, EnvMesh.merge(caps), EnvMesh.scan("town_coping", "dirty_concrete", {tile = 1.6, tint = Vector3(0.8, 0.8, 0.8)}))
-	# Barriers on the pavements, a boom across the road: it lifts for the truck.
-	var road_from := zf + APRON
-	for s: float in [-1.0, 1.0]:
-		# (From the yard wall to the front of the shop at the end of the row.)
-		WorldBuilder.add_collider(self, Vector3(0.4, 2.4, FRONT_Z - zf), Transform3D(Basis(), Vector3(s * TOWN_X, 1.2, (zf + FRONT_Z) * 0.5)))
-		TownBlock.barrier(self, Vector3(s * TOWN_X, 0, (zf + road_from) * 0.5), road_from - zf - 0.3)
-		TownBlock.barrier(self, Vector3(s * TOWN_X, 0, (road_from + ROAD + FRONT_Z) * 0.5), FRONT_Z - road_from - ROAD - 0.3, "ROAD CLOSED")
-		var gate := BoomGate.new()
-		gate.length = ROAD
-		gate.position = Vector3(s * TOWN_X, 0, road_from + ROAD * 0.5)
-		add_child(gate)
+	# The railway viaduct that closes the quarter to the north, with the barriers under its street arches.
+	TownStreets.viaduct(self)
+	TownStreets.dressing(self, zf)
 	_street_dressing(zf)
 	# The station's desk against the back wall, a chair pushed up to it.
 	var desk := POLICE + Vector3(-2.9, 0, HOUSE_D - TownBlock.WALL - 0.52)
@@ -544,8 +532,6 @@ func _street_dressing(zf: float) -> void:
 	WorldBuilder.add_collider(self, Vector3(alley_w.y - alley_w.x, 2.9, 0.2), Transform3D(Basis(), Vector3((alley_w.x + alley_w.y) * 0.5, 1.45, FRONT_Z + 0.5)))
 	PhotoProp.mount(self, "large_iron_gate", Vector3((alley_w.x + alley_w.y) * 0.5, 0, FRONT_Z + 0.55), Vector3.FORWARD, Vector2(alley_w.y - alley_w.x, 2.7))
 	TownBlock.dumpster(self, Vector3(alley_w.x + 1.2, 0, FRONT_Z + 3.4), 90.0)
-	var alley_e := Vector2(26.6, BANK.x - SHOP_W * 0.5)
-	WorldBuilder.add_collider(self, Vector3(alley_e.y - alley_e.x, 2.6, 0.3), Transform3D(Basis(), Vector3((alley_e.x + alley_e.y) * 0.5, 1.3, FRONT_Z + 0.4)))
 	PhotoProp.place(self, "painted_wooden_bench", Vector3(BANK.x - 3.45, 0, FRONT_Z - 0.4), 180.0)
 	PhotoProp.place(self, "metal_trash_can", Vector3(alley_w.x + 0.85, 0, FRONT_Z - 0.55), 180.0)
 	PhotoProp.place(self, "hand_truck", Vector3(HARDWARE.x + 3.8, 0, FRONT_Z - 0.5), 185.0)
@@ -568,9 +554,6 @@ func _street_dressing(zf: float) -> void:
 	PhotoProp.place(self, "plastic_crate_02", Vector3(14.75, 0, zf + 0.42), 8.0, false)
 	PhotoProp.stand(self, "oil_tin", Vector3(14.62, 0.03, zf + 0.42), 60.0)
 	PhotoProp.stand(self, "small_oil_can_01", Vector3(14.85, 0.03, zf + 0.42), 100.0)
-	for s: float in [-1.0, 1.0]:
-		PhotoProp.place(self, "concrete_road_barrier", Vector3(s * (TOWN_X + 0.9), 0, zf + 1.5), 90.0, false)
-		PhotoProp.place(self, "concrete_road_barrier", Vector3(s * (TOWN_X + 0.9), 0, FRONT_Z - 2.0), 90.0, false)
 	PhotoProp.place(self, "trashbag", Vector3(-5.2, 0, FRONT_Z - 0.4), 40.0, false)
 	PhotoProp.place(self, "trashbag", Vector3(-15.7, 0, FRONT_Z - 0.4), 200.0, false)
 	PhotoProp.place(self, "trashbag", Vector3(-15.25, 0, FRONT_Z - 0.55), 75.0, false)
@@ -578,11 +561,7 @@ func _street_dressing(zf: float) -> void:
 	PhotoProp.place(self, "water_manhole_cover", Vector3(11.0, 0.021, road_z - 1.1), 30.0, false)
 	PhotoProp.place(self, "water_manhole_cover", Vector3(-30.5, 0.021, road_z + 1.0), 70.0, false)
 	PhotoProp.place(self, "water_manhole_cover", Vector3(32.0, 0.021, road_z - 0.9), 10.0, false)
-	# The wall that shuts the alley beside the bank, and what stands on the pavement of the new stretches.
-	var alley_wall := EnvMesh.scan("town_yardwall", "red_brick_03", {foot = 0.6, drift = 0.22})
-	EnvMesh.add(self, EnvMesh.box(Vector3(alley_e.y - alley_e.x, 2.6, 0.3)), alley_wall, Transform3D(Basis(), Vector3((alley_e.x + alley_e.y) * 0.5, 1.3, FRONT_Z + 0.4)))
-	EnvMesh.add(self, EnvMesh.box(Vector3(alley_e.y - alley_e.x + 0.06, 0.07, 0.4)), EnvMesh.scan("town_coping", "dirty_concrete", {tile = 1.6, tint = Vector3(0.8, 0.8, 0.8)}),
-		Transform3D(Basis(), Vector3((alley_e.x + alley_e.y) * 0.5, 2.635, FRONT_Z + 0.4)))
+	# What stands on the pavement of the stretches towards the junctions.
 	PhotoProp.place(self, "trashbag", Vector3(alley_w.x + 0.5, 0, FRONT_Z + 1.4), 120.0, false)
 	PhotoProp.place(self, "wooden_crate_02", Vector3(alley_w.y - 0.5, 0, FRONT_Z + 2.4), 95.0, false)
 	PhotoProp.stand(self, "cement_bag", Vector3(HARDWARE.x + 2.97, 0.18, FRONT_Z - 0.52), 82.0)

@@ -186,16 +186,19 @@ static func stone() -> ShaderMaterial:
 
 ## A house of the town beyond: storeys of brick or render with rows of windows on every side, a door,
 ## a plinth, a string course and a flat roof behind a parapet. Seen from the street and over the yard
-## walls only: there is no way in and nothing solid. `base` is the middle of the front at ground level.
-## opts: key, scan / tone / plaster (see wall_material), storeys (3).
+## walls only: there is no way in. `base` is the middle of the front at ground level.
+## opts: key, scan / tone / plaster (see wall_material), storeys (3), solid (true where people can
+## walk up to it: it stops them).
 static func block(set: Node3D, base: Vector3, w: float, d: float, opts := {}) -> void:
-	if not EnvMesh.visual():
-		return
-	var key: String = opts.get("key", "block")
 	var storeys: int = opts.get("storeys", 3)
 	var foot := 0.6
 	var floor_h := 3.0
 	var h := foot + storeys * floor_h
+	if opts.get("solid", false):
+		WorldBuilder.add_collider(set, Vector3(w, h, d), Transform3D(Basis(), base + Vector3(0, h * 0.5, d * 0.5)))
+	if not EnvMesh.visual():
+		return
+	var key: String = opts.get("key", "block")
 	var walls := [EnvMesh.piece(EnvMesh.box(Vector3(w, h, d)), Transform3D(Basis(), base + Vector3(0, h * 0.5, d * 0.5)))]
 	_crown(set, base, w, d, h, walls)
 	EnvMesh.add(set, EnvMesh.merge(walls), wall_material(key, opts))

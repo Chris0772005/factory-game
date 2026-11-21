@@ -34,9 +34,13 @@ const EYE := Vector3(0, 1.55, 0)
 const UNIFORM := {"Swat": Color("#1f3160"), "Swat_Black": Color("#14161c")}
 
 var route: Array[Vector3] = []
-## He stays on the street side of this line: the houses are out of his way for
-## now (no path finding through doors yet).
+## The houses are out of his way for now (no path finding through doors yet): he stays on the
+## street side of `max_z`, and a goal inside `keep_out` (a block of houses on the ground: x and z)
+## is moved to that block's edge on his side, unless it lies in one of the `ways` through it (x
+## from, x to). So he follows round the block and through the passages, but not indoors.
 var max_z := INF
+var keep_out := Rect2()
+var ways: Array[Vector2] = []
 var state := State.PATROL
 ## Peer id of the player the officer is suspicious of (0 = nobody) and how much.
 var watching := 0
@@ -329,7 +333,8 @@ func _patrol(delta: float) -> void:
 
 ## Steers towards `goal`; true when there.
 func _walk_to(goal: Vector3, speed: float, delta: float) -> bool:
-	var to := Vector3(goal.x - global_position.x, 0, minf(goal.z, max_z) - global_position.z)
+	var aim := _reachable(goal)
+	var to := Vector3(aim.x - global_position.x, 0, minf(aim.z, max_z) - global_position.z)
 	if to.length() < 0.35:
 		_stop()
 		return true
@@ -338,6 +343,17 @@ func _walk_to(goal: Vector3, speed: float, delta: float) -> bool:
 	velocity.z = dir.z * speed
 	_face(dir, delta, 9.0)
 	return false
+
+
+## `goal`, or the nearest place to it he goes to: not into the houses of `keep_out`.
+func _reachable(goal: Vector3) -> Vector3:
+	if not keep_out.has_area() or not keep_out.has_point(Vector2(goal.x, goal.z)):
+		return goal
+	for way in ways:
+		if goal.x > way.x and goal.x < way.y:
+			return goal
+	var south := global_position.z < keep_out.get_center().y
+	return Vector3(goal.x, goal.y, keep_out.position.y if south else keep_out.end.y)
 
 
 func _stop() -> void:

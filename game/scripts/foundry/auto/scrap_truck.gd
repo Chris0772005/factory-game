@@ -23,9 +23,11 @@ var lane_z := 0.0
 var far_x := 42.0
 ## Where the street meets the side streets (their middle) and how far those run: the truck leaves
 ## round the eastern corner and comes back round the western one. 0: it leaves and comes back
-## straight along the street, at `far_x`.
+## straight along the street, at `far_x`. With `turn_run` the side streets end in a cross road at
+## `turn_z` (beyond the viaduct): the truck turns into it and drives on that far, out of sight.
 var turn_x := 0.0
 var turn_z := 0.0
+var turn_run := 0.0
 var skip: ScrapSkip
 ## Trip clock in seconds, < 0 = parked.
 var trip := -1.0
@@ -71,15 +73,35 @@ func busy() -> bool:
 
 func _out_path() -> Array[Vector3]:
 	if turn_x > 0.0:
-		return [dock, Vector3(dock.x + 6.5, 0, lane_z), Vector3(turn_x - 6.0, 0, lane_z), Vector3(turn_x - 1.8, 0, lane_z + 1.8),
-			Vector3(turn_x, 0, lane_z + 6.0), Vector3(turn_x, 0, turn_z)]
+		var out: Array[Vector3] = [dock, Vector3(dock.x + 6.5, 0, lane_z), Vector3(turn_x - 6.0, 0, lane_z), Vector3(turn_x - 1.8, 0, lane_z + 1.8),
+			Vector3(turn_x, 0, lane_z + 6.0)]
+		if turn_run > 0.0:
+			out.append(Vector3(turn_x, 0, turn_z - 6.0))
+			out.append(Vector3(turn_x + 1.8, 0, turn_z - 1.8))
+			out.append(Vector3(turn_x + 6.0, 0, turn_z))
+			out.append(Vector3(turn_x + turn_run, 0, turn_z))
+		else:
+			out.append(Vector3(turn_x, 0, turn_z))
+		return out
 	return [dock, Vector3(dock.x + 6.5, 0, lane_z), Vector3(far_x, 0, lane_z)]
 
 
 func _back_path() -> Array[Vector3]:
 	if turn_x > 0.0:
-		return [Vector3(-turn_x, 0, turn_z), Vector3(-turn_x, 0, lane_z + 6.0), Vector3(-turn_x + 1.8, 0, lane_z + 1.8),
-			Vector3(-turn_x + 6.0, 0, lane_z), Vector3(park.x - 7.0, 0, lane_z), park]
+		var back: Array[Vector3] = []
+		if turn_run > 0.0:
+			back.append(Vector3(-turn_x - turn_run, 0, turn_z))
+			back.append(Vector3(-turn_x - 6.0, 0, turn_z))
+			back.append(Vector3(-turn_x - 1.8, 0, turn_z - 1.8))
+			back.append(Vector3(-turn_x, 0, turn_z - 6.0))
+		else:
+			back.append(Vector3(-turn_x, 0, turn_z))
+		back.append(Vector3(-turn_x, 0, lane_z + 6.0))
+		back.append(Vector3(-turn_x + 1.8, 0, lane_z + 1.8))
+		back.append(Vector3(-turn_x + 6.0, 0, lane_z))
+		back.append(Vector3(park.x - 7.0, 0, lane_z))
+		back.append(park)
+		return back
 	return [Vector3(-far_x, 0, lane_z), Vector3(park.x - 7.0, 0, lane_z), park]
 
 
