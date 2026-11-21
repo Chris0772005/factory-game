@@ -56,8 +56,8 @@ offline test_sandbox 120 "ok |FAIL|TESTS|SCRIPT ERROR"
 echo "== Factory simulation =="
 offline test_factory 150 "ok |FAIL|TESTS|stress|SCRIPT ERROR"
 
-echo "== Drawing, FX, foundry round, garage, bells, Eisenhalle, scrap hall, quarter, crew, traffic, diner =="
-for t in test_drawing test_fx test_foundry test_garage test_bells test_iron_hall test_search test_scrap test_scrap_hall test_town test_missions test_auto test_autofoundry test_autoiron test_crew test_traffic test_diner; do
+echo "== Drawing, FX, foundry round, garage, bells, Eisenhalle, scrap hall, quarter, crew, traffic, diner, shops =="
+for t in test_drawing test_fx test_foundry test_garage test_bells test_iron_hall test_search test_scrap test_scrap_hall test_town test_missions test_auto test_autofoundry test_autoiron test_crew test_traffic test_diner test_shops; do
   offline $t 300 "FAIL|TESTS|SCRIPT ERROR"
 done
 
@@ -77,4 +77,6 @@ echo "== Network Suchauftrag (host hides, client finds first) =="
 pair test_net_search 90 80 3 "NET SEARCH" --no-save
 echo "== Network quarter (client orders at the diner, sees the host's traffic) =="
 pair test_net_town 150 140 3 "NET TOWN" --no-save
+echo "== Network shops (client buys a tool and takes a loan, sees the host's sale at the stall) =="
+pair test_net_shops 150 140 3 "NET SHOPS" --no-save
 exit $fail

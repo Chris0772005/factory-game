@@ -19,6 +19,11 @@ var attract_mode := false
 var hud: HUD
 ## Upgrades node of the current save (set by levels that have progression).
 var upgrades: Node = null
+## The crew's loan at the bank (set by levels that have progression).
+var bank: BankLoan = null
+## What the bank kept of the sum `add_money` is booking right now (0 otherwise). Who counts earnings
+## from the change of `money` adds it back: the crew earned it, even if a quarter went to the bank.
+var bank_share := 0
 ## type -> Callable(data: Dictionary) -> Node, for level-specific networked entities.
 var entity_factories := {}
 var _next_item_id := 0
@@ -71,8 +76,11 @@ func create_factory() -> FactoryGrid:
 func add_money(amount: int) -> void:
 	if not Network.is_sim_authority():
 		return
-	money += amount
+	# While the crew owes the bank, a share of whatever comes in goes straight there.
+	bank_share = bank.take_share(amount) if amount > 0 and bank != null else 0
+	money += amount - bank_share
 	money_changed.emit(money)
+	bank_share = 0
 	if Network.is_online():
 		_sync_money.rpc(money)
 
@@ -108,6 +116,8 @@ func _on_peer_ready(id: int, level: String) -> void:
 		return
 	if not entities.has_node(str(id)):
 		spawn_player(id)
+	# The crew's money as it stands (after that it comes with every change).
+	_sync_money.rpc_id(id, money)
 	physics_sync.send_snapshot.call_deferred(id)
 
 

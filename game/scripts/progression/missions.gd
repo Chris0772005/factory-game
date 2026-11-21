@@ -23,6 +23,7 @@ const TRACKS := [
 		{stat = &"earned", goal = 100, reward = 25, text = "Geld verdienen ($)"},
 		{stat = &"upgrade", goal = 1, reward = 30, text = "Ausbau kaufen"},
 		{stat = &"diner", goal = 1, reward = 15, text = "Bei Molly stärken (Diner)"},
+		{stat = &"stall_sold", goal = 3, reward = 40, text = "Am Verkaufstisch verkaufen"},
 		{stat = &"digger_grab", goal = 30, reward = 80, text = "Bagger: Schaufeln laden", needs = &"excavator"},
 		{stat = &"earned", goal = 400, reward = 60, text = "Geld verdienen ($)"},
 		{stat = &"truck_load", goal = 3, reward = 120, text = "LKW: Ladungen wegfahren", needs = &"truck"},
@@ -35,6 +36,10 @@ const TRACKS := [
 		{stat = &"hot_sold", goal = 4, reward = 90, text = "Heiße Ware verkaufen"},
 	]},
 ]
+
+## Missions slotted into a track's list after save files were written: [track, place in the list,
+## length of the list before]. A save from before keeps its mission and its round (see `_moved`).
+const ADDED := [[1, 3, 6]]
 
 signal changed
 
@@ -76,8 +81,9 @@ func _ready() -> void:
 var _last_money := 0
 
 
-func _on_money(amount: int, _world: GameWorld) -> void:
-	var gain := amount - _last_money
+func _on_money(amount: int, world: GameWorld) -> void:
+	# Earned is what came in, also the quarter the bank kept of it.
+	var gain := amount - _last_money + world.bank_share
 	_last_money = amount
 	# Mission rewards themselves do not count as earnings.
 	if gain > 0 and not _paying and Network.is_sim_authority():
@@ -120,6 +126,14 @@ func current(t: int) -> Dictionary:
 		goal = 1 + r / 2
 	var reward := roundi(int(m.reward) * (1.0 + 0.5 * r) / 5.0) * 5
 	return {text = String(m.text), goal = goal, reward = reward, progress = mini(progress[t], goal), stat = m.stat}
+
+
+## Money that comes in without being earned (a loan paid out): `give` hands it over and no mission
+## counts it as earnings.
+func unearned(give: Callable) -> void:
+	_paying = true
+	give.call()
+	_paying = false
 
 
 func note(stat: StringName, amount := 1) -> void:
@@ -185,7 +199,8 @@ func _sync(d: PackedInt32Array, p: PackedInt32Array, n: int) -> void:
 
 
 func to_save() -> Dictionary:
-	return {done = done.duplicate(), progress = progress.duplicate(), total = total}
+	return {done = done.duplicate(), progress = progress.duplicate(), total = total,
+		sizes = TRACKS.map(func(track: Dictionary) -> int: return (track.list as Array).size())}
 
 
 func load_save(v: Variant) -> void:
@@ -193,8 +208,23 @@ func load_save(v: Variant) -> void:
 		return
 	var d: Array = v.get("done", [])
 	var p: Array = v.get("progress", [])
+	var sizes: Array = v.get("sizes", [])
 	for t in done.size():
-		done[t] = int(d[t]) if t < d.size() else 0
+		# Saves from before the lengths were written down have the first lengths.
+		var size := int(sizes[t]) if t < sizes.size() else (TRACKS[t].list as Array).size() - ADDED.filter(func(add: Array) -> bool: return int(add[0]) == t).size()
+		done[t] = _moved(t, maxi(0, int(d[t])) if t < d.size() else 0, size)
 		progress[t] = int(p[t]) if t < p.size() else 0
 	total = int(v.get("total", 0))
 	changed.emit()
+
+
+## `count` missions done in track `t`, counted when its list was `size` long, as a count in today's
+## list: the same mission in the same round, whatever was slotted in since.
+static func _moved(t: int, count: int, size: int) -> int:
+	for add: Array in ADDED:
+		if int(add[0]) != t or int(add[2]) != size or size <= 0:
+			continue
+		var at := count % size
+		count = count / size * (size + 1) + (at + 1 if at >= int(add[1]) else at)
+		size += 1
+	return count

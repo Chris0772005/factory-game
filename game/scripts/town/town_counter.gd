@@ -6,7 +6,8 @@ extends Node3D
 ## the police take notice; PoliceDesk pays the finder's reward and calms them.
 
 const GROUP := &"town_counters"
-const USE_RANGE := 3.0
+## As far as a player is offered the counter (Player.nearest_interactable), so [F] never falls flat.
+const USE_RANGE := 3.5
 const TOP := 1.05
 
 signal taken(pieces: int, pay: int)

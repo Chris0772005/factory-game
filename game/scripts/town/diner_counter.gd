@@ -4,7 +4,8 @@ extends Node3D
 ## [F] pays for it and the whole crew has it. Stands on the counter's customer side.
 
 const GROUP := &"diner_counters"
-const USE_RANGE := 2.6
+## As far as a player is offered the counter (Player.nearest_interactable), so [F] never falls flat.
+const USE_RANGE := 3.5
 
 ## What is ordered here: a key of CrewBoost.MENU.
 var kind := &"coffee"

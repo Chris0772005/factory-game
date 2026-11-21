@@ -200,6 +200,10 @@ const SCANS := {
 	"rough_wood": [0.5, Color(0.148, 0.124, 0.098)],
 	"sand_02": [2.1, Color(0.119, 0.093, 0.064)],
 	"clay_floor_001": [2.0, Color(0.195, 0.116, 0.047)],
+	"marble_01": [1.5, Color(0.443, 0.337, 0.194)],
+	"dark_paneled_wood": [1.4, Color(0.023, 0.008, 0.006)],
+	"wood_floor_worn": [2.0, Color(0.252, 0.099, 0.029)],
+	"quatrefoil_jacquard_fabric": [0.3, Color(0.291, 0.001, 0.014)],
 }
 ## The scans wood is made of (shaders/env_wood.gdshader): edge length used (m; old timber is laid on
 ## larger than life, or a long beam repeats every half metre), the mean of the roughness map and

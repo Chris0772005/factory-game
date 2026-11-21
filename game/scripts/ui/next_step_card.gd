@@ -101,7 +101,7 @@ static var target: Node3D
 
 ## The next thing to do, derived from what the stations are doing right now.
 ## Also sets `target` to the station it happens at, for the yellow marker.
-## Scrap hall: bucket, dealer across the street, saving up for the furnace.
+## Scrap hall: bucket, dealer across the street, saving up for the furnace, the hardware store for tools.
 static func _hall_step(w: GameWorld, goal: StringName, pile: ScrapPile, furnace: Furnace) -> String:
 	var tree := w.get_tree()
 	var bucket := tree.get_first_node_in_group(&"scrap_buckets") as ScrapBucket
@@ -110,15 +110,35 @@ static func _hall_step(w: GameWorld, goal: StringName, pile: ScrapPile, furnace:
 	if goal == &"dig":
 		target = pile
 		return "Am Schrottberg F halten. Der Eimer daneben fängt die Funde."
+	# The letters that ask for a hand tool: once the money is there, off to the hardware store.
+	var wanted: Array = {&"gloves": [&"gloves"], &"shovel": [&"shovel"], &"tools": [&"magnet", &"detector"]}.get(goal, [])
+	for id: StringName in wanted:
+		if w.has_upgrade(id):
+			continue
+		var tool: Dictionary = w.upgrades.info(id)
+		if w.money < int(tool.cost):
+			break
+		for node in tree.get_nodes_in_group(ToolOffer.GROUP):
+			if (node as ToolOffer).upgrade == id:
+				target = node as Node3D
+		return "%d $ sind da: %s im HARDWARE Store kaufen – aus der Halle rechts die Straße hinunter, hinter Molly's Diner." % [tool.cost, tool.name]
 	if goal == &"scrap_sold" or goal == &"foundry_corner":
 		if goal == &"foundry_corner" and w.money >= 150:
 			target = _of_class(tree, "UpgradeBoard")
 			return "150 $ sind da: Schmelzofen an der Werkstatt-Tafel kaufen."
+		# Something dear in the bucket (the host knows what is in it): the crew's stall pays more for it.
+		var stall := tree.get_first_node_in_group(YardStall.GROUP) as YardStall
+		if goal == &"foundry_corner" and bucket and stall and not stall.free_places().is_empty() \
+				and bucket.contents.any(func(k: StringName) -> bool: return YardStall.find_price(k) >= 20):
+			target = stall
+			return "Im Eimer liegt etwas Wertvolles: Am Verkaufstisch vor der Halle zahlen Kunden mehr als der Händler (Eimer hintragen, F)."
 		if bucket and (bucket.is_full() or (goal == &"scrap_sold" and count >= 3)):
 			target = shop
 			return "Eimer über die Straße zum Scrap Dealer tragen, dort F."
 		target = pile
 		if goal == &"foundry_corner":
+			if w.bank and w.bank.debt == 0:
+				return "Für den Schmelzofen sparen: 150 $ – oder bei der Bank leihen (aus der Halle links die Straße hinunter)."
 			return "Für den Schmelzofen sparen: 150 $."
 		return "Eimer am Schrottberg füllen."
 	if goal == &"melt" and furnace and bucket and furnace.charge.is_empty() and bucket._metal_count() > 0:
@@ -136,8 +156,11 @@ static func next_step(w: GameWorld) -> String:
 		if TownLaw.weapon_of(me.held) != &"":
 			return "Waffe zum Pawn Shop bringen. Streife meiden."
 		return "Heiße Ware: Pawn Shop zahlt viel, Police zahlt sicher. Streife meiden."
+	# What lies on the crew's stall is where it should be: the customers take it.
+	var table := tree.get_first_node_in_group(YardStall.GROUP) as YardStall
+	var laid_out: Array = table.goods() if table else []
 	for node in w.entities.get_children():
-		if (node is CastPiece and not (node as CastPiece).series) or node is BronzeStatue:
+		if ((node is CastPiece and not (node as CastPiece).series) or node is BronzeStatue) and node not in laid_out:
 			target = _of_class(tree, "SellCrate")
 			return "Trag den Guss in die Verkaufskiste – das bringt Geld."
 	var iron_step := _iron_step(tree)
@@ -153,7 +176,7 @@ static func next_step(w: GameWorld) -> String:
 	var crucible := tree.get_first_node_in_group(&"crucibles") as Crucible
 	var loose := 0
 	for node in w.entities.get_children():
-		if node is Item and FoundryRules.SCRAP.has((node as Item).kind):
+		if node is Item and FoundryRules.SCRAP.has((node as Item).kind) and node not in laid_out:
 			loose += 1
 	var charged := furnace != null and not furnace.charge.is_empty()
 	if w.is_scrap_hall():

@@ -67,6 +67,8 @@ func _ready() -> void:
 	col.add_child(foot)
 	var hint := Label.new()
 	hint.text = "ESC  Schließen"
+	if world.is_scrap_hall():
+		hint.text += "     ·     Handschuhe, Schaufel, Eimer, Magnet und Detektor verkauft der HARDWARE Store (aus der Halle rechts, hinter Molly's Diner)"
 	hint.theme_type_variation = &"Muted"
 	hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	foot.add_child(hint)
@@ -89,7 +91,8 @@ func _unhandled_input(event: InputEvent) -> void:
 ## This hall's upgrades first, then older ones still to buy, bought ones last.
 func _ordered() -> Array:
 	var tier := world.upgrade_tier()
-	var entries := Upgrades.catalog_for(tier, world.is_scrap_hall()).filter(func(u: Dictionary) -> bool: return upgrades.offered(u) or upgrades.has(u.id))
+	var entries := Upgrades.catalog_for(tier, world.is_scrap_hall()).filter(func(u: Dictionary) -> bool:
+		return upgrades.has(u.id) or (upgrades.offered(u) and not Upgrades.in_store(u, world)))
 	var rank := func(u: Dictionary) -> int:
 		return (2 if upgrades.has(u.id) else 0) + (0 if int(u.get("tier", 0)) == tier else 1)
 	var out := []

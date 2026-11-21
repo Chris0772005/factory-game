@@ -2,12 +2,14 @@ class_name Upgrades
 extends Node
 ## Purchasable upgrades. The host owns the truth; peers get the owned list.
 ## Effects are read by stations through `level(id)` / `has(id)`.
+## Entries marked `store` are hand tools: in the scrap hall they are not on the board but on the bench
+## of the hardware store down the street (ToolOffer); the other halls sell them at their boards.
 
 signal changed
 
 const CATALOG := [
 	# Scrap hall only: the first steps from bare hands to a foundry of one's own.
-	{id = &"bucket_big", name = "Großer Eimer", desc = "Fasst 30 statt 12 Teile.", cost = 60, tier = 0, hall = true},
+	{id = &"bucket_big", name = "Großer Eimer", desc = "Fasst 30 statt 12 Teile.", cost = 60, tier = 0, hall = true, store = true},
 	{id = &"workbench", name = "Werkbank im Hinterzimmer", desc = "Aus Altblech, Federn, Schrauben und Rohr werden Waffen für den Pawn Shop.", cost = 120, tier = 0, hall = true},
 	{id = &"excavator", name = "Bagger & Mulde", desc = "Lädt den Berg selbst in die Mulde. Kowalski holt sie für 80 % ab.", cost = 450, tier = 0, hall = true},
 	{id = &"truck", name = "Eigener LKW", desc = "Fährt volle Mulden selbst weg. Großhandel: +20 %.", cost = 600, tier = 0, hall = true, needs = &"excavator"},
@@ -16,10 +18,10 @@ const CATALOG := [
 	{id = &"bellows_foot", name = "Fußblasebalg", desc = "Jeder Tritt bringt 50 % mehr Hitze.", cost = 120, tier = 0},
 	{id = &"crucible_big", name = "Großer Tiegel", desc = "Fasst 5 statt 3 Liter.", cost = 180, tier = 0},
 	{id = &"mold_slot", name = "Dritte Kavität", desc = "Jeder Formkasten nimmt ein Modell mehr.", cost = 220, tier = 0},
-	{id = &"gloves", name = "Lederhandschuhe", desc = "25 % mehr Kraft beim Tragen, 30 % schneller im Schrott wühlen.", cost = 90, tier = 0},
-	{id = &"shovel", name = "Schaufel", desc = "Doppelt so schnell durch den Schrottberg.", cost = 150, tier = 0},
-	{id = &"magnet", name = "Magnet am Seil", desc = "Jeder Griff in den Schrott holt zwei Teile heraus.", cost = 240, tier = 0},
-	{id = &"detector", name = "Metalldetektor", desc = "Piept bei Wertvollem: seltene Funde gut doppelt so oft.", cost = 420, tier = 0},
+	{id = &"gloves", name = "Lederhandschuhe", desc = "25 % mehr Kraft beim Tragen, 30 % schneller im Schrott wühlen.", cost = 90, tier = 0, store = true},
+	{id = &"shovel", name = "Schaufel", desc = "Doppelt so schnell durch den Schrottberg.", cost = 150, tier = 0, store = true},
+	{id = &"magnet", name = "Magnet am Seil", desc = "Jeder Griff in den Schrott holt zwei Teile heraus.", cost = 240, tier = 0, store = true},
+	{id = &"detector", name = "Metalldetektor", desc = "Piept bei Wertvollem: seltene Funde gut doppelt so oft.", cost = 420, tier = 0, store = true},
 	{id = &"conveyor", name = "Förderband", desc = "Band vom Schrottberg zum Ofen: Schrott drauflegen, er fährt von selbst hinein.", cost = 500, tier = 0},
 	{id = &"robot_arm", name = "Greifarm", desc = "Ein Roboterarm wühlt im Schrottberg und belädt das Förderband – ganz allein.", cost = 1200, tier = 0},
 	{id = &"auto_bellows", name = "Gebläseautomat", desc = "Ein Elektrogebläse hält den Ofen heiß, solange Schrott oder Schmelze da ist – nie mehr treten.", cost = 400, tier = 0},
@@ -52,6 +54,11 @@ const CATALOG := [
 
 var owned := {}
 var world: GameWorld
+
+
+## Whether `u` is sold at the hardware store instead of the board in `world`.
+static func in_store(u: Dictionary, world: GameWorld) -> bool:
+	return bool(u.get("store", false)) and world != null and world.is_scrap_hall()
 
 
 ## Catalogue entries a level offers (its tier and every tier below).
@@ -120,6 +127,16 @@ func buy(id: StringName) -> bool:
 func _broadcast() -> void:
 	if Network.is_online() and multiplayer.is_server():
 		_sync.rpc(PackedStringArray(owned.keys()))
+
+
+func _ready() -> void:
+	Network.peer_ready.connect(_on_peer_ready)
+
+
+## Host: a player who has just joined learns what the crew owns (after that it comes with every purchase).
+func _on_peer_ready(id: int, _level: String) -> void:
+	if is_inside_tree() and Network.is_online() and multiplayer.is_server() and not owned.is_empty():
+		_sync.rpc_id(id, PackedStringArray(owned.keys()))
 
 
 @rpc("authority", "call_remote", "reliable")

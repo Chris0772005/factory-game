@@ -61,18 +61,10 @@ static func near(tree: SceneTree, pos: Vector3) -> ScrapBucket:
 func _ready() -> void:
 	add_to_group(&"scrap_buckets")
 	add_to_group(&"toss_targets")
+	Network.peer_ready.connect(_on_peer_ready)
 	if not StationKit.visual():
 		return
-	var steel := MachineArt.galv_mat()
-	var profile := PackedVector2Array([Vector2(0.0, 0.0), Vector2(RADIUS - 0.05, 0.0), Vector2(RADIUS - 0.04, 0.012),
-		Vector2(RADIUS, HEIGHT - 0.02), Vector2(RADIUS + 0.014, HEIGHT), Vector2(RADIUS - 0.008, HEIGHT - 0.004),
-		Vector2(RADIUS - 0.045, 0.024), Vector2(0.0, 0.024)])
-	StationKit.add(self, StationKit.lathe(profile, 24, 40.0), steel)
-	# Two rolled hoops and the bail handle.
-	for y: float in [0.1, 0.25]:
-		var r := lerpf(RADIUS - 0.04, RADIUS, y / HEIGHT) + 0.004
-		StationKit.add(self, StationKit.tube(StationKit.arc_points(Vector3(0, y, 0), Vector3.RIGHT, Vector3.BACK, r, 0.0, TAU, 28), 0.006, 6, false), steel)
-	StationKit.add(self, StationKit.tube(StationKit.arc_points(Vector3(0, HEIGHT - 0.02, 0), Vector3.RIGHT, Vector3.UP, RADIUS + 0.012, 0.0, PI, 16), 0.008, 6), steel)
+	shell(self)
 	# The load: a rusty mound that rises with every find.
 	_fill = MeshInstance3D.new()
 	var dome := PackedVector2Array()
@@ -83,6 +75,19 @@ func _ready() -> void:
 	_fill.material_override = StationKit.metal("bucket_load", {steel_color = Color("#6f6a66"), rust = 0.7, dents = 0.9, metallic_steel = 0.6, roughness_steel = 0.6})
 	add_child(_fill)
 	_update_look()
+
+
+## The bucket itself under `parent`: galvanised sheet, two rolled hoops and the bail handle.
+static func shell(parent: Node3D) -> void:
+	var steel := MachineArt.galv_mat()
+	var profile := PackedVector2Array([Vector2(0.0, 0.0), Vector2(RADIUS - 0.05, 0.0), Vector2(RADIUS - 0.04, 0.012),
+		Vector2(RADIUS, HEIGHT - 0.02), Vector2(RADIUS + 0.014, HEIGHT), Vector2(RADIUS - 0.008, HEIGHT - 0.004),
+		Vector2(RADIUS - 0.045, 0.024), Vector2(0.0, 0.024)])
+	StationKit.add(parent, StationKit.lathe(profile, 24, 40.0), steel)
+	for y: float in [0.1, 0.25]:
+		var r := lerpf(RADIUS - 0.04, RADIUS, y / HEIGHT) + 0.004
+		StationKit.add(parent, StationKit.tube(StationKit.arc_points(Vector3(0, y, 0), Vector3.RIGHT, Vector3.BACK, r, 0.0, TAU, 28), 0.006, 6, false), steel)
+	StationKit.add(parent, StationKit.tube(StationKit.arc_points(Vector3(0, HEIGHT - 0.02, 0), Vector3.RIGHT, Vector3.UP, RADIUS + 0.012, 0.0, PI, 16), 0.008, 6), steel)
 
 
 func capacity() -> int:
@@ -123,6 +128,12 @@ func _changed() -> void:
 		_sync.rpc(count, worth, hot, PackedStringArray(hot_kinds()))
 
 
+## Host: a player who has just joined learns what is in the bucket (after that it comes with every change).
+func _on_peer_ready(id: int, _level: String) -> void:
+	if is_inside_tree() and Network.is_online() and multiplayer.is_server() and count > 0:
+		_sync.rpc_id(id, count, worth, hot, PackedStringArray(hot_kinds()))
+
+
 @rpc("authority", "call_remote", "reliable")
 func _sync(c: int, w: int, h: int, hot_list: PackedStringArray) -> void:
 	count = c
@@ -155,6 +166,16 @@ func take_hot() -> Array:
 	contents = rest
 	_changed()
 	return out
+
+
+## Host: one find of `kind` is taken out of the load. False if there is none.
+func take_out(kind_out: StringName) -> bool:
+	var at := contents.find(kind_out)
+	if at < 0:
+		return false
+	contents.remove_at(at)
+	_changed()
+	return true
 
 
 ## Host: the dealer took everything he buys; hot goods stay in the bucket.
@@ -257,6 +278,14 @@ func _skip_near(player: Node3D) -> ScrapSkip:
 	return null
 
 
+func _stall_near(player: Node3D) -> YardStall:
+	for node in get_tree().get_nodes_in_group(YardStall.GROUP):
+		var stall := node as YardStall
+		if stall.in_reach(player):
+			return stall
+	return null
+
+
 func _furnace_near(player: Node3D) -> Furnace:
 	for node in get_tree().get_nodes_in_group(&"furnaces"):
 		var f := node as Furnace
@@ -286,6 +315,9 @@ func held_hint(player: Node) -> String:
 	var skip := _skip_near(player as Node3D)
 	if skip and count > hot:
 		return "[F] In die Mulde kippen (%d/%d)" % [skip.count, ScrapSkip.CAPACITY]
+	var stall := _stall_near(player as Node3D)
+	if stall:
+		return stall.bucket_hint(self)
 	if hot > 0:
 		load_text += " · %d× heiße Ware (im Eimer versteckt)" % hot
 	if _shop_near(player as Node3D):
@@ -322,6 +354,10 @@ func use_start(player: Node) -> void:
 		skip.add(tip)
 		contents = keep
 		_changed()
+		return
+	var stall := _stall_near(player as Node3D)
+	if stall:
+		stall.lay_out(self)
 		return
 	var shop := _shop_near(player as Node3D)
 	if shop:

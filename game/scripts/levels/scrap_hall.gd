@@ -44,8 +44,9 @@ func build_stations() -> void:
 
 
 ## The quarter across the street: the law, the pawnbroker who buys hot goods
-## under the counter, the police desk that pays a finder's reward, and the
-## officer on the beat.
+## under the counter, the police desk that pays a finder's reward, the
+## officer on the beat, the hardware store's tools, the bank's loans and the
+## crew's own stall with the people who buy there.
 func _build_town() -> void:
 	add_child(TownLaw.new())
 	add_child(CrewBoost.new())
@@ -69,9 +70,20 @@ func _build_town() -> void:
 	var desk := PoliceDesk.new()
 	desk.position = ScrapHallSet.POLICE + Vector3(0, 0, ScrapHallSet.COUNTER_Z)
 	add_child(desk)
+	# The hardware store's bench: the hand tools, each bought where it lies. The bank's counter: loans.
+	for i in TownShops.OFFERS.size():
+		var offer := ToolOffer.new()
+		offer.upgrade = TownShops.OFFERS[i][0]
+		offer.name = "Offer_%s" % offer.upgrade
+		offer.position = TownShops.offer_spot(i)
+		offer.rotation.y = PI
+		add_child(offer)
+	var loans := BankCounter.new()
+	loans.position = TownShops.loan_spot()
+	add_child(loans)
 	var cop := PolicePatrol.new()
 	cop.name = "Patrol"
-	cop.route = [Vector3(-23.0, 0, ScrapHallSet.BEAT_Z), Vector3(24.0, 0, ScrapHallSet.BEAT_Z)]
+	cop.route = [Vector3(-ScrapHallSet.BEAT_X, 0, ScrapHallSet.BEAT_Z), Vector3(ScrapHallSet.BEAT_X, 0, ScrapHallSet.BEAT_Z)]
 	cop.position = Vector3(14.0, 0.05, ScrapHallSet.BEAT_Z)
 	cop.max_z = ScrapHallSet.FRONT_Z - 0.8
 	add_child(cop)
@@ -94,9 +106,36 @@ func _build_town() -> void:
 			# Art check: the people on the pavement as they are that many seconds into their rounds
 			# (a picture is taken some twenty seconds of play later).
 			(get_node(^"TownWalkers") as TownWalkers).clock = float(arg.trim_prefix("--walk="))
+		elif arg.begins_with("--stall="):
+			# Art check: so many finds lie on the stall's table, and its first customer stands at it.
+			_debug_stall(int(arg.trim_prefix("--stall=")))
+		elif arg.begins_with("--debt="):
+			# Art check: the crew owes the bank so much (the pill on the HUD).
+			bank.owed = maxi(int(arg.trim_prefix("--debt=")) * 2, 1)
+			bank.debt = int(arg.trim_prefix("--debt="))
 		elif arg == "--boost":
 			# Art check: the crew has had coffee and stew at the diner (the pills on the HUD).
 			CrewBoost.of(get_tree()).left = {&"coffee": 152.0, &"meal": 221.0}
+
+
+## Art check: `count` finds on the stall's table (the dearest kinds first) and the first customer in
+## front of it, looking them over.
+func _debug_stall(count: int) -> void:
+	await get_tree().create_timer(1.0).timeout
+	var stall := get_tree().get_first_node_in_group(YardStall.GROUP) as YardStall
+	if stall == null:
+		return
+	var kinds := FoundryRules.SCRAP.keys()
+	kinds.sort_custom(func(a: StringName, b: StringName) -> bool: return FoundryRules.raw_price(a) > FoundryRules.raw_price(b))
+	var free := stall.free_places()
+	for i in mini(count, free.size()):
+		var kind: StringName = kinds[i % kinds.size()]
+		var info: Dictionary = FoundryRules.find_info(kind)
+		var item := spawn_item(kind, info.color, info.size, 0.4, stall.to_global(stall.place_pos(free[i]) + Vector3(0, 0.12, 0)))
+		item.rotation.y = i * 1.3
+	if not stall.customers.is_empty():
+		var who: Dictionary = stall.customers[0]
+		stall.walkers.clock = stall.walkers.time_at(int(who.round), int(who.stop)) - 16.0
 
 
 ## Art check: `--mates=x,z,yaw,x,z,yaw` stands two fellow players' workers there (place and turn in
@@ -120,6 +159,7 @@ func _stand_mates(spots: Array, pace: float) -> void:
 		add_child(mate)
 
 
+## The people of the quarter (the two who buy at the crew's stall follow in `_build_stall`).
 ## Five people who go about their business on the far pavement: from the station to the pawnbroker
 ## and the dealer and back, between the diner, the dealer and the bench, from the kiosk to the
 ## pawnbroker's window, an old woman from the corner to the diner and the pawnbroker's window, and a
@@ -183,11 +223,13 @@ func _build_walkers() -> void:
 		[Vector3(-7.4, 0, slow), 0.0],
 		[Vector3(23.2, 0, slow), 0.0],
 	], 55.0, 0.75)
-	# The old woman: from the western corner to her coffee at the diner, a look into the pawnbroker's
-	# window and home again, slowly, along the houses.
+	# The old woman: from the hardware store's window to her coffee at the diner, a look into the
+	# pawnbroker's window and back again, slowly, along the houses.
+	var hardware := ScrapHallSet.HARDWARE
 	var by_wall := front - 1.45
 	walkers.add_round("Granny", {}, [
-		[Vector3(-25.6, 0, front - 1.0), 6.0, Vector3(-25.6, 0, front - 6.0)],
+		[Vector3(hardware.x - 2.9, 0, front - 1.0), 7.0, Vector3(hardware.x - 2.9, 0, front + 2.0)],
+		[Vector3(hardware.x - 1.5, 0, by_wall), 0.0],
 		[Vector3(diner_door - 1.0, 0, by_wall), 0.0],
 		[Vector3(diner_door, 0, front - 0.6), 0.0],
 		[Vector3(diner_door, 0, front + 1.0), 0.0],
@@ -198,11 +240,11 @@ func _build_walkers() -> void:
 		[Vector3(-10.2, 0, front - 0.85), 7.0, Vector3(-10.2, 0, front + 2.0)],
 		[Vector3(-13.0, 0, by_wall), 0.0],
 		[Vector3(diner_door + 1.0, 0, by_wall), 0.0],
-		[Vector3(-24.5, 0, by_wall), 0.0],
+		[Vector3(hardware.x - 1.5, 0, by_wall), 0.0],
 	], 12.0, 0.7)
 	# The mechanic from the workshop round the corner: something for the dealer, then his coffee.
 	walkers.add_round("Mechanic", {}, [
-		[Vector3(25.8, 0, front - 2.4), 5.0, Vector3(30.0, 0, front - 2.4)],
+		[Vector3(36.0, 0, front - 2.4), 5.0, Vector3(40.0, 0, front - 2.4)],
 		[Vector3(8.0, 0, west), 0.0],
 		[Vector3(4.4, 0, front - 0.95), 8.0, Vector3(4.4, 0, front + 2.0)],
 		[Vector3(3.0, 0, west), 0.0],
@@ -213,8 +255,65 @@ func _build_walkers() -> void:
 		[Vector3(diner_door, 0, front + 1.0), 0.0],
 		[Vector3(diner_door, 0, front - 0.6), 0.0],
 		[Vector3(diner_door + 1.4, 0, east), 0.0],
-		[Vector3(24.0, 0, east), 0.0],
+		[Vector3(34.0, 0, east), 0.0],
 	], 80.0)
+	_build_stall(walkers, west, east)
+
+
+## The crew's stall on the apron and the two who buy there: an old collector who comes from the
+## hardware store, and a young woman from the bank. Both cross at the zebra, look the table over,
+## take one piece if there is one, and go back the way they came.
+func _build_stall(walkers: TownWalkers, west: float, east: float) -> void:
+	var stall := YardStall.new()
+	stall.position = ScrapHallSet.STALL
+	add_child(stall)
+	stall.walkers = walkers
+	var front := ScrapHallSet.FRONT_Z
+	var zf := 8.125
+	# The two ends of the zebra crossing: on the far pavement and on the apron.
+	var far_end := zf + ScrapHallSet.APRON + ScrapHallSet.ROAD + 0.4
+	var near_end := zf + ScrapHallSet.APRON - 0.4
+	var at_table := ScrapHallSet.STALL.z + YardStall.SIZE.y * 0.5 + 0.52
+	var hardware := ScrapHallSet.HARDWARE
+	var bank := ScrapHallSet.BANK
+	var collector_at := Vector3(ScrapHallSet.STALL.x - 0.45, 0, at_table)
+	var collector := walkers.add_round("Collector", {}, [
+		[hardware + TownShops.HW_CUSTOMER, 8.0, hardware + TownShops.CLERK],
+		[Vector3(hardware.x, 0, front + 1.0), 0.0],
+		[Vector3(hardware.x, 0, front - 0.6), 0.0],
+		[Vector3(hardware.x + 1.4, 0, east), 0.0],
+		[Vector3(2.9, 0, east), 0.0],
+		[Vector3(3.9, 0, far_end), 0.0],
+		[Vector3(3.9, 0, near_end), 0.0],
+		[collector_at, 9.0, ScrapHallSet.STALL + Vector3(-0.45, 0, 0)],
+		[Vector3(4.5, 0, near_end), 0.0],
+		[Vector3(4.5, 0, far_end), 0.0],
+		[Vector3(3.5, 0, west), 0.0],
+		[Vector3(hardware.x + 1.4, 0, west), 0.0],
+		[Vector3(hardware.x, 0, front - 0.6), 0.0],
+		[Vector3(hardware.x, 0, front + 1.0), 0.0],
+	], 20.0, 1.0)
+	var shopper_at := Vector3(ScrapHallSet.STALL.x + 0.5, 0, at_table)
+	var shopper := walkers.add_round("Shopper", {}, [
+		[bank + Vector3(TownShops.QUEUE_X, 0, ScrapHallSet.COUNTER_Z - 0.85), 9.0, bank + Vector3(TownShops.QUEUE_X, 0, ScrapHallSet.COUNTER_Z + 1.0)],
+		[Vector3(bank.x, 0, front + 1.0), 0.0],
+		[Vector3(bank.x, 0, front - 0.6), 0.0],
+		[Vector3(bank.x - 1.4, 0, west), 0.0],
+		[Vector3(6.6, 0, west), 0.0],
+		[Vector3(5.6, 0, far_end), 0.0],
+		[Vector3(5.6, 0, near_end), 0.0],
+		[shopper_at, 9.0, ScrapHallSet.STALL + Vector3(0.5, 0, 0)],
+		[Vector3(5.0, 0, near_end), 0.0],
+		[Vector3(5.0, 0, far_end), 0.0],
+		[Vector3(6.0, 0, east), 0.0],
+		[Vector3(bank.x - 1.4, 0, east), 0.0],
+		[Vector3(bank.x, 0, front - 0.6), 0.0],
+		[Vector3(bank.x, 0, front + 1.0), 0.0],
+	], 70.0)
+	stall.customers = [
+		{round = collector, stop = 7, taste = &"finds", at = collector_at},
+		{round = shopper, stop = 7, taste = &"castings", at = shopper_at},
+	]
 
 
 func is_scrap_hall() -> bool:

@@ -147,7 +147,7 @@ func _start() -> void:
 	_patience = PATIENCE
 
 
-## Whether a car of the traffic is close in front of the truck, in its way.
+## Whether a car of the traffic, or somebody on foot, is close in front of the truck, in its way.
 func _held_up() -> bool:
 	var forward := global_transform.basis.z
 	var right := forward.cross(Vector3.UP)
@@ -156,6 +156,13 @@ func _held_up() -> bool:
 		rel.y = 0.0
 		var ahead := rel.dot(forward)
 		if ahead > 3.0 and ahead < 11.5 and absf(rel.dot(right)) < 2.3:
+			return true
+	# ... or one of the townspeople crossing the street (TownWalkers; the same place on every machine).
+	for node in get_tree().get_nodes_in_group(TownWalkers.GROUP):
+		var rel := (node as Node3D).global_position - global_position
+		rel.y = 0.0
+		var ahead := rel.dot(forward)
+		if ahead > 3.5 and ahead < 9.5 and absf(rel.dot(right)) < 2.0:
 			return true
 	return false
 

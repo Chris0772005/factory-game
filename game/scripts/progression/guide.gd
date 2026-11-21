@@ -9,7 +9,8 @@ extends Node
 
 signal changed(new_letter: bool)
 
-## goal: what to do. text: the letter. done: checked against the world.
+## goal: what to do (hall_goal: the same in the scrap hall, where tools are bought at the hardware
+## store). text: the letter. done: checked against the world.
 const LETTERS := [
 	{id = &"dig", goal = "Wühl 3 Teile aus dem Schrottberg (F halten)", reward = 10,
 		text = "Mein Junge, die Gießerei gehört jetzt dir. Fang klein an: Im Schrottberg steckt mehr, als man denkt. Hände rein!"},
@@ -18,10 +19,12 @@ const LETTERS := [
 	{id = &"sold", goal = "Zeichne ein Modell, gieß es und verkauf deinen ersten Guss", reward = 25,
 		text = "Jetzt wird's ernst: zeichnen, Sand stampfen, gießen, Form zerschlagen. Was rauskommt, wandert in die Verkaufskiste."},
 	{id = &"gloves", goal = "Kauf dir Lederhandschuhe an der Werkstatt-Tafel", reward = 20,
+		hall_goal = "Kauf dir Lederhandschuhe im HARDWARE Store (aus der Halle rechts die Straße hinunter, hinter Molly's Diner)",
 		text = "Du wühlst mit bloßen Händen? Sei nicht geizig. Handschuhe zuerst – dann geht's schneller und tut weniger weh."},
-	{id = &"shovel", goal = "Kauf die Schaufel", reward = 30,
+	{id = &"shovel", goal = "Kauf die Schaufel", reward = 30, hall_goal = "Kauf die Schaufel im HARDWARE Store",
 		text = "Hände sind gut, eine Schaufel ist besser. Damit bist du doppelt so schnell durch den Berg."},
 	{id = &"tools", goal = "Kauf den Magnet am Seil und den Metalldetektor", reward = 60,
+		hall_goal = "Kauf den Magnet am Seil und den Metalldetektor im HARDWARE Store",
 		text = "Die guten Stücke liegen tief. Mit Magnet holst du zwei auf einmal, und der Detektor riecht Gold. Hab ich früher alles gehabt."},
 	{id = &"conveyor", goal = "Bau das Förderband zum Ofen", reward = 100,
 		text = "Schleppen ist was für Anfänger. Ein Band vom Schrottberg zum Ofen – drauflegen, fertig."},
@@ -78,6 +81,11 @@ func letters() -> Array:
 	if _letters.is_empty():
 		_letters = LETTERS.duplicate()
 		if world and world.is_scrap_hall():
+			for i in _letters.size():
+				if (_letters[i] as Dictionary).has("hall_goal"):
+					var own: Dictionary = (_letters[i] as Dictionary).duplicate()
+					own.goal = own.hall_goal
+					_letters[i] = own
 			for k in HALL_LETTERS.size():
 				_letters.insert(1 + k, HALL_LETTERS[k])
 	return _letters

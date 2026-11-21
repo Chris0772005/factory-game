@@ -6,14 +6,16 @@ extends Node3D
 ## The people are generated figures of real-looking persons with their own skeleton and clips
 ## (AI-generated, see assets/models/people/NOTICE.txt; put together by tools/people.py;
 ## docs/TECH_SPEC.md, Modul Y). Callers name the kind of person (Worker, Suit, Swat, Patrol, Dealer,
-## Casual, Casual_Woman, Cook, Granny, Mechanic): PEOPLE says who that is. Where a person's file is missing, a Quaternius
+## Casual, Casual_Woman, Cook, Granny, Mechanic, Clerk, Teller, Collector, Shopper): PEOPLE says who that is. Where a person's file is missing, a Quaternius
 ## figure stands in ("Ultimate Modular Men/Women", CC0: the one of that name, or the one STAND_INS
 ## names), moved by the clips of the same rig family and tinted by `recolor`.
 
 const PEOPLE_DIR := "res://assets/models/people/"
 const PEOPLE := {"Worker": "worker", "Suit": "broker", "Swat": "officer", "Patrol": "patrol", "Dealer": "dealer",
-	"Casual": "youth", "Casual_Woman": "woman", "Cook": "cook", "Granny": "granny", "Mechanic": "mechanic"}
-const STAND_INS := {"Patrol": "Swat", "Dealer": "Worker", "Cook": "Casual_Woman", "Granny": "Casual_Woman", "Mechanic": "Worker"}
+	"Casual": "youth", "Casual_Woman": "woman", "Cook": "cook", "Granny": "granny", "Mechanic": "mechanic",
+	"Clerk": "clerk", "Teller": "teller", "Collector": "collector", "Shopper": "shopper"}
+const STAND_INS := {"Patrol": "Swat", "Dealer": "Worker", "Cook": "Casual_Woman", "Granny": "Casual_Woman", "Mechanic": "Worker",
+	"Clerk": "Worker", "Teller": "Casual_Woman", "Collector": "Suit", "Shopper": "Casual_Woman"}
 const DIR := "res://assets/models/quaternius/"
 const ANIM_SOURCE := "res://assets/models/quaternius/Anim_Character.glb"
 ## Stand-in figures: height of the head joint above the ground (m), the figure stands about 1.8 m.
@@ -42,6 +44,8 @@ var _clip := &""
 var _stroll_pace := 0.0
 var _walk_pace := WALK_PACE
 var _run_pace := RUN_PACE
+## Seconds a gesture still has to play before `animate` takes over again.
+var _gesture_left := 0.0
 
 
 static func make(model_name: String, colors := {}) -> TownFigure:
@@ -145,8 +149,14 @@ func _play(clip: StringName, speed := 1.0) -> void:
 
 
 ## Called every physics frame by whoever moves the figure.
-func animate(_delta: float, velocity: Vector3) -> void:
+func animate(delta: float, velocity: Vector3) -> void:
 	var speed := Vector2(velocity.x, velocity.z).length()
+	if _gesture_left > 0.0:
+		# A gesture is played out, unless the figure sets off meanwhile.
+		_gesture_left -= delta
+		if speed < 0.15:
+			return
+		_gesture_left = 0.0
 	if speed < 0.15:
 		_play(&"Idle_Neutral")
 	elif _stroll_pace > 0.0 and speed < (_stroll_pace + _walk_pace) * 0.5:
@@ -164,3 +174,4 @@ func gesture(clip: StringName) -> void:
 		_player.speed_scale = 1.0
 		_player.play(clip, 0.2)
 		_player.queue(&"Idle_Neutral")
+		_gesture_left = _player.get_animation(clip).length

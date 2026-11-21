@@ -41,8 +41,10 @@ func _process(delta: float) -> void:
 
 func _on_money(amount: int) -> void:
 	# One-off bonuses (letters, the find book) are capped so they do not inflate the rate.
-	if amount > _last:
-		_gains.append([_clock, mini(amount - _last, 400)])
+	# What the machines earn is measured before the bank takes its quarter (it takes it again from the payout).
+	var gain := amount - _last + world.bank_share
+	if gain > 0:
+		_gains.append([_clock, mini(gain, 400)])
 	_last = amount
 
 

@@ -18,7 +18,8 @@ const TREE := "res://assets/models/nature/street_tree.glb"
 ## windows = [[x0, x1], ...] (offsets from the middle), sign, sign_color,
 ## sign_back, floor (colour of a wooden floor) or floor_scan (a photo scan of EnvMesh.SCANS, laid
 ## floor_tile metres wide), lining (colour), lamp (colour), strips (false: no strip lights under the
-## ceiling, the house brings lamps of its own).
+## ceiling, the house brings lamps of its own), storeys (floors over the ground floor: windows only,
+## nobody gets up there), scan / tone (the wall, see wall_material).
 static func house(set: Node3D, base: Vector3, w: float, d: float, opts := {}) -> void:
 	var key: String = opts.get("key", "house")
 	var door_x: float = opts.get("door_x", 0.0)
@@ -54,7 +55,11 @@ static func house(set: Node3D, base: Vector3, w: float, d: float, opts := {}) ->
 	var walls := []
 	for b: Array in boxes:
 		walls.append(EnvMesh.piece(EnvMesh.box(b[1]), Transform3D(Basis(), base + b[0])))
-	_crown(set, base, w, d, HEIGHT, walls)
+	var storeys: int = opts.get("storeys", 0)
+	if storeys > 0:
+		_upper(set, base, w, d, storeys, key, walls)
+	else:
+		_crown(set, base, w, d, HEIGHT, walls)
 	EnvMesh.add(set, EnvMesh.merge(walls), wall_mat)
 	_stonework(set, base, w, [[door_x - DOOR_W * 0.5 - 0.12, door_x + DOOR_W * 0.5 + 0.12]])
 	# Inside: lining on the back and side walls, the ceiling, the floor.
@@ -243,13 +248,7 @@ static func block(set: Node3D, base: Vector3, w: float, d: float, opts := {}) ->
 				var mid := origin + along * u + Vector3.UP * (sill + 0.75)
 				pick = (pick * 1103515245 + 12345) & 0x7fffffff
 				var target := curtains if pick % 10 < 3 else panes
-				target.append(EnvMesh.piece(EnvMesh.box(Vector3(1.1, 1.5, 0.03)), Transform3D(turn, mid + out * 0.005)))
-				for side: float in [-1.0, 1.0]:
-					frames.append(EnvMesh.piece(EnvMesh.box(Vector3(0.07, 1.5, 0.06)), Transform3D(turn, mid + along * side * 0.585 + out * 0.03)))
-					frames.append(EnvMesh.piece(EnvMesh.box(Vector3(1.24, 0.07, 0.06)), Transform3D(turn, mid + Vector3.UP * side * 0.785 + out * 0.03)))
-				frames.append(EnvMesh.piece(EnvMesh.box(Vector3(0.05, 1.5, 0.05)), Transform3D(turn, mid + out * 0.03)))
-				stones.append(EnvMesh.piece(EnvMesh.box(Vector3(1.4, 0.07, 0.16)), Transform3D(turn, mid - Vector3.UP * 0.855 + out * 0.08)))
-				stones.append(EnvMesh.piece(EnvMesh.box(Vector3(1.4, 0.16, 0.05)), Transform3D(turn, mid + Vector3.UP * 0.9 + out * 0.025)))
+				_window(mid, turn, out, along, target, frames, stones)
 		# Plinth (on the front it stops either side of the door) and the string course over the ground floor.
 		var door_u := (bays / 2 + 0.5 - bays * 0.5) * pitch
 		var runs := [[-width * 0.5 - 0.05, door_u - 0.63], [door_u + 0.63, width * 0.5 + 0.05]] if front_door else [[-width * 0.5 - 0.05, width * 0.5 + 0.05]]
@@ -264,6 +263,69 @@ static func block(set: Node3D, base: Vector3, w: float, d: float, opts := {}) ->
 	EnvMesh.add(set, EnvMesh.merge(stones), stone())
 	if not doors.is_empty():
 		EnvMesh.add(set, EnvMesh.merge(doors), door, Transform3D(), false)
+
+
+## One window of a row, its middle at `mid` on a face that looks `out` (`along` runs along the face):
+## the pane goes to `panes` (glass, or a drawn curtain), frame and glazing bar to `frames`, sill and
+## lintel to `stones`.
+static func _window(mid: Vector3, turn: Basis, out: Vector3, along: Vector3, panes: Array, frames: Array, stones: Array) -> void:
+	panes.append(EnvMesh.piece(EnvMesh.box(Vector3(1.1, 1.5, 0.03)), Transform3D(turn, mid + out * 0.005)))
+	for side: float in [-1.0, 1.0]:
+		frames.append(EnvMesh.piece(EnvMesh.box(Vector3(0.07, 1.5, 0.06)), Transform3D(turn, mid + along * side * 0.585 + out * 0.03)))
+		frames.append(EnvMesh.piece(EnvMesh.box(Vector3(1.24, 0.07, 0.06)), Transform3D(turn, mid + Vector3.UP * side * 0.785 + out * 0.03)))
+	frames.append(EnvMesh.piece(EnvMesh.box(Vector3(0.05, 1.5, 0.05)), Transform3D(turn, mid + out * 0.03)))
+	stones.append(EnvMesh.piece(EnvMesh.box(Vector3(1.4, 0.07, 0.16)), Transform3D(turn, mid - Vector3.UP * 0.855 + out * 0.08)))
+	stones.append(EnvMesh.piece(EnvMesh.box(Vector3(1.4, 0.16, 0.05)), Transform3D(turn, mid + Vector3.UP * 0.9 + out * 0.025)))
+
+
+## Storeys over the ground floor of a house that can be walked into (`house` with `storeys`): the walls
+## run on (added to `walls`, so they are of the same stuff), rows of windows on every side like the
+## town's other houses, a string course where they begin and the crown on top. Looks only.
+static func _upper(set: Node3D, base: Vector3, w: float, d: float, storeys: int, key: String, walls: Array) -> void:
+	var floor_h := 3.0
+	var rise := storeys * floor_h
+	walls.append(EnvMesh.piece(EnvMesh.box(Vector3(w, rise, d)), Transform3D(Basis(), base + Vector3(0, HEIGHT + rise * 0.5, d * 0.5))))
+	_crown(set, base, w, d, HEIGHT + rise, walls)
+	var glass := StandardMaterial3D.new()
+	glass.albedo_color = Color("#18222b")
+	glass.roughness = 0.05
+	glass.metallic_specular = 0.9
+	var drawn := StandardMaterial3D.new()
+	drawn.albedo_color = Color("#8d8a80")
+	drawn.roughness = 0.9
+	var frame := StandardMaterial3D.new()
+	frame.albedo_color = Color("#d8d4c9")
+	frame.roughness = 0.55
+	var panes := []
+	var curtains := []
+	var frames := []
+	var stones := []
+	var faces := [
+		[Vector3(0, 0, 0), Vector3.FORWARD, Vector3.LEFT, w],
+		[Vector3(0, 0, d), Vector3.BACK, Vector3.RIGHT, w],
+		[Vector3(-w * 0.5, 0, d * 0.5), Vector3.LEFT, Vector3.BACK, d],
+		[Vector3(w * 0.5, 0, d * 0.5), Vector3.RIGHT, Vector3.FORWARD, d],
+	]
+	var pick := hash(key)
+	for face: Array in faces:
+		var out: Vector3 = face[1]
+		var along: Vector3 = face[2]
+		var width: float = face[3]
+		var turn := Basis(along, Vector3.UP, out)
+		var origin: Vector3 = base + face[0]
+		var bays := maxi(int(width / 2.7), 1)
+		var pitch := width / bays
+		for s in storeys:
+			for b in bays:
+				var mid := origin + along * ((b + 0.5 - bays * 0.5) * pitch) + Vector3.UP * (HEIGHT + s * floor_h + 1.7)
+				pick = (pick * 1103515245 + 12345) & 0x7fffffff
+				_window(mid, turn, out, along, curtains if pick % 10 < 3 else panes, frames, stones)
+		stones.append(EnvMesh.piece(EnvMesh.box(Vector3(width + 0.12, 0.12, 0.08)), Transform3D(turn, origin + Vector3.UP * (HEIGHT + 0.3) + out * 0.04)))
+	EnvMesh.add(set, EnvMesh.merge(panes), glass, Transform3D(), false)
+	if not curtains.is_empty():
+		EnvMesh.add(set, EnvMesh.merge(curtains), drawn, Transform3D(), false)
+	EnvMesh.add(set, EnvMesh.merge(frames), frame, Transform3D(), false)
+	EnvMesh.add(set, EnvMesh.merge(stones), stone())
 
 
 ## A house that is shut: brick front, roller shutter down, a sign. Solid.

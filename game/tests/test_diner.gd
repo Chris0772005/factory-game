@@ -3,8 +3,8 @@ extends Node
 ## counter coffee and a hot stew are ordered for the whole crew. Coffee makes the heap give way
 ## faster, the stew makes everybody quicker on their feet, each for a while. Without the money
 ## nothing is served, nobody pays twice while plenty is left, and the first order ticks off a
-## mission. The five people of the quarter walk their rounds without passing through a wall,
-## a counter or a stool.
+## mission. The seven people of the quarter walk their rounds without passing through a wall,
+## a counter, a stool or the furniture of the two new shops.
 
 var _failures := 0
 
@@ -89,9 +89,10 @@ func _run() -> void:
 	await _frames(6)
 	_check(boost.left.is_empty() and is_equal_approx(CrewBoost.walk(get_tree()), 1.0), "and then the stew")
 	_check(coffee.hint(me).contains("[F]"), "the next coffee can be ordered")
-	# The people of the quarter: five rounds, none through a wall, a counter or a stool.
+	# The people of the quarter: seven rounds (five passers-by and the two who buy at the crew's stall),
+	# none through a wall, a counter, a stool or a shop's furniture.
 	var walkers := world.find_child("TownWalkers", true, false) as TownWalkers
-	_check(walkers != null and walkers._rounds.size() == 5, "five people walk their rounds")
+	_check(walkers != null and walkers._rounds.size() == 7, "seven people walk their rounds")
 	if walkers:
 		var space := world.get_world_3d().direct_space_state
 		var ball := SphereShape3D.new()

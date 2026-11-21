@@ -81,7 +81,8 @@ func _cards(rng: RandomNumberGenerator) -> void:
 	# The board pins the cards of this hall's tier (the shop lists all tiers up to it).
 	var world := get_tree().get_first_node_in_group(&"world") as GameWorld if is_inside_tree() else null
 	var tier := world.upgrade_tier() if world else 0
-	var entries := Upgrades.CATALOG.filter(func(e: Dictionary) -> bool: return int(e.get("tier", 0)) == tier)
+	# (What the hardware store sells is not pinned up here.)
+	var entries := Upgrades.CATALOG.filter(func(e: Dictionary) -> bool: return int(e.get("tier", 0)) == tier and not Upgrades.in_store(e, world))
 	for i in entries.size():
 		var u: Dictionary = entries[i]
 		var col := i % cols

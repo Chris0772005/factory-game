@@ -38,6 +38,9 @@ func build_level() -> void:
 	find_book.name = "FindBook"
 	find_book.world = self
 	add_child(find_book)
+	bank = BankLoan.new()
+	bank.world = self
+	add_child(bank)
 	build_stations()
 	ScrapLine.build_for(self)
 	AutoFoundry.build_for(self)
@@ -59,6 +62,7 @@ func build_level() -> void:
 			upgrades.changed.connect(_autosave)
 			guide.changed.connect(func(_n): _autosave())
 			find_book.changed.connect(_autosave)
+			bank.changed.connect(_autosave)
 		spawn_items()
 
 

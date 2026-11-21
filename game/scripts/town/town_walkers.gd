@@ -19,11 +19,12 @@ var _rounds: Array = []
 var _sync := 0.0
 
 
-## A walker of `model` (TownFigure: Casual, Casual_Woman, Worker, Suit) in `colors`, who starts
+## A walker of `model` (TownFigure: Casual, Casual_Woman, Worker, Suit ...) in `colors`, who starts
 ## `offset` seconds into the round and walks at `pace` m/s (below about 1 m/s the people stroll).
 ## `stops` are [position, seconds to stand there] in walking order, with a third entry where the
 ## walker should look meanwhile (a point); after the last stop the walker returns to the first.
-func add_round(model: String, colors: Dictionary, stops: Array, offset := 0.0, pace := SPEED) -> void:
+## Returns the number of the round (for `standing`).
+func add_round(model: String, colors: Dictionary, stops: Array, offset := 0.0, pace := SPEED) -> int:
 	var legs: Array = []
 	var total := 0.0
 	for i in stops.size():
@@ -42,6 +43,34 @@ func add_round(model: String, colors: Dictionary, stops: Array, offset := 0.0, p
 		figure.add_to_group(GROUP)
 		entry.figure = figure
 	_rounds.append(entry)
+	return _rounds.size() - 1
+
+
+## Where the walker of round `index` is: [the stop it stands at (-1 while it walks), the seconds it has
+## stood there, how many rounds it has finished]. The same on every peer (the rounds run by one clock).
+func standing(index: int) -> Array:
+	var entry: Dictionary = _rounds[index]
+	var run := clock + float(entry.offset)
+	var t := fposmod(run, float(entry.total))
+	var lap := int(floor(run / float(entry.total)))
+	var legs: Array = entry.legs
+	for i in legs.size():
+		var leg: Array = legs[i]
+		if t <= float(leg[0]) + float(leg[1]) + float(leg[2]):
+			var since := t - float(leg[0])
+			return [i if since <= float(leg[1]) else -1, since, lap]
+	return [-1, 0.0, lap]
+
+
+## How far into its round (s) the walker of round `index` reaches stop `stop`.
+func time_at(index: int, stop: int) -> float:
+	var entry: Dictionary = _rounds[index]
+	return float(((entry.legs as Array)[stop] as Array)[0]) - float(entry.offset)
+
+
+## The figure of round `index` (null on a machine without a screen).
+func figure_of(index: int) -> TownFigure:
+	return (_rounds[index] as Dictionary).figure as TownFigure
 
 
 func _physics_process(delta: float) -> void:
