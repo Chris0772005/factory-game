@@ -303,6 +303,55 @@ func _build_art() -> void:
 	StationKit.add_merged(_wheel, spokes, steel)
 	var knob := StationKit.wood("ladle_knob", {base_color = Color("#6e4630")})
 	StationKit.add(_wheel, EnvMesh.cylinder(0.025, 0.025, 0.12, 8), knob, Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(0, 0.2, -0.06)))
+	_build_details()
+
+
+## The small parts of the ladle (MachineDetail, TECH_SPEC Modul Y, Stufe U12). What tips with the
+## shell hangs on the pivot: rivets round both hoops, a riveted seam down the back, the pads the
+## trunnions are bolted to, a weld round the bottom, the maker's plate. What hangs still with the
+## bail: bolts through its head, the cover of the worm gear, a bearing cap on the far trunnion.
+func _build_details() -> void:
+	var p := -PIVOT
+	var d := MachineDetail.Parts.new()
+	for y: float in [0.25, 0.62]:
+		MachineDetail.rivets_around(d, Vector3(0, p + y, 0), Vector3.UP, _shell_radius(y) + 0.025, 22, 0.02, true)
+	# The shell is one plate rolled and lapped at the back (away from the lip): two rows of rivets.
+	for row: float in [-0.03, 0.03]:
+		var a := PI + row
+		var dir := Vector3(sin(a), 0, cos(a))
+		for part: Vector2 in [Vector2(0.07, 0.19), Vector2(0.31, 0.56), Vector2(0.68, HEIGHT - 0.1)]:
+			MachineDetail.rivet_row(d, dir * _shell_radius(part.x) + Vector3(0, p + part.x, 0), dir * _shell_radius(part.y) + Vector3(0, p + part.y, 0),
+				maxi(roundi((part.y - part.x) / 0.07) + 1, 2), dir, 0.018, true)
+	for s: float in [-1.0, 1.0]:
+		d.dark.append(EnvMesh.piece(EnvMesh.box(Vector3(0.07, 0.25, 0.25), 0.008), Transform3D(Basis(), Vector3(s * (RADIUS - 0.022), 0, 0)), 0.5))
+		for sy: float in [-1.0, 1.0]:
+			for sz: float in [-1.0, 1.0]:
+				MachineDetail.bolt(d, Vector3(s * (RADIUS + 0.013), sy * 0.09, sz * 0.09), Vector3(s, 0, 0), 0.024, true)
+	MachineDetail.weld_ring(d, Vector3(0, p + 0.04, 0), Vector3.UP, 0.443, 0.012)
+	MachineDetail.commit(_pivot, d)
+	# The plate sits between the hoops on the side of the hand wheel, where the crew stands.
+	var pa := deg_to_rad(150.0)
+	var pdir := Vector3(sin(pa), 0, cos(pa))
+	MachineDetail.type_plate(_pivot, Transform3D(Basis(Vector3.UP.cross(pdir), Vector3.UP, pdir), pdir * (_shell_radius(0.44) + 0.004) + Vector3(0, p + 0.44, 0)),
+		"MM IRONWORKS", ["LADLE   TYPE L-50", "No. 0963"], Vector2(0.17, 0.1))
+	var fixed := MachineDetail.Parts.new()
+	var top := HANG - 0.08
+	var w := RADIUS + 0.2
+	for face: float in [-1.0, 1.0]:
+		for sx: float in [-1.0, 1.0]:
+			MachineDetail.bolt(fixed, Vector3(sx * 0.055, top + 0.05, face * 0.061), Vector3(0, 0, face), 0.02)
+	# Worm gear: its cover is bolted on all round (the side away from the shell).
+	for sy: float in [-1.0, 0.0, 1.0]:
+		for sz: float in [-1.0, 1.0]:
+			MachineDetail.bolt(fixed, Vector3(w + 0.121, PIVOT + sy * 0.115, sz * 0.09), Vector3.RIGHT, 0.018)
+	fixed.dark.append(EnvMesh.piece(EnvMesh.cylinder(0.085, 0.09, 0.06, 16), Transform3D(Basis(Vector3.BACK, PI * 0.5), Vector3(-w - 0.03, PIVOT, 0)), 0.4))
+	MachineDetail.bolt_circle(fixed, Vector3(-w - 0.061, PIVOT, 0), Vector3.LEFT, 0.06, 4, 0.016, true, PI * 0.25)
+	MachineDetail.commit(self, fixed)
+
+
+## Radius of the shell's outside `y` above its base (the shell widens toward the rim).
+func _shell_radius(y: float) -> float:
+	return lerpf(0.44, RADIUS, y / (HEIGHT - 0.06))
 
 
 ## Pouring lip: the rim pulls out into a spout towards +Z.

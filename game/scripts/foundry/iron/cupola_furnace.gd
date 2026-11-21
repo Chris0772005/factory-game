@@ -353,6 +353,96 @@ func _build_art() -> void:
 	crank.append(EnvMesh.piece(EnvMesh.cylinder(0.025, 0.025, 0.16, 8), Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(0, 0.32, 0.08))))
 	StationKit.add_merged(_fan, crank, steel_dark())
 	StationKit.label(self, "GEBLÄSE", Transform3D(Basis(), BLOWER_POS + Vector3(0, 0.12, 0.31)), 48, Color("#2a2522"), 800, 0.0012)
+	_build_details()
+
+
+## The small parts of a riveted and bolted furnace (MachineDetail, TECH_SPEC Modul Y, Stufe U12):
+## rivets round every hoop and down the lapped plate seams, bolts round the wind box and on its
+## peep-hole covers, flanges on the blast main with a gauge at its bend, foot plates under the legs,
+## a cast frame round the tap hole, rivets on the trough's cheeks and the charging box, bolts on the
+## blower, welds where the shaft's parts meet, and the maker's plate.
+func _build_details() -> void:
+	var r := SHAFT_RADIUS
+	var d := MachineDetail.Parts.new()
+	var bands: Array[float] = [1.0, 1.9, 2.8, 3.7]
+	for y in bands:
+		MachineDetail.rivets_around(d, Vector3(0, y, 0), Vector3.UP, r + 0.025, 26, 0.022, true)
+	# The courses of plate between the hoops (and the wind box): each lapped in three places, two rows
+	# of rivets to a lap, the laps of one course standing between those of the next.
+	var courses := [Vector2(0.74, 0.93), Vector2(1.54, 1.83), Vector2(1.97, 2.73), Vector2(2.87, 3.63), Vector2(3.77, SHAFT_HEIGHT - 0.36)]
+	for i in courses.size():
+		var course: Vector2 = courses[i]
+		var count := maxi(roundi((course.y - course.x) / 0.1) + 1, 2)
+		for k in 3:
+			for row: float in [-0.028, 0.028]:
+				var a := TAU * (k + 0.5 * (i % 2)) / 3.0 + 0.35 + row
+				var dir := Vector3(sin(a), 0, cos(a))
+				MachineDetail.rivet_row(d, dir * r + Vector3(0, course.x, 0), dir * r + Vector3(0, course.y, 0), count, dir, 0.02, true)
+	# Wind box: its outer plate is bolted to the two rings, and four covers let one look at the tuyeres.
+	for y: float in [1.235, 1.415]:
+		MachineDetail.bolts_around(d, Vector3(0, y, 0), Vector3.UP, r + 0.2, 18, 0.024, true)
+	for k in 4:
+		var a := PI * 0.25 + k * PI * 0.5
+		var dir := Vector3(sin(a), 0, cos(a))
+		var at := dir * (r + 0.2) + Vector3(0, 1.325, 0)
+		d.dark.append(EnvMesh.piece(EnvMesh.cylinder(0.062, 0.066, 0.018, 14), Transform3D(StationKit.basis_y(dir), at + dir * 0.009), 0.5))
+		MachineDetail.bolt_circle(d, at + dir * 0.018, dir, 0.046, 4, 0.012, true, PI * 0.25)
+	# Blast main: a flange where it leaves the blower and one where it enters the wind box.
+	var p0 := BLOWER_POS + Vector3(0.3, 0.75, 0)
+	var p1 := Vector3(-r - 0.3, 1.32, 0.15)
+	var p2 := Vector3(-r - 0.1, 1.32, 0.1)
+	MachineDetail.flange(d, p0.lerp(p1, 0.22), p1 - p0, 0.18, 0.018, 8, 0.02, true)
+	MachineDetail.flange(d, p1.lerp(p2, 0.38), p2 - p1, 0.18, 0.018, 8, 0.02, true)
+	# Legs: a foot plate with four anchor bolts, and two bolts each way into the shaft's bottom ring.
+	for k in 4:
+		var a := PI * 0.25 + k * PI * 0.5
+		var foot := Vector3(sin(a), 0, cos(a)) * (r - 0.1)
+		d.dark.append(EnvMesh.piece(EnvMesh.box(Vector3(0.27, 0.016, 0.27), 0.003), Transform3D(Basis(), foot + Vector3(0, 0.008, 0)), 0.3))
+		for sx: float in [-1.0, 1.0]:
+			for sz: float in [-1.0, 1.0]:
+				MachineDetail.bolt(d, foot + Vector3(sx * 0.1, 0.016, sz * 0.1), Vector3.UP, 0.024, true)
+		for y: float in [0.6, 0.67]:
+			MachineDetail.bolt(d, foot + Vector3(signf(foot.x) * 0.07, y, 0), Vector3(signf(foot.x), 0, 0), 0.02, true)
+			MachineDetail.bolt(d, foot + Vector3(0, y, signf(foot.z) * 0.07), Vector3(0, 0, signf(foot.z)), 0.02, true)
+	# Tap hole: a cast frame bolted over it (the glowing hole stands a little proud of it).
+	d.dark.append(EnvMesh.piece(EnvMesh.box(Vector3(0.34, 0.3, 0.03), 0.006), Transform3D(Basis(), Vector3(0, 2.25, r + 0.005)), 0.6))
+	for sx: float in [-1.0, 1.0]:
+		for sy: float in [-1.0, 1.0]:
+			MachineDetail.bolt(d, Vector3(sx * 0.135, 2.25 + sy * 0.115, r + 0.02), Vector3.BACK, 0.022, true)
+	# Trough: its iron cheeks are riveted along their length.
+	var start := Vector3(0, 2.22, r)
+	var run := TROUGH_END - start
+	var along := run.normalized()
+	var side := along.cross(Vector3.UP).normalized()
+	for s: float in [-1.0, 1.0]:
+		var cheek := (start + TROUGH_END) * 0.5 + Vector3(0, 0.08, 0) + side * s * 0.197
+		MachineDetail.rivet_row(d, cheek - along * run.length() * 0.42, cheek + along * run.length() * 0.42, 6, side * s, 0.016, true)
+	# Blower: the cover is bolted on all round, the foot is bolted down.
+	var hub := BLOWER_POS + Vector3(0, 0.55, 0.171)
+	MachineDetail.bolt_circle(d, hub, Vector3.BACK, 0.375, 12, 0.02)
+	for sx: float in [-1.0, 1.0]:
+		for sz: float in [-1.0, 1.0]:
+			MachineDetail.bolt(d, BLOWER_POS + Vector3(sx * 0.31, 0.18, sz * 0.26), Vector3.UP, 0.024)
+	# Charging box: riveted down its corners and along its rim on the two sides one sees.
+	var front := SKIP_POS + Vector3(0, 0, SKIP_SIZE.z * 0.5 + 0.026)
+	var flank := SKIP_POS + Vector3(SKIP_SIZE.x * 0.5 + 0.026, 0, 0)
+	for s: float in [-1.0, 1.0]:
+		MachineDetail.rivet_row(d, front + Vector3(s * (SKIP_SIZE.x * 0.5 - 0.02), 0.07, 0), front + Vector3(s * (SKIP_SIZE.x * 0.5 - 0.02), SKIP_SIZE.y - 0.1, 0), 5, Vector3.BACK, 0.016)
+		MachineDetail.rivet_row(d, flank + Vector3(0, 0.07, s * (SKIP_SIZE.z * 0.5 - 0.02)), flank + Vector3(0, SKIP_SIZE.y - 0.1, s * (SKIP_SIZE.z * 0.5 - 0.02)), 5, Vector3.RIGHT, 0.016)
+	MachineDetail.rivet_row(d, front + Vector3(-SKIP_SIZE.x * 0.5 + 0.1, SKIP_SIZE.y - 0.03, 0), front + Vector3(SKIP_SIZE.x * 0.5 - 0.1, SKIP_SIZE.y - 0.03, 0), 7, Vector3.BACK, 0.016)
+	MachineDetail.rivet_row(d, flank + Vector3(0, SKIP_SIZE.y - 0.03, -SKIP_SIZE.z * 0.5 + 0.1), flank + Vector3(0, SKIP_SIZE.y - 0.03, SKIP_SIZE.z * 0.5 - 0.1), 6, Vector3.RIGHT, 0.016)
+	# Welds: under the shaft where the legs carry it, and where the wind box is let into the shell.
+	MachineDetail.weld_ring(d, Vector3(0, 0.702, 0), Vector3.UP, r + 0.002, 0.014)
+	for y: float in [1.152, 1.498]:
+		MachineDetail.weld_ring(d, Vector3(0, y, 0), Vector3.UP, r + 0.006, 0.012)
+	MachineDetail.commit(self, d)
+	# The gauge stands on the bend of the blast main and faces the crank.
+	MachineDetail.gauge(self, Transform3D(Basis(), p1 + Vector3(0, 0.12 + 0.095, 0.02)), 0.05, 0.3)
+	# The maker's plate: at eye height on the side of the tap, between the wind box and the next hoop.
+	var pa := deg_to_rad(20.0)
+	var pdir := Vector3(sin(pa), 0, cos(pa))
+	MachineDetail.type_plate(self, Transform3D(Basis(Vector3.UP.cross(pdir), Vector3.UP, pdir), pdir * (r + 0.003) + Vector3(0, 1.685, 0)),
+		"MM IRONWORKS", ["CUPOLA   TYPE K-3", "No. 1958-07   2500 kg/h"], Vector2(0.22, 0.14))
 
 
 func steel_dark() -> ShaderMaterial:

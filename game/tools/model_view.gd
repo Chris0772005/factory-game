@@ -1,7 +1,7 @@
 extends Node3D
 ## Art check: shows one model on the street's asphalt in the light of the first level (--plain: a plain sky and sun instead).
 ##   godot-render --path . res://tools/model_view.tscn -- --shot=out.png --model=res://...[,res://...] [--yaw=35] [--pitch=12] [--dist=9] [--h=1.4] [--dump]
-##   ... --finish applies VehicleFinish (gloss, glass, lamps, dust and mud); --rig=0,-30,90,60 instead of --model shows the excavator rig posed (swing, boom, stick, bucket in degrees), --lamps with its lamps on. --hide=a,b hides the nodes of those names. --heap=2.5,1.1,3.0,1.76,1.0,0.42,0.9 shows a load of scrap (floor, rim, height, crown, fill). --row=a,b,c stands those Poly Haven scans side by side at their real size. --scrap=junk_gear,hot_pistol lays out things from the scrap. --anim=1.2 shows the model's first animation at that second (--clip=Run: that one; --clip=Run,Walk: one each for several models). --mats shows the stations' metal and wood on a block, a drum and a ball each.
+##   ... --finish applies VehicleFinish (gloss, glass, lamps, dust and mud); --rig=0,-30,90,60 instead of --model shows the excavator rig posed (swing, boom, stick, bucket in degrees), --lamps with its lamps on. --hide=a,b hides the nodes of those names. --heap=2.5,1.1,3.0,1.76,1.0,0.42,0.9 shows a load of scrap (floor, rim, height, crown, fill). --row=a,b,c stands those Poly Haven scans side by side at their real size. --scrap=junk_gear,hot_pistol lays out things from the scrap. --anim=1.2 shows the model's first animation at that second (--clip=Run: that one; --clip=Run,Walk: one each for several models). --mats shows the stations' metal and wood on a block, a drum and a ball each. --details shows the small parts of MachineDetail on a steel plate. --station=furnace,cupola,line,hoist,crane,trough,mold,bench stands those stations of the halls side by side.
 
 func _ready() -> void:
 	var model := ""
@@ -21,6 +21,8 @@ func _ready() -> void:
 	var anim_at := -1.0
 	var clip_name := ""
 	var mats := false
+	var details := false
+	var station := ""
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--model="):
 			model = arg.trim_prefix("--model=")
@@ -56,6 +58,10 @@ func _ready() -> void:
 			clip_name = arg.trim_prefix("--clip=")
 		elif arg == "--mats":
 			mats = true
+		elif arg == "--details":
+			details = true
+		elif arg.begins_with("--station="):
+			station = arg.trim_prefix("--station=")
 	if plain:
 		_plain_light()
 	else:
@@ -137,6 +143,10 @@ func _ready() -> void:
 			x += wide + 0.15
 	if mats:
 		_material_samples()
+	if details:
+		_detail_samples()
+	if station != "":
+		_stations(station.split(","))
 	for part_name in hide:
 		for part in find_children(part_name, "Node3D", true, false):
 			(part as Node3D).visible = false
@@ -168,6 +178,67 @@ func _material_samples() -> void:
 		StationKit.add(self, EnvMesh.box(Vector3(0.5, 0.5, 0.5), 0.02), samples[i], Transform3D(Basis(Vector3.UP, 0.3), Vector3(x, 0.25, 0)))
 		StationKit.add(self, EnvMesh.cylinder(0.2, 0.2, 0.5, 24), samples[i], Transform3D(Basis(), Vector3(x, 0.25, 0.75)))
 		StationKit.add(self, EnvMesh.sphere(0.2, 24, 12), samples[i], Transform3D(Basis(), Vector3(x, 0.2, 1.4)))
+
+
+## --details: the small parts of MachineDetail on a painted steel plate, to judge them close up
+## (try --yaw=0 --pitch=6 --dist=2.7 --h=0.62).
+func _detail_samples() -> void:
+	var paint := StationKit.metal("view_plate", {paint_color = Color("#3f6f8f"), paint = 0.95, rust = 0.25})
+	StationKit.add(self, EnvMesh.box(Vector3(1.6, 1.1, 0.02), 0.004), paint, Transform3D(Basis(), Vector3(0, 0.6, 0)))
+	var front := 0.01
+	var d := MachineDetail.Parts.new()
+	MachineDetail.bolt_row(d, Vector3(-0.72, 1.08, front), Vector3(0.72, 1.08, front), 9, Vector3.BACK)
+	MachineDetail.rivet_row(d, Vector3(-0.74, 0.15, front), Vector3(-0.74, 1.0, front), 12, Vector3.BACK)
+	MachineDetail.weld(d, PackedVector3Array([Vector3(-0.5, 0.1, front), Vector3(-0.5, 1.02, front)]))
+	# A pipe stub with two flanges, a weld round its foot, a hand wheel and a gauge.
+	var pipe := StationKit.metal("view_pipe", {steel_color = Color("#5c6468"), rust = 0.4})
+	StationKit.add(self, EnvMesh.cylinder(0.05, 0.05, 0.3, 16), pipe, Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(0.5, 0.8, front + 0.15)))
+	MachineDetail.flange(d, Vector3(0.5, 0.8, front + 0.012), Vector3.BACK, 0.1)
+	MachineDetail.flange(d, Vector3(0.5, 0.8, front + 0.3), Vector3.BACK, 0.1)
+	MachineDetail.weld_ring(d, Vector3(0.5, 0.8, front + 0.024), Vector3.BACK, 0.052, 0.01)
+	MachineDetail.handwheel(d, Vector3(0.5, 0.8, front + 0.36), Vector3.BACK, 0.09)
+	MachineDetail.gauge(self, Transform3D(Basis(), Vector3(0.5, 1.0, front + 0.1)), 0.045, 0.4)
+	# A small door with two hinges and a grab handle; a lifting eye on top of the plate.
+	StationKit.add(self, EnvMesh.box(Vector3(0.3, 0.36, 0.012), 0.004), paint, Transform3D(Basis(), Vector3(-0.2, 0.32, front + 0.006)))
+	for y: float in [0.2, 0.44]:
+		MachineDetail.hinge(d, Vector3(-0.355, y, front), Vector3.UP, Vector3.BACK, 0.07)
+	MachineDetail.handle(d, Vector3(-0.09, 0.26, front + 0.012), Vector3(-0.09, 0.38, front + 0.012), Vector3.BACK)
+	MachineDetail.lifting_eye(d, Vector3(0.0, 1.15, 0.0), Vector3.UP)
+	MachineDetail.type_plate(self, Transform3D(Basis(), Vector3(-0.12, 0.8, front)), "MM IRONWORKS", ["TYPE K-3   No. 1958-07", "MAX 2500 kg/h"])
+	# A switch box; its cable runs down the plate in clips, then free across the floor to a motor.
+	MachineDetail.switch_box(self, Transform3D(Basis(), Vector3(0.18, 0.42, front)))
+	MachineDetail.cable(d, PackedVector3Array([Vector3(0.18, 0.26, front + 0.012), Vector3(0.18, 0.03, front + 0.012)]), 0.01, Vector3.BACK, 0.2)
+	MachineDetail.cable(d, PackedVector3Array([Vector3(0.18, 0.03, front + 0.012), Vector3(0.2, 0.012, 0.14), Vector3(0.42, 0.012, 0.45), Vector3(0.6, 0.012, 0.52), Vector3(0.66, 0.3, 0.52)]))
+	MachineDetail.motor(self, Transform3D(Basis(Vector3.UP, 0.4), Vector3(0.78, 0, 0.6)))
+	MachineDetail.commit(self, d)
+
+
+## --station=furnace,cupola,line,hoist,crane,trough,mold,bench: those stations of the halls as the
+## levels build them, 4.5 m apart (the cranes over a short span, so trolley and hook are near).
+func _stations(names: PackedStringArray) -> void:
+	for i in names.size():
+		var node: Node3D = null
+		match names[i]:
+			"furnace":
+				node = Furnace.new()
+			"cupola":
+				node = CupolaFurnace.new()
+			"line":
+				node = MoldLine.new()
+			"hoist", "crane":
+				var crane: ChainHoist = HallCrane.new() if names[i] == "crane" else ChainHoist.new()
+				crane.x_range = Vector2(-2.5, 2.5)
+				crane.z_range = Vector2(-1.0, 1.0)
+				node = crane
+			"trough":
+				node = QuenchTrough.new()
+			"mold":
+				node = MoldBox.new()
+			"bench":
+				node = ModelBench.new()
+		if node:
+			node.position.x = (float(i) - float(names.size() - 1) * 0.5) * 4.5
+			add_child(node)
 
 
 ## A plain sky and sun, without the level's grade (--plain).

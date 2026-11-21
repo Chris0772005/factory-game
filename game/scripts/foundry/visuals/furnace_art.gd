@@ -44,6 +44,7 @@ func build(bellows: Node3D) -> void:
 	_lid()
 	_tuyere()
 	_bellows_art(bellows)
+	_details(bellows)
 
 
 ## Called every frame by the furnace with its heat (0..1) and bellows squash
@@ -336,6 +337,44 @@ func _bellows_art(bellows: Node3D) -> void:
 	StationKit.add_merged(_top_board, pad, rubber)
 	StationKit.label(_top_board, "MM", Transform3D(Basis(Vector3.RIGHT, -PI * 0.5) * Basis(Vector3.FORWARD, PI * 0.5), Vector3(0.2, BOARD.y + 0.001, 0)),
 		64, Color(0.22, 0.13, 0.08, 0.75), 700, 0.0012)
+
+
+## The small parts that show the furnace was put together by hand (MachineDetail, TECH_SPEC Modul Y,
+## Stufe U12): bolts through the flue's collar and clamp bands, a weld where the tuyere enters the
+## drum, rivets in the bail brackets, the maker's plate on the front, and brass tacks that hold the
+## leather to the bellows boards.
+func _details(bellows: Node3D) -> void:
+	var d := MachineDetail.Parts.new()
+	var x := STACK_XZ.x
+	var z := STACK_XZ.y
+	# The collar sits on the back of the drum (its face lies 8 mm proud of the shell).
+	MachineDetail.bolt_circle(d, Vector3(x, 0.6, -0.503), Vector3.FORWARD, 0.0785, 6, 0.014, true)
+	# Each joint band of the stack is a clamp: two ears at the front, a bolt through them.
+	for y: float in [1.15, 1.75, STACK_TOP - 0.02]:
+		d.dark.append(EnvMesh.piece(EnvMesh.box(Vector3(0.036, 0.026, 0.03), 0.004), Transform3D(Basis(), Vector3(x, y, z + 0.09)), 0.4))
+		MachineDetail.bolt(d, Vector3(x + 0.018, y, z + 0.092), Vector3.RIGHT, 0.014, true)
+		MachineDetail.bolt(d, Vector3(x - 0.018, y, z + 0.092), Vector3.LEFT, 0.014, true)
+	MachineDetail.weld_ring(d, Vector3(0.497, 0.195, 0), Vector3.RIGHT, 0.039, 0.009)
+	for s: float in [-1.0, 1.0]:
+		for bz: float in [-0.085, 0.085]:
+			for by: float in [0.572, 0.598]:
+				MachineDetail.rivet(d, Vector3(s * 0.511, by, bz), Vector3(s, 0, 0), 0.012, true)
+	MachineDetail.commit(self, d)
+	# The plate faces the side one works from (+z), a little toward the lid, between the two hoops.
+	var a := deg_to_rad(-22.0)
+	var dir := Vector3(sin(a), 0, cos(a))
+	MachineDetail.type_plate(self, Transform3D(Basis(Vector3.UP.cross(dir), Vector3.UP, dir), dir * 0.497 + Vector3(0, 0.375, 0)),
+		"MM IRONWORKS", ["DRUM FURNACE   B-1", "No. 0417"], Vector2(0.15, 0.085))
+	# Bellows: the leather is tacked to the edges of both boards. The top board moves.
+	var low := MachineDetail.Parts.new()
+	for s: float in [-1.0, 1.0]:
+		MachineDetail.tack_row(low, Vector3(-0.2, 0.072, s * 0.186), Vector3(0.3, 0.072, s * 0.186), 9, Vector3(0, 0, s))
+	MachineDetail.commit(bellows, low)
+	var high := MachineDetail.Parts.new()
+	for s: float in [-1.0, 1.0]:
+		MachineDetail.tack_row(high, Vector3(0.07, BOARD.y * 0.5, s * (BOARD.z * 0.5 + 0.001)), Vector3(BOARD.x - 0.04, BOARD.y * 0.5, s * (BOARD.z * 0.5 + 0.001)), 9, Vector3(0, 0, s))
+	MachineDetail.tack_row(high, Vector3(BOARD.x + 0.006, BOARD.y * 0.5, -BOARD.z * 0.5 + 0.04), Vector3(BOARD.x + 0.006, BOARD.y * 0.5, BOARD.z * 0.5 - 0.04), 5, Vector3.RIGHT)
+	MachineDetail.commit(_top_board, high)
 
 
 ## Leather wedge, built closed (flat, rings stacked at the hinge height); the

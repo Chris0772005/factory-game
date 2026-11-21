@@ -55,6 +55,14 @@ func _frame(rng: RandomNumberGenerator) -> void:
 		var z := -0.24 + i * 0.12
 		parts.append(EnvMesh.piece(EnvMesh.box(Vector3(1.11, 0.022, 0.1), 0.006, 1), Transform3D(Basis(Vector3.UP, StationKit.jitter(rng, 0.6)), Vector3(0, 0.211, z)), rng.randf(), Vector3.RIGHT))
 	StationKit.add_merged(self, parts, frame_wood)
+	# Coach bolts through every leg into the aprons and the stretchers (MachineDetail, Stufe U12).
+	var d := MachineDetail.Parts.new()
+	for x: float in [-0.6, 0.6]:
+		for z: float in [-0.31, 0.31]:
+			for y: float in [TOP - 0.155, TOP - 0.105, 0.17]:
+				MachineDetail.bolt(d, Vector3(x, y, z + signf(z) * 0.045), Vector3(0, 0, signf(z)), 0.016, true)
+				MachineDetail.bolt(d, Vector3(x + signf(x) * 0.045, y, z), Vector3(signf(x), 0, 0), 0.016, true)
+	MachineDetail.commit(self, d)
 
 
 ## Bench vise at the front-left corner.

@@ -271,6 +271,13 @@ func _flask(variant: int) -> void:
 		for z: float in [-0.16, 0.16]:
 			irons.append(EnvMesh.piece(EnvMesh.box(Vector3(0.01, 0.07, 0.05), 0.003, 1), Transform3D(Basis(), Vector3(s * (hx + WALL + 0.005), 0.35, z))))
 	StationKit.add_merged(root, irons, iron)
+	# The handles' plates are bolted through the end boards (MachineDetail, Stufe U12).
+	var d := MachineDetail.Parts.new()
+	for s: float in [-1.0, 1.0]:
+		for z: float in [-0.16, 0.16]:
+			for y: float in [0.328, 0.372]:
+				MachineDetail.bolt(d, Vector3(s * (hx + WALL + 0.01), y, z), Vector3(s, 0, 0), 0.014, true)
+	MachineDetail.commit(root, d)
 	var brand := Color(0.2, 0.11, 0.06, 0.7)
 	StationKit.label(root, "MM", Transform3D(Basis(), Vector3(-hx * 0.55, 0.15, hz + WALL + 0.007)), 96, brand, 700, 0.0013)
 	StationKit.label(root, "Nr. %d" % (variant + 1), Transform3D(Basis(), Vector3(hx * 0.55, 0.13, hz + WALL + 0.007)), 64, brand, 600, 0.0011)

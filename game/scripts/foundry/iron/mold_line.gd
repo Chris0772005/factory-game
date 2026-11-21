@@ -607,6 +607,87 @@ func _build_art() -> void:
 	box.append(EnvMesh.piece(EnvMesh.box(Vector3(0.12, 0.08, 0.6), 0.01), Transform3D(Basis(), Vector3(0, TUNDISH_TOP - 0.3, -0.5))))
 	StationKit.add_merged(_tundish_node, box, paint)
 	StationKit.label(_tundish_node, "GIESSAUTOMAT", Transform3D(Basis(), Vector3(0, TUNDISH_TOP - 0.18, 0.3)), 48, Color("#f0e2c4"), 800, 0.0011)
+	_build_details()
+
+
+## The small parts of the line (MachineDetail, TECH_SPEC Modul Y, Stufe U12): foot plates with anchor
+## bolts under every leg and bolts where the legs carry the rails; on the moulding machine bolted
+## column feet and head, a hydraulic unit with its motor on top, a switch box on the front column
+## with the cable across to the motor, and the maker's plate; riveted seams, a flue collar and a plate
+## on the cooling hood; rivets on the shake-out chute; bolts on the pouring box. (Nothing stands on the
+## floor before the machine: that is where one stands to work it.)
+func _build_details() -> void:
+	var d := MachineDetail.Parts.new()
+	# Roller beds: twelve pairs of legs.
+	for z: float in [0.0, RETURN_Z]:
+		for k in RUN:
+			for s: float in [-1.0, 1.0]:
+				var leg := Vector3(k * PITCH, 0, z + s * 0.32)
+				d.steel.append(EnvMesh.piece(EnvMesh.box(Vector3(0.17, 0.012, 0.17), 0.003), Transform3D(Basis(), leg + Vector3(0, 0.006, 0)), 0.4))
+				for bx: float in [-1.0, 1.0]:
+					MachineDetail.bolt(d, leg + Vector3(bx * 0.06, 0.012, s * 0.06), Vector3.UP, 0.018)
+					MachineDetail.bolt(d, leg + Vector3(bx * 0.022, BELT_Y - 0.06, s * 0.031), Vector3(0, 0, s), 0.016)
+	# Moulding machine: two columns, a cross head, a hydraulic unit on the floor before the front one.
+	var m := slot_position(MOLD_SLOT)
+	for s: float in [-1.0, 1.0]:
+		var foot := Vector3(m.x, 0, m.z + s * 0.5)
+		d.steel.append(EnvMesh.piece(EnvMesh.box(Vector3(0.3, 0.016, 0.3), 0.004), Transform3D(Basis(), foot + Vector3(0, 0.008, 0)), 0.3))
+		for bx: float in [-1.0, 1.0]:
+			for bz: float in [-1.0, 1.0]:
+				MachineDetail.bolt(d, foot + Vector3(bx * 0.115, 0.016, bz * 0.115), Vector3.UP, 0.024)
+		# The head is bolted to each column from both sides.
+		for side: float in [-1.0, 1.0]:
+			for by: float in [-0.07, 0.07]:
+				MachineDetail.bolt(d, Vector3(m.x + side * 0.251, 2.0 + by, m.z + s * 0.5), Vector3(side, 0, 0), 0.024)
+	var unit := Vector3(m.x - 0.45, 0.85, m.z + 0.55)
+	for bx: float in [-1.0, 1.0]:
+		for by: float in [-1.0, 1.0]:
+			MachineDetail.bolt(d, unit + Vector3(bx * 0.14, by * 0.2, 0.181), Vector3.BACK, 0.016)
+	# The unit's pressure line leaves its far side and runs up the back of the front column to the head.
+	var column_x := m.x - 0.071
+	MachineDetail.conduit(d, PackedVector3Array([unit + Vector3(0.1, 0.25, -0.12), Vector3(column_x - 0.012, 1.2, m.z + 0.45), Vector3(column_x - 0.012, 1.86, m.z + 0.45)]), 0.011)
+	for y: float in [1.45, 1.65, 1.82]:
+		MachineDetail.clip(d, Vector3(column_x - 0.012, y, m.z + 0.45), Vector3.UP, Vector3.LEFT, 0.011)
+	# Cooling hood: riveted along the edges of both long sides, down two seams, round the flue.
+	var c := (slot_position(3) + slot_position(4)) * 0.5
+	for s: float in [-1.0, 1.0]:
+		var face := Vector3(c.x, c.y, c.z + s * 0.441)
+		var out := Vector3(0, 0, s)
+		for y: float in [0.34, 1.16]:
+			MachineDetail.rivet_row(d, face + Vector3(-PITCH + 0.04, y, 0), face + Vector3(PITCH - 0.04, y, 0), 16, out, 0.014)
+		for x: float in [-PITCH + 0.04, -0.32, 0.32, PITCH - 0.04]:
+			MachineDetail.rivet_row(d, face + Vector3(x, 0.44, 0), face + Vector3(x, 1.06, 0), 6, out, 0.014)
+	d.steel.append(EnvMesh.piece(EnvMesh.cylinder(0.2, 0.24, 0.05, 16), Transform3D(Basis(), c + Vector3(0, 1.245, 0)), 0.5))
+	MachineDetail.rivets_around(d, c + Vector3(0, 1.24, 0), Vector3.UP, 0.223, 12, 0.014)
+	MachineDetail.rivets_around(d, c + Vector3(0, 2.1, 0), Vector3.UP, 0.161, 10, 0.014)
+	# Shake-out chute: its two cheeks are riveted to the plate.
+	var g := slot_position(SHAKEOUT_SLOT)
+	var slope := Basis(Vector3.BACK, -0.45)
+	for s: float in [-1.0, 1.0]:
+		var cheek := g + Vector3(0.65, 0.16, 0.3 + s * 0.3)
+		MachineDetail.rivet_row(d, cheek + slope * Vector3(-0.4, -0.045, s * 0.016), cheek + slope * Vector3(0.4, -0.045, s * 0.016), 7, Vector3(0, 0, s), 0.014)
+	MachineDetail.commit(self, d)
+	# The pump's motor lies on top of the unit (its top is 1.1 m up).
+	var motor_at := Vector3(m.x - 0.45, 1.1, m.z + 0.55)
+	MachineDetail.motor(self, Transform3D(Basis(Vector3.UP, PI * 0.5), motor_at), 0.22, 0.075, Color("#3f6f8f"))
+	# Switch box on the front column, facing the one who works the machine; its cable hangs across to
+	# the motor's terminal box.
+	var box_at := Vector3(m.x - 0.07, 1.25, m.z + 0.5)
+	MachineDetail.switch_box(self, Transform3D(Basis(Vector3.UP, -PI * 0.5), box_at), Vector3(0.2, 0.28, 0.1))
+	var wires := MachineDetail.Parts.new()
+	MachineDetail.cable(wires, MachineDetail.sag(box_at + Vector3(-0.05, -0.14, 0.03), motor_at + Vector3(0.03, 0.2, 0.02), 0.09))
+	MachineDetail.commit(self, wires)
+	MachineDetail.type_plate(self, Transform3D(Basis(), Vector3(m.x, 1.55, m.z + 0.571)), "MM IRONWORKS", ["MOULDER   TYPE F-12", "No. 1961-22"], Vector2(0.13, 0.08))
+	MachineDetail.type_plate(self, Transform3D(Basis(), c + Vector3(0.62, 0.62, 0.441)), "MM IRONWORKS", ["COOLING HOOD   C-2"], Vector2(0.14, 0.07), false)
+	# Pouring box (only there once it is bought: on its own node).
+	var t := MachineDetail.Parts.new()
+	for s: float in [-1.0, 1.0]:
+		MachineDetail.bolt_row(t, Vector3(-0.29, TUNDISH_TOP - 0.33, s * 0.296), Vector3(0.29, TUNDISH_TOP - 0.33, s * 0.296), 5, Vector3(0, 0, s), 0.016)
+		var foot := Vector3(s * 0.3, 0, 0)
+		t.steel.append(EnvMesh.piece(EnvMesh.box(Vector3(0.16, 0.012, 0.16), 0.003), Transform3D(Basis(), foot + Vector3(0, 0.006, 0)), 0.4))
+		for bz: float in [-1.0, 1.0]:
+			MachineDetail.bolt(t, foot + Vector3(s * 0.055, 0.012, bz * 0.055), Vector3.UP, 0.018)
+	MachineDetail.commit(_tundish_node, t)
 
 
 func _refresh_flasks() -> void:

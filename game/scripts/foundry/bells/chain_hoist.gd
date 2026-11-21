@@ -264,6 +264,70 @@ func _build_art() -> void:
 	hook_mesh.outer_radius = 0.09
 	StationKit.add(_hook_node, hook_mesh, steel, Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(0, -0.06, 0)))
 	StationKit.add(_hook_node, EnvMesh.box(Vector3(0.12, 0.14, 0.1), 0.02), yellow, Transform3D(Basis(), Vector3(0, 0.06, 0)))
+	_build_details(girder_paint)
+
+
+## The small parts of the crane (MachineDetail, TECH_SPEC Modul Y, Stufe U12): rivets along both
+## flanges of the girder and stiffeners across its web, a conduit along its back, bolts and axle caps
+## on the end carriages, bolts and the maker's plate on the trolley, bolts through the hook block.
+## Everything is measured from `girder`, `x_range` and `rail_height`: the hall crane of the iron
+## hall is this crane with a heavier girder. Each part hangs on the node it travels with.
+func _build_details(girder_paint: ShaderMaterial) -> void:
+	var cx := (x_range.x + x_range.y) * 0.5
+	var span := x_range.y - x_range.x + 1.8
+	var mid := rail_height + 0.05
+	var half := girder.y * 0.5
+	var size := clampf(girder.x * 0.075, 0.018, 0.032)
+	var b := MachineDetail.Parts.new()
+	var count := int((span - 0.6) / 0.25) + 1
+	for face: float in [-1.0, 1.0]:
+		for edge: float in [-1.0, 1.0]:
+			var y := mid + edge * (girder.x * 0.5 - size * 1.6)
+			MachineDetail.rivet_row(b, Vector3(cx - span * 0.5 + 0.3, y, face * half), Vector3(cx + span * 0.5 - 0.3, y, face * half), count, Vector3(0, 0, face), size, true)
+	# Stiffeners: an upright flat on the web every metre and a half or so (none behind the load plate).
+	var stiff := []
+	var bays := maxi(int(span / 1.4), 2)
+	for i in range(1, bays):
+		var x := cx - span * 0.5 + span * i / bays
+		if absf(x) < 0.75:
+			continue
+		for face: float in [-1.0, 1.0]:
+			stiff.append(EnvMesh.piece(EnvMesh.box(Vector3(0.014, girder.x - size * 5.0, 0.03), 0.003), Transform3D(Basis(), Vector3(x, mid, face * (half + 0.013))), 0.4))
+	StationKit.add_merged(_bridge, stiff, girder_paint)
+	# The supply runs in a conduit along the back of the girder, clipped on every metre.
+	var run_y := mid + girder.x * 0.5 - size * 4.5
+	var back := -half - 0.013
+	MachineDetail.conduit(b, PackedVector3Array([Vector3(cx - span * 0.5 + 0.3, run_y, back), Vector3(cx + span * 0.5 - 0.3, run_y, back)]), 0.012)
+	for i in int(span - 0.6) + 1:
+		MachineDetail.clip(b, Vector3(cx - span * 0.5 + 0.35 + i, run_y, back), Vector3.RIGHT, Vector3.FORWARD, 0.012)
+	# End carriages: bolted to the girder from outside, and an axle cap over each wheel.
+	for s: float in [-1.0, 1.0]:
+		var end := Vector3(cx + s * span * 0.5, rail_height + 0.16, 0)
+		for by: float in [-0.05, 0.05]:
+			for bz: float in [-1.0, 1.0]:
+				MachineDetail.bolt(b, end + Vector3(s * 0.2, by, bz * (half + 0.12)), Vector3(s, 0, 0), size)
+		for face: float in [-1.0, 1.0]:
+			var cap := end + Vector3(0, -0.02, face * (0.25 + half))
+			b.dark.append(EnvMesh.piece(EnvMesh.cylinder(0.07, 0.075, 0.02, 14), Transform3D(Basis(Vector3.RIGHT, PI * 0.5), cap + Vector3(0, 0, face * 0.01)), 0.5))
+			MachineDetail.bolt_circle(b, cap + Vector3(0, 0, face * 0.02), Vector3(0, 0, face), 0.046, 4, 0.014, true, PI * 0.25)
+	MachineDetail.commit(_bridge, b, false, true)
+	# Trolley: its cheeks are bolted at the corners, the rope drum has a bolted cap on either end.
+	var t := MachineDetail.Parts.new()
+	var body := Vector3(0, rail_height - 0.2, 0)
+	for face: float in [-1.0, 1.0]:
+		for sx: float in [-1.0, 1.0]:
+			for sy: float in [-1.0, 1.0]:
+				MachineDetail.bolt(t, body + Vector3(sx * 0.18, sy * 0.105, face * 0.211), Vector3(0, 0, face), 0.02)
+	for s: float in [-1.0, 1.0]:
+		MachineDetail.bolt_circle(t, Vector3(s * 0.151, rail_height - 0.38, 0), Vector3(s, 0, 0), 0.08, 6, 0.014, true)
+	MachineDetail.commit(_trolley, t)
+	MachineDetail.type_plate(_trolley, Transform3D(Basis(), body + Vector3(0, 0, 0.212)), "MM IRONWORKS", ["HOIST   TYPE H-2", capacity_label], Vector2(0.17, 0.1))
+	# Hook block: two bolts through each cheek.
+	var h := MachineDetail.Parts.new()
+	for face: float in [-1.0, 1.0]:
+		for sy: float in [-1.0, 1.0]:
+			MachineDetail.bolt(h, Vector3(0, 0.06 + sy * 0.04, face * 0.051), Vector3(0, 0, face), 0.016)
+	MachineDetail.commit(_hook_node, h)
 
 
 func _update_art() -> void:

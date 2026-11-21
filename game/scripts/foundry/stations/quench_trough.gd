@@ -74,6 +74,39 @@ func _build_art() -> void:
 	water.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(water)
 	StationKit.label(self, "WASSER", Transform3D(Basis(), Vector3(0, 0.36, hz + 0.03)), 72, Color("#e9e3d6"), 800, 0.0012)
+	_build_details()
+
+
+## The small parts of the tub (MachineDetail, TECH_SPEC Modul Y, Stufe U12): rivets under the rolled
+## rim of both long sides and down the seams near the corners, a grab handle on either end, a drain
+## cock on a short pipe at the foot of one end.
+func _build_details() -> void:
+	var hx := SIZE.x * 0.5
+	var hz := SIZE.z * 0.5
+	var lean := 0.06
+	var d := MachineDetail.Parts.new()
+	for s: float in [-1.0, 1.0]:
+		# The long walls lean out toward the top: every part follows that lean.
+		var tilt := Basis(Vector3.RIGHT, s * lean)
+		var out := tilt * Vector3(0, 0, s)
+		var mid := Vector3(0, 0.12 + (SIZE.y - 0.12) * 0.5, s * (hz - 0.0125))
+		var skin := 0.0135
+		MachineDetail.rivet_row(d, mid + tilt * Vector3(-hx + 0.05, 0.2, s * skin), mid + tilt * Vector3(hx - 0.05, 0.2, s * skin), 15, out, 0.014)
+		for x: float in [-hx + 0.05, hx - 0.05]:
+			MachineDetail.rivet_row(d, mid + tilt * Vector3(x, -0.2, s * skin), mid + tilt * Vector3(x, 0.13, s * skin), 5, out, 0.014)
+		# The short walls lean the same way; a handle high on each.
+		var end_tilt := Basis(Vector3.BACK, -s * lean)
+		var end_out := end_tilt * Vector3(s, 0, 0)
+		var end_mid := Vector3(s * (hx - 0.0125), 0.12 + (SIZE.y - 0.12) * 0.5, 0)
+		MachineDetail.handle(d, end_mid + end_tilt * Vector3(s * skin, 0.12, -0.09), end_mid + end_tilt * Vector3(s * skin, 0.12, 0.09), end_out, 0.05, 0.008)
+		MachineDetail.rivet_row(d, end_mid + end_tilt * Vector3(s * skin, 0.2, -hz + 0.06), end_mid + end_tilt * Vector3(s * skin, 0.2, hz - 0.06), 7, end_out, 0.014)
+	# Drain: a pipe stub with a flange and a small hand wheel, low on the right end.
+	var drain := Vector3(hx - 0.004, 0.2, 0.14)
+	d.steel.append(EnvMesh.piece(EnvMesh.cylinder(0.024, 0.024, 0.1, 10), Transform3D(Basis(Vector3.BACK, -PI * 0.5), drain + Vector3(0.05, 0, 0)), 0.5))
+	MachineDetail.flange(d, drain + Vector3(0.008, 0, 0), Vector3.RIGHT, 0.05, 0.01, 4, 0.012)
+	d.steel.append(EnvMesh.piece(EnvMesh.cylinder(0.008, 0.008, 0.06, 6), Transform3D(Basis(), drain + Vector3(0.07, 0.04, 0)), 0.5))
+	MachineDetail.handwheel(d, drain + Vector3(0.07, 0.075, 0), Vector3.UP, 0.04)
+	MachineDetail.commit(self, d)
 
 
 ## Horizontal distance from `p` to the tub's footprint (0 inside).
