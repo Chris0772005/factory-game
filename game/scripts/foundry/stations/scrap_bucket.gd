@@ -302,13 +302,26 @@ func _metal_count() -> int:
 	return n
 
 
-## An open lock-up of the storage auctions with pieces in it, in reach of `player`.
+## The lock-up of the storage auctions that [F] with the bucket means for `player`: the nearest one
+## that stands open with pieces in it (in reach of its door, or with the player in its room), or that
+## takes bids (the bucket need not be set down to bid).
 func _lockup_near(player: Node3D) -> StorageLockup:
+	var best: StorageLockup = null
+	var best_d := INF
 	for node in get_tree().get_nodes_in_group(StorageLockup.GROUP):
 		var unit := node as StorageLockup
-		if unit.state == StorageLockup.State.WON and unit.in_reach(player) and not unit.goods_inside().is_empty():
-			return unit
-	return null
+		var open := unit.state == StorageLockup.State.WON
+		if open and unit.goods_inside().is_empty():
+			continue
+		if not open and not unit.takes_bids():
+			continue
+		if not unit.in_reach(player) and not (open and unit.in_room(player.global_position)):
+			continue
+		var d := unit.interact_point().distance_squared_to(player.global_position)
+		if d < best_d:
+			best_d = d
+			best = unit
+	return best
 
 
 ## The post office's counter, in reach of `player`.
@@ -324,7 +337,7 @@ func held_hint(player: Node) -> String:
 	# (Also with an empty bucket: this is where it gets filled.)
 	var unit := _lockup_near(player as Node3D)
 	if unit:
-		return unit.bucket_hint(self)
+		return unit.bucket_hint(self) if unit.state == StorageLockup.State.WON else unit.hint(player)
 	var load_text := "Eimer %d/%d · %d $" % [count, capacity(), worth]
 	if count == 0:
 		return "Eimer leer – neben den Schrottberg stellen (Linksklick) und wühlen"
@@ -361,7 +374,10 @@ func use_start(player: Node) -> void:
 		return
 	var unit := _lockup_near(player as Node3D)
 	if unit:
-		unit.sweep(self)
+		if unit.state == StorageLockup.State.WON:
+			unit.sweep(self)
+		else:
+			unit.interact(player)
 		return
 	if count == 0:
 		return

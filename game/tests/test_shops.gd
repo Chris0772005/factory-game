@@ -78,10 +78,13 @@ func _street(me: Player) -> void:
 		# Up the side street to the back street, and no further than the barrier under the viaduct.
 		var corner := Transform3D(Basis(), Vector3(dir * (side - 3.6), 0.06, front - 2.0))
 		_check(not me.test_move(corner, Vector3(0, 0, TownStreets.BACK_Z - front + 2.0)), "the %s side street is free up to the back street" % name)
-		var under := Transform3D(Basis(), Vector3(dir * side, 0.06, TownStreets.VIADUCT_Z - 1.0))
-		_check(me.test_move(under, Vector3(0, 0, 4.0)), "under the viaduct a barrier stops people")
-		var pavement := Transform3D(Basis(), Vector3(dir * (TownStreets.GATE_X + TownStreets.GATE_W * 0.5 - 0.8), 0.06, TownStreets.VIADUCT_Z - 1.0))
+		var under := Transform3D(Basis(), Vector3(dir * side, 0.06, TownStreets.BAR_Z - 2.0))
+		_check(me.test_move(under, Vector3(0, 0, 4.0)), "at the viaduct a barrier stops people")
+		var pavement := Transform3D(Basis(), Vector3(dir * (TownStreets.GATE_X + TownStreets.GATE_W * 0.5 - 0.8), 0.06, TownStreets.BAR_Z - 2.0))
 		_check(me.test_move(pavement, Vector3(0, 0, 4.0)), "on the pavement beside the road too")
+		# It is as high as the arch (nothing is thrown over it for good) and as deep as the viaduct.
+		var high := Transform3D(Basis(), Vector3(dir * side, 3.4, TownStreets.BAR_Z - 2.0))
+		_check(me.test_move(high, Vector3(0, 0, 4.0)), "and it reaches up to the arch")
 	# The back street, from one side street to the other (between the parked cars and the van).
 	var back := Transform3D(Basis(), Vector3(-side + 3.6, 0.06, 34.0))
 	_check(not me.test_move(back, Vector3(side * 2.0 - 7.2, 0, 0)), "the back street is free from end to end")
@@ -100,6 +103,44 @@ func _street(me: Player) -> void:
 	var yard := Transform3D(Basis(), Vector3(10.0, 0.06, front + 4.0))
 	_check(me.test_move(yard, Vector3(0, 0, 4.0)), "elsewhere the yard wall behind the row is solid")
 	await _frames(1)
+	await _rounds(me)
+
+
+## Who moves about the block: the officer finds his way back from behind the row, and a worker who
+## ends up beyond the viaduct is set back.
+func _rounds(me: Player) -> void:
+	var here := me.global_position
+	# After a chase behind the row the officer walks back to his beat through the passage, not into the
+	# yard wall (where he used to march on the spot until he was set back).
+	var cop := get_tree().get_first_node_in_group(PolicePatrol.GROUP) as PolicePatrol
+	var beat := cop.global_position
+	cop.global_position = Vector3(0.0, 0.05, TownStreets.BACK_Z - 2.0)
+	cop.state = PolicePatrol.State.RETURN
+	cop._return_time = 0.0
+	cop.set_physics_process(true)
+	var through := false
+	for i in 13 * 60:
+		await get_tree().physics_frame
+		var at := cop.global_position
+		if at.z > 23.5 and at.z < 28.0 and at.x > TownStreets.PASSAGE.x and at.x < TownStreets.PASSAGE.y:
+			through = true
+		if cop.state != PolicePatrol.State.RETURN:
+			break
+	_check(through and cop.state != PolicePatrol.State.RETURN and cop.global_position.z < ScrapHallSet.FRONT_Z - 1.0,
+		"from the back street the officer walks back to his beat through the passage (%.1f s, at %s)" % [cop._return_time, cop.global_position])
+	# A suspect who hugs the passage's wall is still in a way, not indoors.
+	var hug := Vector3(TownStreets.PASSAGE.x + 0.45, 0, 25.0)
+	_check(cop._reachable(hug) == hug, "somebody close to the passage's wall is not taken for indoors")
+	cop.set_physics_process(false)
+	cop.state = PolicePatrol.State.PATROL
+	cop.velocity = Vector3.ZERO
+	cop.global_position = beat
+	# Beyond the viaduct nobody gets back in on foot: whoever ends up there is set back at the hall.
+	me._do_teleport(Vector3(TownStreets.GATE_X, 0.3, TownStreets.VIADUCT_Z + TownStreets.VIADUCT_D + 4.0))
+	await _frames(100)
+	_check(me.global_position.z < 20.0, "a worker who ends up beyond the viaduct is set back at the hall (at %s)" % me.global_position)
+	me._do_teleport(here)
+	await _frames(3)
 
 
 ## The hardware store: in through the door, the tools on the bench, bought with [F].
@@ -269,9 +310,11 @@ func _stall(world: FoundryLevel, me: Player, stall: YardStall, missions: Mission
 		if guide.letters()[i].id == &"foundry_corner":
 			guide.load_index(i)
 	world.add_money(-world.money)
+	# (The post office asks for other things than are in the bucket here: its tip comes before the stall's.)
+	(get_tree().get_first_node_in_group(PostOffice.GROUP) as PostOffice).set_orders([&"scrap_pipe", &"scrap_candle", &"scrap_trophy"])
 	bucket.contents = [&"junk_bolt", &"scrap_can"] as Array[StringName]
 	bucket._changed()
-	_check(NextStepCard.next_step(world).contains("Bank"), "saving for the furnace, the card names the bank (%s)" % NextStepCard.next_step(world))
+	_check(NextStepCard.next_step(world).contains("Bank") and not NextStepCard.next_step(world).contains("POST"), "saving for the furnace, the card names the bank (%s)" % NextStepCard.next_step(world))
 	bucket.contents = [&"junk_bolt", &"scrap_ring"] as Array[StringName]
 	bucket._changed()
 	var nudge := NextStepCard.next_step(world)

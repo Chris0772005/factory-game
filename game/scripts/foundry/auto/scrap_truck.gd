@@ -39,6 +39,7 @@ var _roll := 0.0
 var _last_pos := Vector3.ZERO
 var _paid := false
 var _patience := 0.0
+var _honk := 0.0
 var _lamps: Array[BaseMaterial3D] = []
 var _beams: Array[SpotLight3D] = []
 var _lit := false
@@ -124,6 +125,18 @@ func _physics_process(delta: float) -> void:
 			_start_remote.rpc()
 	if not busy():
 		return
+	# Somebody of the crew in front of the bonnet: the truck waits for as long as it takes, and sounds
+	# its horn. (It would shove a worker along the road, and under the viaduct against the barrier.)
+	if _player_ahead():
+		_honk -= delta
+		if _honk <= 0.0:
+			_honk = 4.0
+			Sfx.play(&"car_horn", global_position + Vector3(0, 1.5, 0), -3.0, 0.04)
+			var world := get_tree().get_first_node_in_group(&"world") as GameWorld
+			if world and not world.attract_mode:
+				HUD.popup(world, global_position + Vector3(0, 3.7, 0), "Der LKW wartet – Platz machen!", UITheme.INFO)
+		return
+	_honk = 0.8
 	# A car right ahead in its way (TownTraffic): the truck waits a moment instead of driving through it.
 	if _patience > 0.0 and _held_up():
 		_patience -= delta
@@ -167,6 +180,22 @@ func _start() -> void:
 	_paid = false
 	loaded = false
 	_patience = PATIENCE
+
+
+## Whether a worker stands close in front of the truck, in its way (every machine looks for itself:
+## the truck stops on the screen of whoever stands there).
+func _player_ahead() -> bool:
+	var forward := global_transform.basis.z
+	var right := forward.cross(Vector3.UP)
+	for node in get_tree().get_nodes_in_group(&"players"):
+		var rel := (node as Node3D).global_position - global_position
+		if absf(rel.y) > 3.0:
+			continue
+		rel.y = 0.0
+		var ahead := rel.dot(forward)
+		if ahead > 2.0 and ahead < 8.5 and absf(rel.dot(right)) < 1.9:
+			return true
+	return false
 
 
 ## Whether a car of the traffic, or somebody on foot, is close in front of the truck, in its way.

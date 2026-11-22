@@ -254,7 +254,7 @@ func _bidding(delta: float) -> void:
 	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
 	if ours and world and world.money >= bid:
 		world.add_money(-bid)
-		_call("… und zum Dritten! Verkauft an die Schrotthalle für %s $." % HUD._format(bid), true)
+		_call("… und zum Dritten! Verkauft an die Schrotthalle für %s $." % HUD._format(bid), true, true)
 		Missions.report(get_tree(), &"lot_won", 1)
 		_lay_out()
 		state = State.WON
@@ -300,15 +300,28 @@ func goods_inside() -> Array:
 	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
 	if world == null or state != State.WON:
 		return out
-	var half := TownStreets.ARCH_W * 0.5
 	for node in world.entities.get_children():
 		var item := node as Item
 		if item == null or item is ScrapBucket or item.is_queued_for_deletion() or FoundryRules.find_info(item.kind).is_empty():
 			continue
-		var local := to_local(item.global_position)
-		if absf(local.x) < half and local.z > -0.2 and local.z < TownStreets.LOCKUP_D and not item.is_held():
+		if in_room(item.global_position) and not item.is_held() and not _carried(item):
 			out.append(item)
 	return out
+
+
+## Whether `at` lies in the room behind the door (with `grow` to spare all round).
+func in_room(at: Vector3, grow := 0.0) -> bool:
+	var local := to_local(at)
+	return absf(local.x) < TownStreets.ARCH_W * 0.5 + grow and local.z > -0.2 - grow and local.z < TownStreets.LOCKUP_D + grow
+
+
+## Whether somebody carries `item`. The host knows it from the thing itself (Item.is_held), the
+## other players only from the carrier.
+func _carried(item: Item) -> bool:
+	for player in get_tree().get_nodes_in_group(&"players"):
+		if (player as Player).held_item() == item:
+			return true
+	return false
 
 
 ## Host: every piece in the room goes into `bucket`, as far as it has room. Returns how many.
@@ -330,15 +343,48 @@ func _open(delta: float) -> void:
 	_empty_for = _empty_for + delta if inside.is_empty() else 0.0
 	if _empty_for < 6.0 and _clock < CLEAR_AFTER:
 		return
-	# Nobody is shut in: the shutter waits for whoever still stands in the room.
-	for player in get_tree().get_nodes_in_group(&"players"):
-		var local := to_local((player as Node3D).global_position)
-		if absf(local.x) < TownStreets.ARCH_W * 0.5 + 0.3 and local.z > -0.6 and local.z < TownStreets.LOCKUP_D + 0.3:
-			return
-	_clear_goods()
+	# Nobody and nothing of the crew's is shut in: the shutter waits for whoever still stands in the
+	# room, and for the bucket (or a tool) somebody set down there.
+	if _occupied():
+		return
+	# What the crew left lying after all that time is paid for: it is set out by the kerb.
+	if not inside.is_empty():
+		_set_out(inside)
+	_goods.clear()
 	state = State.RESTING
 	_clock = REST_WON
 	_publish()
+
+
+## Host: whether somebody stands in the room, or something that is no find lies in it (the bucket, a
+## tool, a casting).
+func _occupied() -> bool:
+	for player in get_tree().get_nodes_in_group(&"players"):
+		if in_room((player as Node3D).global_position, 0.4):
+			return true
+	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
+	if world == null:
+		return false
+	for node in world.entities.get_children():
+		var item := node as Item
+		if item and not item.is_queued_for_deletion() and (item is ScrapBucket or FoundryRules.find_info(item.kind).is_empty()) and in_room(item.global_position):
+			return true
+	return false
+
+
+## Host: the pieces still in the room are set out on the pavement in front of it, in two rows by the
+## kerb (clear of the door), and the auctioneer says so.
+func _set_out(items: Array) -> void:
+	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
+	if world == null:
+		return
+	for i in items.size():
+		var item: Item = items[i]
+		var info: Dictionary = FoundryRules.find_info(item.kind)
+		var spot := Vector3(-1.26 + (i % 8) * 0.36, 0.3, -3.0 - (i / 8) * 0.42)
+		world.spawn_item(item.kind, info.color, info.size, 0.4, to_global(spot))
+		item.queue_free()
+	_call("Lager %d wird geräumt – der Rest von Los %d steht am Bordstein." % [number, number], false)
 
 
 ## Host: what still lies in the room goes with the clearance.
@@ -353,6 +399,16 @@ func _clear_goods() -> void:
 
 func interact_point() -> Vector3:
 	return global_position + Vector3(0, 1.2, 0)
+
+
+## Whether [F] can bid here (a lot waits, or the bidding runs).
+func takes_bids() -> bool:
+	return state == State.SHUT or state == State.BIDDING
+
+
+## A Suchauftrag hides its find only in front of the door: the room behind may be shut.
+func hunt_spot_ok(at: Vector3) -> bool:
+	return to_local(at).z < -0.3
 
 
 func in_reach(player: Node3D) -> bool:
@@ -419,6 +475,7 @@ func _on_peer_ready(id: int, _level: String) -> void:
 
 @rpc("authority", "call_remote", "reliable")
 func _sync(now: int, kind: int, count: int, from: int, standing: int, crew: bool, other: int, left: float) -> void:
+	var was_open := state == State.WON
 	state = now as State
 	theme = clampi(kind, 0, THEMES.size() - 1)
 	pieces = count
@@ -429,13 +486,25 @@ func _sync(now: int, kind: int, count: int, from: int, standing: int, crew: bool
 	time_left = left
 	_show()
 	changed.emit()
+	if was_open and state != State.WON:
+		_put_out()
 
 
-## Host: the auctioneer calls it out, on every screen.
-func _call(text: String, hammer: bool) -> void:
+## This peer's own worker, should the shutter come down behind him (the host closes on what it sees
+## of him, a moment late): he is set in front of the door.
+func _put_out() -> void:
+	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
+	var me := world.local_player() if world else null
+	if me and in_room(me.global_position, 0.1) and to_local(me.global_position).z > -0.3:
+		me._do_teleport(to_global(Vector3(0, 0.06, -1.2)))
+
+
+## Host: the auctioneer calls it out, on every screen; with `hammer` a lot is knocked down, with `won`
+## to the crew.
+func _call(text: String, hammer: bool, won := false) -> void:
 	var auction := StorageAuction.of(get_tree())
 	if auction:
-		auction.call_out(text, hammer, state != State.BIDDING and hammer and ours)
+		auction.call_out(text, hammer, won)
 
 
 # --- Looks ---------------------------------------------------------------------------------------

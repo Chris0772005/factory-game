@@ -59,6 +59,11 @@ func in_reach(player: Node3D) -> bool:
 	return interact_point().distance_to(player.global_position + Vector3(0, 0.9, 0)) < USE_RANGE
 
 
+## A Suchauftrag hides its find only on the customers' side of the counter.
+func hunt_spot_ok(at: Vector3) -> bool:
+	return to_local(at).z < -0.3
+
+
 func worth_of(kinds: Array) -> int:
 	var pay := 0
 	for k: StringName in kinds:

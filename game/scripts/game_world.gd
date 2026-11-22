@@ -49,6 +49,13 @@ func _ready() -> void:
 	Network.peer_left.connect(_on_peer_left)
 	Network.session_started.connect(_on_session_started)
 	Network.peer_ready.connect(_on_peer_ready)
+	# A worker who ends up outside the level is set back at the spawn (each machine looks after its own).
+	var rescue := Timer.new()
+	rescue.name = "Rescue"
+	rescue.wait_time = 1.0
+	rescue.autostart = true
+	rescue.timeout.connect(_rescue)
+	add_child(rescue)
 	build_level()
 	if attract_mode:
 		return
@@ -301,6 +308,19 @@ func has_upgrade(id: StringName) -> bool:
 
 func respawn_point(_player: Player) -> Vector3:
 	return Vector3(randf_range(-1.0, 1.0), 0.3, 5.0)
+
+
+## Whether `at` lies where no worker gets back from on foot (levels add their own edges).
+func out_of_bounds(at: Vector3) -> bool:
+	return at.y < -6.0
+
+
+func _rescue() -> void:
+	if attract_mode or entities == null:
+		return
+	var me := local_player()
+	if me and out_of_bounds(me.global_position):
+		me.teleport(respawn_point(me))
 
 
 func local_player() -> Player:

@@ -43,6 +43,9 @@ const ARCADE := GATE_X - GATE_W * 0.5 - ABUT
 ## Where the houses beyond the side streets stand (their fronts on the side street), and the
 ## stretch of the eastern row that is the post office (z from, to).
 const FAR_X := 49.7
+## Where the boom and the barriers of a street arch stand: just in front of the viaduct's face, so
+## the boom lifts in the open and not into the vault.
+const BAR_Z := VIADUCT_Z - 0.7
 const POST_FROM := 19.52
 const POST_TO := 30.5
 ## What is in the arches, from the west: "" bricked up, "lockup" a lock-up of the storage auctions
@@ -223,8 +226,12 @@ static func viaduct(set: ScrapHallSet) -> void:
 		WorldBuilder.add_collider(set, Vector3(END_RUN + ABUT, VIADUCT_H, VIADUCT_D), Transform3D(Basis(), Vector3(s * (gate_out + (END_RUN + ABUT) * 0.5), VIADUCT_H * 0.5, mid_z)))
 		# People stay in the quarter: a barrier across the street arch, a boom over the road that lifts
 		# for the cars and the truck.
-		var bar_z := VIADUCT_Z + 1.3
-		WorldBuilder.add_collider(set, Vector3(GATE_W, 2.6, 0.4), Transform3D(Basis(), Vector3(s * GATE_X, 1.3, bar_z)))
+		# What stops them is as deep as the viaduct and as high as the arch: a worker a lorry pushes
+		# against it is never squeezed out on the far side, and nothing is thrown over it for good.
+		var bar_z := BAR_Z
+		var stop_h := GATE_SPRING + GATE_RISE + 0.2
+		var stop_d := VIADUCT_Z + VIADUCT_D - (bar_z - 0.2)
+		WorldBuilder.add_collider(set, Vector3(GATE_W, stop_h, stop_d), Transform3D(Basis(), Vector3(s * GATE_X, stop_h * 0.5, bar_z - 0.2 + stop_d * 0.5)))
 		var gate := BoomGate.new()
 		gate.length = ScrapHallSet.ROAD
 		gate.position = Vector3(s * ScrapHallSet.SIDE_X, 0, bar_z)
@@ -265,7 +272,7 @@ static func viaduct(set: ScrapHallSet) -> void:
 		for part: Array in [[gate_in, ScrapHallSet.SIDE_X - ScrapHallSet.ROAD * 0.5], [ScrapHallSet.SIDE_X + ScrapHallSet.ROAD * 0.5, gate_out]]:
 			var from: float = part[0]
 			var to: float = part[1]
-			_cross_barrier(set, Vector3(s * (from + to) * 0.5, 0, VIADUCT_Z + 1.3), to - from - 0.15)
+			_cross_barrier(set, Vector3(s * (from + to) * 0.5, 0, BAR_Z), to - from - 0.15)
 	# The band under the parapet, the parapet and its coping, and the deck behind, along the whole length.
 	var length := (end_from + END_RUN) * 2.0
 	stones.append(EnvMesh.piece(EnvMesh.box(Vector3(length, 0.22, 0.34)), Transform3D(Basis(), Vector3(0, DECK_H + 0.11, VIADUCT_Z - 0.09))))
@@ -460,7 +467,7 @@ static func dressing(set: ScrapHallSet, zf: float) -> void:
 		caps.append(EnvMesh.piece(EnvMesh.box(Vector3(0.7 if x < 0.0 else 0.52, 0.1, 0.7)), Transform3D(Basis(), Vector3(x, 3.35, wall_z))))
 	EnvMesh.add(set, EnvMesh.merge(caps), TownBlock.stone())
 	# Boards over the two ways through, for those who look from the main street.
-	_way_board(set, Vector3((PASSAGE.x + PASSAGE.y) * 0.5, 3.0, front + 0.2), 3.4, "PASSAGE TO VIADUCT LANE")
+	_way_board(set, Vector3((PASSAGE.x + PASSAGE.y) * 0.5, 3.0, front + 0.2), 3.4, "PASSAGE TO VIADUCT LANE", PASSAGE.y - PASSAGE.x)
 	_way_board(set, Vector3((ALLEY_EAST.x + ALLEY_EAST.y) * 0.5, 2.85, front + 0.2), 2.2, "VIADUCT LANE")
 	# The names of the streets on the corners.
 	_name_plate(set, Vector3(-38.2, 2.55, BACK_NEAR + 0.012), 0.0, "VIADUCT LANE")
@@ -484,15 +491,23 @@ static func dressing(set: ScrapHallSet, zf: float) -> void:
 	PhotoProp.mount(set, "exterior_aircon_unit:0", Vector3(17.0, 2.3, BACK_NEAR), Vector3.BACK)
 
 
-## A painted board over a way through the row: `at` its middle, `width` wide; it looks to the main street.
-static func _way_board(set: Node3D, at: Vector3, width: float, text: String) -> void:
+## A painted board over a way through the row: `at` its middle, `width` wide; it looks to the main
+## street. Where the way is wider than the board (`span`, from wall to wall), it hangs from an iron
+## rail across it; else two arms hold it between the houses.
+static func _way_board(set: Node3D, at: Vector3, width: float, text: String, span := 0.0) -> void:
 	var board := StandardMaterial3D.new()
 	board.albedo_color = Color("#22342c")
 	board.roughness = 0.7
 	EnvMesh.add(set, EnvMesh.box(Vector3(width, 0.46, 0.05), 0.02), board, Transform3D(Basis(), at))
 	var iron := StationKit.metal("way_board_iron", {steel_color = Color("#2c2f31"), rust = 0.3, metallic_steel = 0.6})
-	for s: float in [-1.0, 1.0]:
-		EnvMesh.add(set, EnvMesh.box(Vector3(0.05, 0.05, 0.4)), iron, Transform3D(Basis(), at + Vector3(s * (width * 0.5 - 0.15), 0.1, 0.2)))
+	if span > width:
+		EnvMesh.add(set, EnvMesh.box(Vector3(span, 0.07, 0.07)), iron, Transform3D(Basis(), at + Vector3(0, 0.44, 0)))
+		for s: float in [-1.0, 1.0]:
+			EnvMesh.add(set, EnvMesh.box(Vector3(0.04, 0.2, 0.04)), iron, Transform3D(Basis(), at + Vector3(s * (width * 0.5 - 0.3), 0.32, 0)))
+			EnvMesh.add(set, EnvMesh.box(Vector3(0.12, 0.2, 0.12)), iron, Transform3D(Basis(), at + Vector3(s * (span * 0.5 - 0.06), 0.44, 0)))
+	else:
+		for s: float in [-1.0, 1.0]:
+			EnvMesh.add(set, EnvMesh.box(Vector3(0.05, 0.05, 0.4)), iron, Transform3D(Basis(), at + Vector3(s * (width * 0.5 - 0.15), 0.1, 0.2)))
 	StationKit.label(set, text, Transform3D(Basis(Vector3.UP, PI), at + Vector3(0, 0, -0.035)), 84, Color("#e9dfc4"), 800, 0.003)
 
 

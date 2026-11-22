@@ -41,6 +41,7 @@ func _run() -> void:
 	missions.progress[1] = 0
 	await _lots(world, me, units, missions)
 	await _post(world, me, missions)
+	_hunt(units)
 	_finish()
 
 
@@ -76,6 +77,8 @@ func _lots(world: FoundryLevel, me: Player, units: Array[StorageLockup], mission
 	var unit := units[0]
 	unit.stock(1, 9)
 	var value := StorageLockup.worth(unit._lot)
+	var calls := []
+	StorageAuction.of(get_tree()).called.connect(func(text: String, hammer: bool, won: bool) -> void: calls.append([text, hammer, won]))
 	_check(unit.pieces == 9 and unit.theme == 1 and value > 0 and unit.opening == maxi(10, roundi(value * 0.3 / 5.0) * 5),
 		"the opening bid is three tenths of what the pieces bring at the stall (%d $ of %d $)" % [unit.opening, value])
 	var door := unit.global_position
@@ -130,6 +133,8 @@ func _lots(world: FoundryLevel, me: Player, units: Array[StorageLockup], mission
 	await _frames(8)
 	_check(unit.state == StorageLockup.State.WON and world.money == 1000 - price + 40, "knocked down to the crew: %d $ paid, the mission's 40 $ on top (%d $ left)" % [price, world.money])
 	_check(missions.done[1] == 5, "the mission is done")
+	_check(not calls.is_empty() and calls[-1][1] and calls[-1][2] and String(calls[-1][0]).contains("Schrotthalle"),
+		"the auctioneer knocks it down to the crew, with the fanfare (%s)" % [calls[-1] if not calls.is_empty() else "-"])
 	await _frames(40)
 	_check(unit.goods_inside().size() == 9, "the nine pieces lie in the room (%d)" % unit.goods_inside().size())
 	_check(not me.test_move(shut, Vector3(0, 0, 3.6)), "the shutter is up, and the way down the middle of the room is free")
@@ -149,6 +154,20 @@ func _lots(world: FoundryLevel, me: Player, units: Array[StorageLockup], mission
 	_check(bucket.count == 9 and unit.goods_inside().is_empty(), "nine pieces in the bucket, the room is empty (%d in the bucket)" % bucket.count)
 	_check(bucket.worth > 0 and not bucket.held_hint(me).begins_with("[F] Alles"), "and the bucket is its old self again (%s)" % bucket.held_hint(me))
 	me.release()
+	# The bucket set down in the room keeps the shutter up: the crew's only bucket is not shut in.
+	bucket.global_position = unit.to_global(Vector3(0.3, 0.4, 2.0))
+	bucket.linear_velocity = Vector3.ZERO
+	unit._empty_for = 5.9
+	await _frames(20)
+	_check(unit.state == StorageLockup.State.WON and unit.in_room(bucket.global_position), "the shutter waits for the bucket that stands in the room")
+	unit._empty_for = 0.0
+	bucket.global_position = unit.to_global(Vector3(0.9, 0.4, -1.4))
+	bucket.linear_velocity = Vector3.ZERO
+	await _frames(3)
+	# The shutter that comes down behind a mate (the host saw him a moment late) sets him out in front.
+	me._do_teleport(unit.to_global(Vector3(0, 0.06, 1.5)))
+	unit._put_out()
+	_check(not unit.in_room(me.global_position), "a worker the shutter would shut in is set in front of the door")
 	# Empty for a while and nobody inside: the shutter comes down and the lock-up rests.
 	unit._empty_for = 5.9
 	me._do_teleport(Vector3(door.x, 0.06, door.z + 1.5))
@@ -172,6 +191,25 @@ func _lots(world: FoundryLevel, me: Player, units: Array[StorageLockup], mission
 	unit.time_left = 0.05
 	await _frames(8)
 	_check(unit.state == StorageLockup.State.RESTING and world.money == money and unit.goods_inside().is_empty(), "let go, the lot goes to the other bidder and costs nothing")
+	_check(calls[-1][1] and not calls[-1][2], "the hammer falls without the fanfare (%s)" % [calls[-1]])
+	# With the bucket in hand the crew bids just the same.
+	unit.stock(0, 6)
+	unit._rival_limit = 100000
+	bucket.global_position = me.global_position + Vector3(0, 1.0, 0.7)
+	bucket.linear_velocity = Vector3.ZERO
+	await _frames(2)
+	me.grab(bucket)
+	await _frames(3)
+	_check(me.held == bucket and bucket.held_hint(me).begins_with("[F] Mitbieten"), "with the bucket in hand the sign's line shows (%s)" % bucket.held_hint(me))
+	bucket.use_start(me)
+	_check(unit.state == StorageLockup.State.BIDDING and unit.ours, "and [F] bids")
+	_check(bucket.held_hint(me).begins_with("Ihr bietet"), "the bucket's line follows the bidding (%s)" % bucket.held_hint(me))
+	me.release()
+	await _frames(3)
+	unit._rival_in = 0.05
+	await _frames(8)
+	unit.time_left = 0.05
+	await _frames(8)
 	# A bid the crew cannot pay when the hammer falls.
 	unit.stock(0, 6)
 	unit._rival_limit = 0
@@ -194,11 +232,18 @@ func _lots(world: FoundryLevel, me: Player, units: Array[StorageLockup], mission
 	_check(unit.state == StorageLockup.State.RESTING, "left lying too long, the lock-up is cleared")
 	await _frames(5)
 	var left := 0
+	var kerb := 0
 	for node in world.entities.get_children():
 		var item := node as Item
-		if item and not item.is_queued_for_deletion() and absf(item.global_position.x - door.x) < 1.9 and item.global_position.z > door.z - 0.2 and item.global_position.z < door.z + 5.6:
+		if item == null or item is ScrapBucket or item.is_queued_for_deletion():
+			continue
+		if unit.in_room(item.global_position):
 			left += 1
-	_check(left == 0, "nothing is left in it (%d)" % left)
+		var local := unit.to_local(item.global_position)
+		if absf(local.x) < 1.6 and local.z < -2.6 and local.z > -3.85:
+			kerb += 1
+	_check(left == 0 and kerb == 7, "nothing is left in it: the seven pieces stand by the kerb, they are paid for (%d in the room, %d by the kerb)" % [left, kerb])
+	_check(String(calls[-1][0]).contains("geräumt"), "and the auctioneer says so (%s)" % calls[-1][0])
 
 
 func _post(world: FoundryLevel, me: Player, missions: Missions) -> void:
@@ -296,6 +341,30 @@ func _post(world: FoundryLevel, me: Player, missions: Missions) -> void:
 			open += 1
 		again[o.kind] = true
 	_check(open == PostOffice.SLOTS and again.size() == PostOffice.SLOTS, "then three new orders hang there, each for something else")
+
+
+## A Suchauftrag never hides its find where no worker gets: in a lock-up, behind a counter.
+func _hunt(units: Array[StorageLockup]) -> void:
+	var hunt := get_tree().get_first_node_in_group(&"search_hunts") as SearchHunt
+	_check(hunt != null, "the hall has its Suchauftrag")
+	if hunt == null:
+		return
+	var stations := get_tree().get_nodes_in_group(&"interactable").filter(func(n: Node) -> bool: return n.has_method(&"hunt_spot_ok"))
+	var picked := 0
+	var bad := 0
+	for i in 400:
+		var p := hunt._pick_spot()
+		if p == Vector3.INF:
+			continue
+		picked += 1
+		for unit in units:
+			if unit.in_room(p):
+				bad += 1
+		for n in stations:
+			var at := (n as Node3D).global_position
+			if Vector2(at.x - p.x, at.z - p.z).length() < 2.7 and not n.hunt_spot_ok(p):
+				bad += 1
+	_check(stations.size() >= 8 and picked > 200 and bad == 0, "of %d hiding places none lies in a lock-up or behind a counter (%d do)" % [picked, bad])
 
 
 func _frames(n: int) -> void:

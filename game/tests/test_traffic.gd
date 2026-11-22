@@ -82,6 +82,17 @@ func _run() -> void:
 	var held := truck._held_up()
 	truck.global_position = Vector3(-6.0, 0, ScrapHallSet.TRAFFIC_LANE_Z - 8.0)
 	_check(held and not truck._held_up(), "the truck sees a car right in front of it, and none from the apron")
+	# ... and for a worker in front of its bonnet, for as long as he stands there (it would shove him
+	# along, and under the viaduct against the barrier).
+	var spot := me.global_position
+	truck.global_position = Vector3(spot.x - 5.5, 0, spot.z)
+	var blocked := truck._player_ahead()
+	truck.trip = 0.0
+	for i in 40:
+		await get_tree().physics_frame
+	var waited := truck.trip
+	truck.global_position = Vector3(spot.x - 5.5, 0, spot.z - 6.0)
+	_check(blocked and waited < 0.05 and not truck._player_ahead(), "the truck waits for a worker in front of it (%.2f s under way), and sees none beside the road" % waited)
 	truck.free()
 	# The player steps off the road: they drive on and leave.
 	me._do_teleport(Vector3(3.0, 0.1, 5.0))

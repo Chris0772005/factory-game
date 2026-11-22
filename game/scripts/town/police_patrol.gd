@@ -41,6 +41,11 @@ var route: Array[Vector3] = []
 var max_z := INF
 var keep_out := Rect2()
 var ways: Array[Vector2] = []
+## The line he walks through each way (x), in the order of `ways`: clear of what stands in it and
+## of the pillars at its ends. Without one he takes the way's middle. `ways` are as wide as somebody
+## can stand in them; to walk through he keeps within LANE_W of the line.
+var lanes: Array[float] = []
+const LANE_W := 0.5
 var state := State.PATROL
 ## Peer id of the player the officer is suspicious of (0 = nobody) and how much.
 var watching := 0
@@ -170,8 +175,9 @@ func _think(delta: float) -> void:
 			_return_time += delta
 			if _walk_to(back, WALK_SPEED * 1.5, delta):
 				state = State.PATROL
-			elif _return_time > 14.0:
-				# Hung up on something on the way back: he is on his beat again.
+			elif _return_time > 40.0:
+				# Hung up on something on the way back (a walk round the block takes a while): he is on
+				# his beat again.
 				global_position = back
 				state = State.PATROL
 	_sweep -= delta
@@ -334,15 +340,91 @@ func _patrol(delta: float) -> void:
 ## Steers towards `goal`; true when there.
 func _walk_to(goal: Vector3, speed: float, delta: float) -> bool:
 	var aim := _reachable(goal)
-	var to := Vector3(aim.x - global_position.x, 0, minf(aim.z, max_z) - global_position.z)
-	if to.length() < 0.35:
+	var whole := Vector3(aim.x - global_position.x, 0, minf(aim.z, max_z) - global_position.z)
+	if whole.length() < 0.35:
 		_stop()
 		return true
-	var dir := to.normalized()
+	var step := _via(aim)
+	var to := Vector3(step.x - global_position.x, 0, minf(step.z, max_z) - global_position.z)
+	var dir := to.normalized() if to.length() > 0.05 else whole.normalized()
 	velocity.x = dir.x * speed
 	velocity.z = dir.z * speed
 	_face(dir, delta, 9.0)
 	return false
+
+
+## The next point on the way to `aim`: `aim` itself, or, when houses of `keep_out` stand between him
+## and it, the mouth of the way through the row (or the end of the row) with the shortest walk, and
+## then its other end. (Walking straight at it, he marched on the spot against the yard wall behind
+## the row after every chase round the block.)
+func _via(aim: Vector3) -> Vector3:
+	if not keep_out.has_area():
+		return aim
+	var here := Vector2(global_position.x, global_position.z)
+	var there := Vector2(aim.x, aim.z)
+	if not _houses_between(here, there):
+		return aim
+	# (The mouths lie clear of what stands along the row: boards and bins in front, dumpsters behind.)
+	var south := keep_out.position.y - 0.8
+	var north := keep_out.end.y + 1.2
+	if keep_out.has_point(here):
+		# In a way through the row: along its line to the mouth on the aim's side.
+		return Vector3(_lane_at(here.x), aim.y, north if there.y > here.y else south)
+	if here.y > keep_out.position.y and here.y < keep_out.end.y:
+		# Beside the row, in a side street: first clear of the row, on the aim's side of it.
+		return Vector3(here.x, aim.y, north if there.y > keep_out.get_center().y else south)
+	# In front of the row or behind it: the line he takes through or round it ...
+	var line := 0.0
+	if keep_out.has_point(there):
+		line = _lane_at(there.x)
+	else:
+		var best := INF
+		var lines: Array[float] = [keep_out.position.x - 1.6, keep_out.end.x + 1.6]
+		for i in ways.size():
+			lines.append(_lane(i))
+		for x in lines:
+			var cost := absf(here.x - x) + absf(there.x - x)
+			if cost < best:
+				best = cost
+				line = x
+	# ... to its mouth on his side, and then through.
+	var mine := south if here.y < keep_out.get_center().y else north
+	if absf(here.x - line) > 0.3:
+		return Vector3(line, aim.y, mine)
+	return Vector3(line, aim.y, north if mine == south else south)
+
+
+## Whether a house of `keep_out` stands on the straight line from `a` to `b`. The row is open only
+## along the lines through its ways (where he stands in a way already, that way as wide as it is).
+func _houses_between(a: Vector2, b: Vector2) -> bool:
+	var in_way := _way_at(a.x) if keep_out.has_point(a) else -1
+	var steps := maxi(1, ceili(a.distance_to(b) / 0.4))
+	for i in steps + 1:
+		var s := a.lerp(b, float(i) / steps)
+		if not keep_out.has_point(s):
+			continue
+		var way := _way_at(s.x)
+		if way < 0 or (way != in_way and absf(s.x - _lane(way)) > LANE_W):
+			return true
+	return false
+
+
+## The way through the row that `x` lies in (index of `ways`), or -1.
+func _way_at(x: float) -> int:
+	for i in ways.size():
+		if x > ways[i].x and x < ways[i].y:
+			return i
+	return -1
+
+
+## The line he walks through way `index`.
+func _lane(index: int) -> float:
+	return lanes[index] if index < lanes.size() else (ways[index].x + ways[index].y) * 0.5
+
+
+func _lane_at(x: float) -> float:
+	var index := _way_at(x)
+	return _lane(index) if index >= 0 else x
 
 
 ## `goal`, or the nearest place to it he goes to: not into the houses of `keep_out`.

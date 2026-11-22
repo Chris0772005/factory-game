@@ -12,6 +12,9 @@ const SAY_TIME := 4.6
 ## Where his chalkboard stands (from the desk).
 const BOARD := Vector3(0.5, 0, -1.55)
 
+## A call went out (on every peer): the line, whether the hammer fell, and whether the crew won.
+signal called(text: String, hammer: bool, won: bool)
+
 var _bubble: Label3D
 var _bubble_left := 0.0
 var _man: TownNpc
@@ -47,6 +50,7 @@ func call_out(text: String, hammer := false, won := false) -> void:
 
 @rpc("authority", "call_local", "reliable")
 func _said(text: String, hammer: bool, won: bool) -> void:
+	called.emit(text, hammer, won)
 	if hammer:
 		Sfx.play(&"hammer_clank", global_position + Vector3(0, 1.2, 0), -2.0, 0.05)
 	if won:
@@ -105,10 +109,14 @@ func _build() -> void:
 	_man.position = Vector3(0, 0, 0.62)
 	_man.rotation.y = PI
 	add_child(_man)
-	_bubble = StationKit.label(self, "", Transform3D(), 52, Color("#fff8e6"), 600, 0.0017)
+	# His call is meant for the whole pavement: big, in lines of its own, and bright in the viaduct's shade.
+	_bubble = StationKit.label(self, "", Transform3D(), 52, Color("#fff8e6"), 700, 0.003)
 	_bubble.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	_bubble.outline_size = 14
-	_bubble.outline_modulate = Color(0.08, 0.07, 0.05, 0.92)
-	_bubble.position = Vector3(0, 2.3, 0.5)
+	_bubble.shaded = false
+	_bubble.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_bubble.width = 620.0
+	_bubble.outline_size = 16
+	_bubble.outline_modulate = Color(0.08, 0.07, 0.05, 0.95)
+	_bubble.position = Vector3(0, 2.6, 0.5)
 	_bubble.no_depth_test = true
 	_bubble.visible = false

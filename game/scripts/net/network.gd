@@ -23,9 +23,12 @@ var last_message := ""
 var _pending_join := {}
 var _address := "127.0.0.1"
 var _port := PORT
+## script -> whether it (or a script it builds on) declares RPCs.
+var _rpc_scripts := {}
 
 
 func _ready() -> void:
+	get_tree().node_added.connect(_name_rpc_node)
 	multiplayer.peer_connected.connect(func(id): peer_joined.emit(id))
 	multiplayer.peer_disconnected.connect(func(id): peer_left.emit(id))
 	multiplayer.connected_to_server.connect(func(): session_started.emit())
@@ -40,6 +43,51 @@ func _ready() -> void:
 			host(port)
 		elif arg.begins_with("--join="):
 			join_after_load(arg.trim_prefix("--join="), port)
+		elif arg.begins_with("--shift-names="):
+			# Test switch: this process has already made so many nodes without a name, as a player has who
+			# sat in the menu for a while. The engine numbers such nodes through ("@Node3D@57"), so a node
+			# that RPCs travel to must carry a name of its own; the co-op tests run their client with this.
+			for i in int(arg.trim_prefix("--shift-names=")):
+				var filler := Node.new()
+				add_child(filler)
+				filler.free()
+
+
+## Every node that RPCs travel to needs the same path on every peer. A node added without a name is
+## numbered through by the engine ("@Node3D@57", counted per process: a player who sat in the menu
+## longer has other numbers), so such a node gets a name of its own as it enters the tree: its class
+## and its place among its like under the same parent ("MoldBox_1"). Both peers build a level's
+## stations in the same order, so they arrive at the same names. Nameless nodes above it on the way
+## to the root are named the same way.
+func _name_rpc_node(node: Node) -> void:
+	var script := node.get_script() as Script
+	if script == null or not String(node.name).begins_with("@"):
+		return
+	if not _rpc_scripts.has(script):
+		var found := false
+		var s := script
+		while s and not found:
+			var config: Variant = s.get_rpc_config()
+			found = config is Dictionary and not (config as Dictionary).is_empty()
+			s = s.get_base_script()
+		_rpc_scripts[script] = found
+	if not _rpc_scripts[script]:
+		return
+	var chain: Array[Node] = [node]
+	var up := node.get_parent()
+	while up and up != get_tree().root:
+		if String(up.name).begins_with("@"):
+			chain.push_front(up)
+		up = up.get_parent()
+	for n in chain:
+		var kind := n.get_class()
+		var named := n.get_script() as Script
+		if named and named.get_global_name() != &"":
+			kind = String(named.get_global_name())
+		var i := 0
+		while n.get_parent().has_node(NodePath("%s_%d" % [kind, i])):
+			i += 1
+		n.name = "%s_%d" % [kind, i]
 
 
 func host(port := PORT) -> Error:

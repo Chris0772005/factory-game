@@ -104,6 +104,8 @@ func _run() -> void:
 	await _frames(5)
 	var truck := get_tree().get_first_node_in_group(ScrapTruck.GROUP) as ScrapTruck
 	_check(truck != null and not truck.busy(), "the truck is parked in front of the hall")
+	# (The worker steps away from the skip: the truck waits for whoever stands where it is going.)
+	me._do_teleport(Vector3(3.0, 0.1, 5.0))
 	var load := []
 	for i in ScrapSkip.CAPACITY:
 		load.append(&"junk_gear")

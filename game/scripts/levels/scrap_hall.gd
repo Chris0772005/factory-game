@@ -113,7 +113,10 @@ func _build_town() -> void:
 	# He follows round the block and through the two passages, but not into the houses of the row.
 	var row := ScrapHallSet.BANK.x + ScrapHallSet.SHOP_W * 0.5 + 0.4
 	cop.keep_out = Rect2(-row, ScrapHallSet.FRONT_Z - 0.8, row * 2.0, TownStreets.BACK_NEAR + 0.5 - ScrapHallSet.FRONT_Z + 0.8)
-	cop.ways = [Vector2(TownStreets.PASSAGE.x + 0.6, TownStreets.PASSAGE.y - 0.6), Vector2(TownStreets.ALLEY_EAST.x + 0.35, TownStreets.ALLEY_EAST.y - 0.35)]
+	# (The ways as wide as a worker can stand in them; the lines he walks: past the dumpster in the
+	# passage and between the pillars at its far end, and down the middle of the alley.)
+	cop.ways = [Vector2(TownStreets.PASSAGE.x + 0.3, TownStreets.PASSAGE.y - 0.3), Vector2(TownStreets.ALLEY_EAST.x + 0.3, TownStreets.ALLEY_EAST.y - 0.3)]
+	cop.lanes = [-3.1, (TownStreets.ALLEY_EAST.x + TownStreets.ALLEY_EAST.y) * 0.5] as Array[float]
 	add_child(cop)
 	_build_walkers()
 	# The town's cars drive down the street.
@@ -138,10 +141,15 @@ func _build_town() -> void:
 			# Art check: so many finds lie on the stall's table, and its first customer stands at it.
 			_debug_stall(int(arg.trim_prefix("--stall=")))
 		elif arg.begins_with("--lot="):
-			# Art check: lock-up N stands open with a won lot of that kind in it ("2,1": lock-up 2, workshop).
+			# Art check: lock-up N stands open with a won lot of that kind in it ("2,1": lock-up 2, workshop);
+			# with "bid" as a third part the crew has just bid on it instead and the auctioneer calls it out.
 			var lot := arg.trim_prefix("--lot=").split(",")
 			var unit := get_node_or_null("Lockup_%d" % int(lot[0])) as StorageLockup
-			if unit:
+			if unit and lot.size() > 2 and lot[2] == "bid":
+				unit.stock(int(lot[1]), 9)
+				add_money(500)
+				_debug_bid.call_deferred(unit)
+			elif unit:
 				unit.stock(int(lot[1]) if lot.size() > 1 else 0, 11)
 				unit.bid = unit.opening
 				unit._lay_out()
@@ -154,6 +162,16 @@ func _build_town() -> void:
 		elif arg == "--boost":
 			# Art check: the crew has had coffee and stew at the diner (the pills on the HUD).
 			CrewBoost.of(get_tree()).left = {&"coffee": 152.0, &"meal": 221.0}
+
+
+## Art check: the crew has just bid on `unit`'s lot; the count stands still and the auctioneer's call
+## stays up, however long the picture takes.
+func _debug_bid(unit: StorageLockup) -> void:
+	unit.place_bid()
+	unit.set_physics_process(false)
+	var auction := StorageAuction.of(get_tree())
+	if auction:
+		auction._bubble_left = 100000.0
 
 
 ## Art check: `count` finds on the stall's table (the dearest kinds first) and the first customer in
@@ -490,3 +508,8 @@ func spawn_position(index: int) -> Vector3:
 
 func respawn_point(_player: Player) -> Vector3:
 	return SPAWN + Vector3(randf_range(-1.0, 1.0), 0.1, 0)
+
+
+## Beyond the viaduct (and under the ground) nobody gets back in on foot.
+func out_of_bounds(at: Vector3) -> bool:
+	return at.y < -6.0 or at.z > TownStreets.VIADUCT_Z + TownStreets.VIADUCT_D + 0.5

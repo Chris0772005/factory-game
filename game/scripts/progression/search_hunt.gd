@@ -154,7 +154,8 @@ func _pick_spot() -> Vector3:
 	var probe := SphereShape3D.new()
 	probe.radius = 0.22
 	for attempt in 40:
-		var a := (anchors[randi() % anchors.size()] as Node3D).global_position
+		var anchor := anchors[randi() % anchors.size()] as Node3D
+		var a := anchor.global_position
 		var ang := randf() * TAU
 		var p := Vector3(a.x + sin(ang) * randf_range(0.8, 1.9), 0.0, a.z + cos(ang) * randf_range(0.8, 1.9))
 		var ray := PhysicsRayQueryParameters3D.create(p + Vector3(0, 2.2, 0), p + Vector3(0, -0.5, 0))
@@ -166,6 +167,12 @@ func _pick_spot() -> Vector3:
 		q.transform = Transform3D(Basis(), p + Vector3(0, 0.36, 0))
 		if not space.intersect_shape(q, 1).is_empty():
 			continue
+		# No worker gets behind a counter or a shut door: the station says which side is its customers',
+		# and nothing solid may stand between it and the spot.
+		if anchor.has_method(&"hunt_spot_ok") and not anchor.hunt_spot_ok(p):
+			continue
+		if _walled_off(space, a, p):
+			continue
 		var near_worker := false
 		for node in get_tree().get_nodes_in_group(&"players"):
 			if (node as Node3D).global_position.distance_to(p) < 4.0:
@@ -174,6 +181,22 @@ func _pick_spot() -> Vector3:
 			continue
 		return Vector3(p.x, hit.position.y, p.z)
 	return Vector3.INF
+
+
+## Whether something solid (a wall, a counter, a shutter) stands between a station and a spot beside
+## it. What a ray starts inside of (the station's own body) does not count, nor do loose things.
+func _walled_off(space: PhysicsDirectSpaceState3D, from: Vector3, to: Vector3) -> bool:
+	var ray := PhysicsRayQueryParameters3D.create(Vector3(from.x, 0.5, from.z), Vector3(to.x, 0.5, to.z))
+	var skip: Array[RID] = []
+	for i in 4:
+		ray.exclude = skip
+		var hit := space.intersect_ray(ray)
+		if hit.is_empty():
+			return false
+		if not (hit.collider is RigidBody3D or hit.collider is CharacterBody3D):
+			return true
+		skip.append(hit.rid)
+	return false
 
 
 # --- Networking -----------------------------------------------------------------

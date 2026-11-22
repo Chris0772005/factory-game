@@ -6,6 +6,11 @@
 # check, no script error and no signal that could not be delivered (both players' logs for the
 # network tests). Other error lines of the engine are shown but do not fail the run. The exit code
 # is 1 if any test did not pass.
+#
+# The client of every network test starts with --shift-names: it has then made a number of nameless
+# nodes before the level loads, as a player has who came through the menu. A station that RPCs
+# travel to and that carries no name of its own would then have another path there than on the
+# host; such an RPC that finds no node fails the test.
 set -u
 GODOT="${GODOT:-godot}"
 cd "$(dirname "$0")/../game"
@@ -13,6 +18,8 @@ fail=0
 # Random port so parallel test runs on one machine don't collide.
 PORT=$((20000 + RANDOM % 20000))
 BAD="FAIL|SCRIPT ERROR|Error calling from signal"
+# An RPC that did not find its node on the other side.
+LOST="Node not found|rpc node checksum failed|Failed to get path from RPC"
 # Engine errors that are known and harmless (leftovers counted when the process ends).
 KNOWN="resources still in use at exit"
 
@@ -40,11 +47,11 @@ pair() {
   timeout -s KILL "$2" "$GODOT" --headless --path . "res://tests/$1.tscn" -- --host --port=$PORT --role=host ${6:-} > "$host" 2>&1 &
   local host_pid=$!
   sleep "$4"
-  timeout -s KILL "$3" "$GODOT" --headless --path . "res://tests/$1.tscn" -- --join=127.0.0.1 --port=$PORT --role=client ${6:-} > "$client" 2>&1
+  timeout -s KILL "$3" "$GODOT" --headless --path . "res://tests/$1.tscn" -- --join=127.0.0.1 --port=$PORT --role=client --shift-names=37 ${6:-} > "$client" 2>&1
   wait $host_pid
   grep -hE "^\[|SCRIPT ERROR|Error calling from signal" "$host" "$client"
   others "$host" "$client"
-  if grep -qE "$BAD" "$host" "$client" || ! grep -q "\[host\] $5 PASSED" "$host" || ! grep -q "\[client\] $5 PASSED" "$client"; then
+  if grep -qE "$BAD|$LOST" "$host" "$client" || ! grep -q "\[host\] $5 PASSED" "$host" || ! grep -q "\[client\] $5 PASSED" "$client"; then
     echo "   -> $1 did not pass (logs $host, $client)"
     fail=1
   fi
@@ -79,4 +86,6 @@ echo "== Network quarter (client orders at the diner, sees the host's traffic) =
 pair test_net_town 150 140 3 "NET TOWN" --no-save
 echo "== Network shops (client buys a tool and takes a loan, sees the host's sale at the stall) =="
 pair test_net_shops 150 140 3 "NET SHOPS" --no-save
+echo "== Network names (every station under the same path on both sides, the foundry corner bought late) =="
+pair test_net_names 120 110 3 "NET NAMES" --no-save
 exit $fail

@@ -35,6 +35,11 @@ func in_reach(player: Node3D) -> bool:
 	return interact_point().distance_to(player.global_position + Vector3(0, 0.9, 0)) < USE_RANGE
 
 
+## A Suchauftrag hides its find only on the customers' side of the counter.
+func hunt_spot_ok(at: Vector3) -> bool:
+	return to_local(at).z < 0.0
+
+
 func hint(_player: Node) -> String:
 	var bank := BankLoan.of(get_tree())
 	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
