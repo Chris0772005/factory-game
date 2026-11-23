@@ -25,12 +25,17 @@ var _address := "127.0.0.1"
 var _port := PORT
 ## script -> whether it (or a script it builds on) declares RPCs.
 var _rpc_scripts := {}
+## Host: the level each connected peer last said it has loaded (peer id -> scene path). A world
+## that comes up later hears from them again (`replay_ready`).
+var _levels := {}
 
 
 func _ready() -> void:
 	get_tree().node_added.connect(_name_rpc_node)
 	multiplayer.peer_connected.connect(func(id): peer_joined.emit(id))
-	multiplayer.peer_disconnected.connect(func(id): peer_left.emit(id))
+	multiplayer.peer_disconnected.connect(func(id):
+		_levels.erase(id)
+		peer_left.emit(id))
 	multiplayer.connected_to_server.connect(func(): session_started.emit())
 	multiplayer.server_disconnected.connect(func(): _end_session("Der Host hat das Spiel verlassen."))
 	multiplayer.connection_failed.connect(func(): _end_session("Verbindung zum Host fehlgeschlagen."))
@@ -96,6 +101,7 @@ func host(port := PORT) -> Error:
 	if err != OK:
 		return err
 	multiplayer.multiplayer_peer = peer
+	_levels.clear()
 	session_started.emit()
 	return OK
 
@@ -135,13 +141,27 @@ func announce_level(level: String) -> void:
 @rpc("any_peer", "call_remote", "reliable")
 func _hello(level: String) -> void:
 	if multiplayer.is_server():
+		_levels[multiplayer.get_remote_sender_id()] = level
 		peer_ready.emit(multiplayer.get_remote_sender_id(), level)
+
+
+## Host: a world that has just come up hears again from every peer that said hello before it was
+## there. (The server opens when "Hosten" is pressed, the hall loads a moment later; whoever had
+## pressed "Beitreten" first could connect in between, was answered by nobody and stood there
+## without a worker. The same on the way into another hall.)
+func replay_ready() -> void:
+	if not is_online() or not multiplayer.is_server():
+		return
+	for id: int in _levels.keys():
+		peer_ready.emit(id, String(_levels[id]))
 
 
 ## Host (or solo): moves everyone to the level at `path`. Clients reload it
 ## and reconnect, so they take the same, tested path as a fresh join.
 func travel(path: String) -> void:
 	if is_online() and multiplayer.is_server():
+		# (Those who are told now come back as fresh joiners and say hello again.)
+		_levels.clear()
 		_travel.rpc(path)
 	Transition.change_scene(path)
 
@@ -179,6 +199,7 @@ func leave() -> void:
 
 
 func _end_session(reason: String) -> void:
+	_levels.clear()
 	if multiplayer.multiplayer_peer:
 		multiplayer.multiplayer_peer.close()
 	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()

@@ -88,4 +88,6 @@ echo "== Network shops (client buys a tool and takes a loan, sees the host's sal
 pair test_net_shops 150 140 3 "NET SHOPS" --no-save
 echo "== Network names (every station under the same path on both sides, the foundry corner bought late) =="
 pair test_net_names 120 110 3 "NET NAMES" --no-save
+echo "== Network early join (the client says hello before the host's hall stands) =="
+pair test_net_early 120 110 3 "NET EARLY" --no-save
 exit $fail

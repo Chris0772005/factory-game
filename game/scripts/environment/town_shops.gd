@@ -255,12 +255,13 @@ static func post_office(lot: Node3D) -> void:
 	PhotoProp.stand(lot, "clipboard", Vector3(4.2, TOP, counter_z - 0.05), 170.0)
 	# For the customers: picture postcards on the wall over the bench, forms on the writing table,
 	# a parcel on the hand truck, a fan under the ceiling.
-	PhotoProp.mount(lot, "postcard_set_01", Vector3(-side + 0.02, 1.45, 2.45), Vector3.RIGHT)
+	# (Just in front of the wall's lining, which is 3 cm thick: flush with the wall they lay inside it.)
+	PhotoProp.mount(lot, "postcard_set_01", Vector3(-side + 0.032, 1.45, 2.45), Vector3.RIGHT)
 	PhotoProp.stand(lot, "clipboard", Vector3(-3.5, 1.015, 0.9), 40.0)
 	PhotoProp.stand(lot, "binder_notebook", Vector3(-3.75, 1.015, 1.25), 200.0)
 	PhotoProp.stand(lot, "cardboard_box_01", Vector3(side - 0.47, 0.16, 2.52), 85.0, 0.8)
 	PhotoProp.hang(lot, "ceiling_fan", Vector3(0.6, TownBlock.ROOM_H, 1.9), 30.0)
-	PhotoProp.mount(lot, "hanging_picture_frame_02", Vector3(side - 0.02, 1.75, 1.2), Vector3.LEFT)
+	PhotoProp.mount(lot, "hanging_picture_frame_02", Vector3(side - 0.032, 1.75, 1.2), Vector3.LEFT)
 	_ceiling_sign(lot, Vector3(POST_HAND_X, 2.72, counter_z - 0.3), "PARCELS & MAIL ORDERS", Color("#1d2f4f"))
 	StationKit.label(lot, "STAMPS · PARCELS · TELEGRAMS", Transform3D(Basis(Vector3.UP, PI), Vector3(-3.1, 2.72, back - 0.04)), 76, Color("#1d2f4f"), 700, 0.0032)
 	var clerk := TownNpc.make("Postmistress")

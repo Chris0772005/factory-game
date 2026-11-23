@@ -533,9 +533,13 @@ func _show() -> void:
 		_lamp.visible = state == State.WON
 
 
+## The shutter rolls up towards its box at the door's head: it gets shorter from below while its top
+## stays where it is. (Lifted as a whole, the box travelled up across the board and into the arch.)
 func _show_shutter() -> void:
 	if _shutter:
-		_shutter.position.y = _lift * (TownStreets.DOOR.y - 0.3)
+		var left := 1.0 - _lift * (1.0 - 0.3 / TownStreets.DOOR.y)
+		_shutter.scale.y = left
+		_shutter.position.y = TownStreets.DOOR.y * (1.0 - left)
 
 
 ## What stands at the back of the room: it belongs to the lot's kind and goes with it.

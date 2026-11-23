@@ -50,6 +50,25 @@ func _run() -> void:
 	money = world.money
 	await _frames(10)
 	_check(not hunt.active and world.money == money, "unsolved hunts time out without a reward")
+	# In the other halls too the hunt still finds hiding places: a spot counts only if nothing solid
+	# stands between it and its station, and no station may lose all its spots to its own body.
+	world.queue_free()
+	await _frames(3)
+	for path: String in ["res://scenes/backyard.tscn", "res://scenes/bell_foundry.tscn", "res://scenes/iron_hall.tscn"]:
+		var hall: GameWorld = load(path).instantiate()
+		add_child(hall)
+		await _frames(10)
+		var seeker: SearchHunt = null
+		for node in get_tree().get_nodes_in_group(&"search_hunts"):
+			if hall.is_ancestor_of(node):
+				seeker = node
+		var found := 0
+		for i in 40:
+			if seeker and seeker._pick_spot() != Vector3.INF:
+				found += 1
+		_check(found >= 30, "%s: free hiding places by the stations (%d/40)" % [path.get_file().get_basename(), found])
+		hall.queue_free()
+		await _frames(3)
 	_finish()
 
 

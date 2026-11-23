@@ -57,6 +57,10 @@ func _ready() -> void:
 	rescue.timeout.connect(_rescue)
 	add_child(rescue)
 	build_level()
+	if not attract_mode:
+		# Whoever connected before this world stood (while the host was still leaving the menu) gets
+		# his answer now.
+		Network.replay_ready.call_deferred()
 	if attract_mode:
 		return
 	if Network.is_sim_authority():

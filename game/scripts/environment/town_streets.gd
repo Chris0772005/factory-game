@@ -407,7 +407,8 @@ static func _viaduct_dressing(set: ScrapHallSet) -> void:
 			lamp.shadow_enabled = false
 			lamp.position = Vector3(s * GATE_X, 3.6, z)
 			set.add_child(lamp)
-		var sign_at := Vector3(s * (GATE_X + GATE_W * 0.5 - 1.1), 1.62, VIADUCT_Z + 1.24)
+		# (On the barrier across the outer pavement, between its posts.)
+		var sign_at := Vector3(s * (GATE_X + GATE_W * 0.5 - 1.1), 1.02, BAR_Z - 0.06)
 		var plate := StandardMaterial3D.new()
 		plate.albedo_color = Color("#e9e4d6")
 		plate.roughness = 0.6
