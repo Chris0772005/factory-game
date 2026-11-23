@@ -43,14 +43,21 @@ func _run() -> void:
 	# A save from before the stall mission was slotted in keeps its mission, its progress and its round.
 	var today: Dictionary = missions.to_save()
 	missions.load_save({done = [2, 3, 1], progress = [4, 7, 0], total = 6})
-	_check(missions.done[1] == 5 and missions.progress[1] == 7 and missions.current(1).stat == &"earned" and missions.done[0] == 2 and missions.done[2] == 1,
+	_check(missions.done[1] == 6 and missions.progress[1] == 7 and missions.current(1).stat == &"earned" and missions.done[0] == 2 and missions.done[2] == 1,
 		"an older save that had the diner behind it goes on where it was (%s)" % missions.current(1).get("text", "?"))
 	missions.load_save({done = [0, 8, 0], progress = [0, 0, 0], total = 8})
-	_check(missions.done[1] == 10 and missions.round_of(1) == 1 and missions.current(1).stat == &"diner", "and keeps its round (%s)" % missions.current(1).get("text", "?"))
-	# One from the stage before (seven business missions then): the lot mission was slotted in since.
+	_check(missions.done[1] == 11 and missions.round_of(1) == 1 and missions.current(1).stat == &"diner", "and keeps its round (%s)" % missions.current(1).get("text", "?"))
+	# One from two stages before (seven business missions then): the lot mission and the wages were
+	# slotted in since.
 	missions.load_save({done = [4, 12, 0], progress = [0, 2, 0], total = 16, sizes = [5, 7, 5]})
-	_check(missions.done[1] == 14 and missions.round_of(1) == 1 and missions.done[0] == 5 and missions.current(0).get("stat", &"") == &"heap",
-		"a save of the stage before keeps its place too (%s)" % missions.current(1).get("text", "?"))
+	_check(missions.done[1] == 16 and missions.round_of(1) == 1 and missions.current(1).stat == &"earned" and missions.done[0] == 5
+		and missions.current(0).get("stat", &"") == &"heap", "a save of two stages before keeps its place too (%s)" % missions.current(1).get("text", "?"))
+	# One from the stage before (eight business missions): the wages for hired hands were slotted in.
+	missions.load_save({done = [0, 4, 0], progress = [0, 0, 0], total = 4, sizes = [6, 8, 5]})
+	_check(missions.done[1] == 4 and missions.current(1).stat == &"lot_won", "a save of the stage before goes on with its mission (%s)" % missions.current(1).get("text", "?"))
+	missions.load_save({done = [0, 14, 0], progress = [0, 3, 0], total = 14, sizes = [6, 8, 5]})
+	_check(missions.done[1] == 16 and missions.round_of(1) == 1 and missions.progress[1] == 3 and missions.current(1).stat == &"earned",
+		"and one that was past the new mission's place keeps its mission and its round (%s)" % missions.current(1).get("text", "?"))
 	missions.load_save(today)
 	_check(missions.done[1] == 3 and missions.current(1).stat == &"stall_sold", "a save of today is read as it stands")
 	await _street(me)

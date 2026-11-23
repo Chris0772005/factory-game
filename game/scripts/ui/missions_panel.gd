@@ -96,6 +96,7 @@ func _refresh() -> void:
 
 
 func _process(_delta: float) -> void:
-	# The wanted box and the debt at the bank sit between the money and the missions; make room for them.
+	# The wanted box, the debt at the bank and the hired hands sit between the money and the missions;
+	# make room for them.
 	var law := TownLaw.of(get_tree())
-	_pill.position.y = HUD.SAFE.y + (146.0 if law and law.stars() > 0 else 92.0) + BankHud.room(get_tree())
+	_pill.position.y = HUD.SAFE.y + (146.0 if law and law.stars() > 0 else 92.0) + BankHud.room(get_tree()) + HandsHud.room(get_tree())

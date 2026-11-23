@@ -80,8 +80,9 @@ func _physics_process(delta: float) -> void:
 		if _sync <= 0.0:
 			_sync = SYNC_EVERY
 			_set_clock.rpc(clock)
-	# Whom the walkers give way to: the players and the officer on the beat.
-	var players := get_tree().get_nodes_in_group(&"players") + get_tree().get_nodes_in_group(PolicePatrol.GROUP)
+	# Whom the walkers give way to: the players, the officer on the beat and the crew's hired hands.
+	var players := get_tree().get_nodes_in_group(&"players") + get_tree().get_nodes_in_group(PolicePatrol.GROUP) \
+		+ get_tree().get_nodes_in_group(HiredHand.GROUP)
 	for entry: Dictionary in _rounds:
 		var figure := entry.figure as TownFigure
 		if figure == null:

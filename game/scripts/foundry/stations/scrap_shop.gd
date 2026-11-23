@@ -48,6 +48,24 @@ func buy_bucket(bucket: ScrapBucket) -> void:
 	_pay(world, pay, "+%d $ · %d Teile" % [pay, pieces], interact_point())
 
 
+## Host: somebody hands loose `kinds` over the counter (the runner the crew hires, HiredHand): the
+## dealer pays his price for every piece he buys. `from` names who brought them. Returns what he paid.
+func buy_kinds(kinds: Array, from := "") -> int:
+	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
+	var pay := 0
+	var pieces := 0
+	for kind: StringName in kinds:
+		var price := FoundryRules.raw_price(kind)
+		if price > 0:
+			pay += price
+			pieces += 1
+	if world == null or pieces == 0:
+		return 0
+	Missions.report(get_tree(), &"scrap_sold", pieces)
+	_pay(world, pay, "+%d $ · %d Teile%s" % [pay, pieces, " · %s" % from if from != "" else ""], interact_point())
+	return pay
+
+
 func _pay(world: GameWorld, amount: int, text: String, at: Vector3) -> void:
 	world.add_money(amount)
 	world.popup_all(at + Vector3(0, 0.6, 0), text, UITheme.ACCENT)

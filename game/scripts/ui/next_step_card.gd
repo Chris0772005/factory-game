@@ -140,8 +140,14 @@ static func _hall_step(w: GameWorld, goal: StringName, pile: ScrapPile, furnace:
 		if bucket and (bucket.is_full() or (goal == &"scrap_sold" and count >= 3)):
 			target = shop
 			return "Eimer über die Straße zum Scrap Dealer tragen, dort F."
-		# Money in hand and never bid yet: the storage auctions behind the row are worth a look.
 		var uncle := tree.get_first_node_in_group(&"guides") as Guide
+		# Money for a helper and never hired one: the labour exchange beyond Mill Street has hands for hire.
+		var digger := HiredHand.of(tree, &"digger")
+		if goal == &"foundry_corner" and Network.is_sim_authority() and uncle and int(uncle.stats.get("hired", 0)) == 0 and digger \
+				and digger.state == HiredHand.State.WAITING and w.money >= int(digger.info().fee) and w.money < 150:
+			target = digger
+			return "Hilfe gefällig? In der LABOUR EXCHANGE wartet Hugo: %d $ Handgeld, dann wühlt er für euch in den Eimer (aus der Halle rechts die Straße hinunter, über die Kreuzung)." % digger.info().fee
+		# Money in hand and never bid yet: the storage auctions behind the row are worth a look.
 		if goal == &"foundry_corner" and Network.is_sim_authority() and uncle and int(uncle.stats.get("lot_bid", 0)) == 0 and w.money < 150:
 			for node in tree.get_nodes_in_group(StorageLockup.GROUP):
 				var unit := node as StorageLockup

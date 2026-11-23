@@ -60,6 +60,9 @@ pair() {
 echo "== Offline gameplay =="
 offline test_sandbox 120 "ok |FAIL|TESTS|SCRIPT ERROR"
 
+echo "== Hired hands (they walk the streets and work for minutes: the longest test) =="
+offline test_hands 600 "FAIL|TESTS|SCRIPT ERROR"
+
 echo "== Factory simulation =="
 offline test_factory 150 "ok |FAIL|TESTS|stress|SCRIPT ERROR"
 
@@ -90,4 +93,7 @@ echo "== Network names (every station under the same path on both sides, the fou
 pair test_net_names 120 110 3 "NET NAMES" --no-save
 echo "== Network early join (the client says hello before the host's hall stands) =="
 pair test_net_early 120 110 3 "NET EARLY" --no-save
+
+echo "== Network: hired hands (the mate hires and dismisses, both see them work) =="
+pair test_net_hands 260 250 3 "NET HANDS" --no-save
 exit $fail

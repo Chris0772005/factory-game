@@ -45,8 +45,8 @@ func build_stations() -> void:
 
 ## The quarter across the street: the law, the pawnbroker who buys hot goods
 ## under the counter, the police desk that pays a finder's reward, the
-## officer on the beat, the hardware store's tools, the bank's loans and the
-## crew's own stall with the people who buy there.
+## officer on the beat, the hardware store's tools, the bank's loans, the
+## crew's own stall with the people who buy there, and the hands for hire.
 func _build_town() -> void:
 	add_child(TownLaw.new())
 	add_child(CrewBoost.new())
@@ -119,6 +119,7 @@ func _build_town() -> void:
 	cop.lanes = [-3.1, (TownStreets.ALLEY_EAST.x + TownStreets.ALLEY_EAST.y) * 0.5] as Array[float]
 	add_child(cop)
 	_build_walkers()
+	_build_hands()
 	# The town's cars drive down the street.
 	var traffic := TownTraffic.new()
 	add_child(traffic)
@@ -159,6 +160,10 @@ func _build_town() -> void:
 			# Art check: the crew owes the bank so much (the pill on the HUD).
 			bank.owed = maxi(int(arg.trim_prefix("--debt=")) * 2, 1)
 			bank.debt = int(arg.trim_prefix("--debt="))
+		elif arg.begins_with("--hands="):
+			# Art check: the hired hands at their work ("work"), or all three just hired and on their
+			# way to the yard ("come").
+			_debug_hands.call_deferred(arg.trim_prefix("--hands="))
 		elif arg == "--boost":
 			# Art check: the crew has had coffee and stew at the diner (the pills on the HUD).
 			CrewBoost.of(get_tree()).left = {&"coffee": 152.0, &"meal": 221.0}
@@ -172,6 +177,90 @@ func _debug_bid(unit: StorageLockup) -> void:
 	var auction := StorageAuction.of(get_tree())
 	if auction:
 		auction._bubble_left = 100000.0
+
+
+## The three who can be hired at the labour exchange beyond the western side street (HiredHand): a
+## digger, a runner and a stall keeper. Each knows the way from there to the yard: out of the door,
+## over the crossing of Mill Street, along the far pavement and over the zebra crossing to the hall.
+func _build_hands() -> void:
+	# (Behind the main menu nobody is hired.)
+	if attract_mode:
+		return
+	var lot := TownShops.labour_lot()
+	var zf := 8.125
+	var near_end := zf + ScrapHallSet.APRON - 0.4
+	var far_end := zf + ScrapHallSet.APRON + ScrapHallSet.ROAD + 0.4
+	var side := ScrapHallSet.SIDE_X
+	var half := ScrapHallSet.ROAD * 0.5
+	var door := TownShops.LABOUR_DOOR_X
+	# (Along the far pavement they keep between the two lanes of the townspeople, who walk 1.9 and
+	# 2.9 m from the fronts, and clear of the patrol's beat nearer the kerb.)
+	var lane := ScrapHallSet.FRONT_Z - 2.4
+	var way: Array[Vector3] = [lot * Vector3(door, 0, 1.0), lot * Vector3(door, 0, -0.9),
+		Vector3(-side - half - 0.45, 0, 19.9), Vector3(-side + half + 0.5, 0, 19.9),
+		Vector3(-39.6, 0, lane), Vector3(0.4, 0, lane), Vector3(1.4, 0, far_end), Vector3(1.4, 0, near_end)]
+	# (The cars come down Mill Street from the viaduct, and down the main street from the west.)
+	var roads := {2: Vector3(0, 0, 1), 6: Vector3(-1, 0, 0)}
+	var stall := ScrapHallSet.STALL
+	# Where each stands at work with nothing to do: the digger by the heap's face, the runner inside
+	# the open front, the stall keeper behind her table.
+	var posts := {&"digger": [Vector3(0.7, 0, 2.3), 235.0], &"runner": [Vector3(6.6, 0, 6.4), 215.0],
+		&"keeper": [stall + Vector3(0.62, 0, -YardStall.SIZE.y * 0.5 - 0.42), 0.0]}
+	for i in HiredHand.ORDER.size():
+		var role: StringName = HiredHand.ORDER[i]
+		var hand := HiredHand.new()
+		hand.name = "Hand_%s" % role
+		hand.role = role
+		hand.home = lot * (TownShops.LABOUR_WAITING[i][0] as Vector3)
+		hand.home_yaw = float(TownShops.LABOUR_WAITING[i][1]) - 90.0
+		hand.way = way
+		if role == &"keeper":
+			# She comes round behind her table, past the parasol's pole (not over the table's corner).
+			var behind: Array[Vector3] = way.duplicate()
+			behind.append(stall + Vector3(-1.7, 0, -1.35))
+			behind.append(stall + Vector3(0.62, 0, -1.35))
+			hand.way = behind
+		hand.roads = roads
+		hand.post = posts[role][0]
+		hand.post_yaw = posts[role][1]
+		# The runner's trip: over the zebra crossing to the dealer's counter, beside the bin.
+		hand.trip = [Vector3(1.9, 0, near_end), Vector3(1.9, 0, far_end), Vector3(1.6, 0, 21.35)] as Array[Vector3]
+		hand.trip_roads = {0: Vector3(-1, 0, 0)}
+		hand.yard = Rect2(-14.0, -10.0, 28.0, zf + ScrapHallSet.APRON + 10.0)
+		add_child(hand)
+		if Network.is_sim_authority():
+			hand.changed.connect(_autosave)
+	# How many work for the crew and what they cost a minute shows under the money.
+	if DisplayServer.get_name() != "headless":
+		add_child(HandsHud.new())
+
+
+## Art check: the hired hands. "work": the digger at the heap, the stall keeper behind her table with
+## a few finds on it, and the runner on the zebra crossing with a full crate, for as long as the
+## picture takes. "come": all three just hired, in a row on the far pavement on their way to the yard.
+func _debug_hands(what: String) -> void:
+	add_money(1000)
+	var row := 0
+	for node in get_tree().get_nodes_in_group(HiredHand.GROUP):
+		var hand := node as HiredHand
+		if what == "come":
+			hand.hire()
+			hand.global_position = Vector3(-12.0 - 1.5 * row, 0.05, ScrapHallSet.FRONT_Z - 2.4 + 0.3 * (row % 2))
+			hand.rotation.y = PI * 0.5
+			hand.velocity = Vector3(HiredHand.HURRY, 0, 0)
+			hand.pose_only = true
+			row += 1
+			continue
+		hand.start_at_work()
+		if hand.role == &"runner":
+			hand.global_position = Vector3(1.9, 0.05, 12.6)
+			hand.rotation.y = 0.0
+			hand.velocity = Vector3(0, 0, HiredHand.WALK)
+			hand.carrying = true
+			hand.loaded = 8
+			hand.pose_only = true
+	if what != "come":
+		_debug_stall(4)
 
 
 ## Art check: `count` finds on the stall's table (the dearest kinds first) and the first customer in

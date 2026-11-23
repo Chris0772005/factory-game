@@ -90,6 +90,10 @@ func _heap_centre() -> Vector3:
 	return to_global(_centre_local(_size))
 
 
+func foot() -> float:
+	return RADIUS * _size
+
+
 func hint(player: Node) -> String:
 	if stock <= 0:
 		return "Schrottberg abgetragen – die nächste Ladung kommt gleich!"

@@ -1,7 +1,8 @@
 class_name TownShops
 ## The two shops at the ends of the street across from the hall (ScrapHallSet): the hardware store in
 ## the west, where the crew buys its hand tools from the bench (ToolOffer), and the bank in the east,
-## where it borrows at the counter (BankCounter). Houses, furniture and people are built here; the
+## where it borrows at the counter (BankCounter); beyond the side streets the post office (east) and
+## the labour exchange (west), where the crew hires hands (HiredHand). Houses, furniture and people are built here; the
 ## level adds what can be used. Everything that stands about is a photo scan (Poly Haven, CC0, see
 ## CREDITS.md) or made of scanned surfaces (graphics standard, TECH_SPEC Modul Y).
 
@@ -50,6 +51,22 @@ const POSTMISTRESS := Vector3(0.1, 0, 4.7)
 ## Parcels on the shelves behind the counter (TownBlock.shelves).
 const POST_GOODS := ["cardboard_box_01", "cardboard_box_01@90", "book_encyclopedia_set_01", "cardboard_box_01@90", "cardboard_box_01",
 	"metal_toolbox", "cardboard_box_01@90"]
+
+
+# --- Labour exchange (in its own frame, see labour_lot) ------------------------------------------------
+## Along the front, from its middle (-x is the end towards the main street): the door. Where the
+## three who can be hired wait in the room, in the order of HiredHand.ORDER: place, and the way each
+## looks (degrees in the room: 180 is towards the street). The desk nobody sits at.
+const LABOUR_DOOR_X := -3.1
+const LABOUR_WAITING := [[Vector3(-4.05, 0, 4.55), 135.0], [Vector3(0.5, 0, 4.9), 180.0], [Vector3(0.9, 0, 1.7), 245.0]]
+const LABOUR_DESK := Vector3(3.15, 0, 4.25)
+
+
+## The labour exchange's own frame: the middle of its front at the origin, +z into the house, -x
+## along the front towards the main street. It stands beyond the western side street (Mill Street)
+## and looks east across it, the post office's mirror image.
+static func labour_lot() -> Transform3D:
+	return Transform3D(Basis(Vector3.UP, -PI * 0.5), Vector3(-TownStreets.FAR_X, 0, (TownStreets.POST_FROM + TownStreets.POST_TO) * 0.5))
 
 
 ## The post office's own frame: the middle of its front at the origin, +z into the house, +x along
@@ -271,6 +288,140 @@ static func post_office(lot: Node3D) -> void:
 	# Outside: a lamp over the door and the mail box.
 	PhotoProp.mount(lot, "industrial_wall_lamp", Vector3(POST_DOOR_X, TownBlock.DOOR_H + 0.1, 0), Vector3.FORWARD)
 	_mail_box(lot, box_at)
+
+
+# =====================================================================================================
+# Labour exchange
+# =====================================================================================================
+
+## The labour exchange, built into `lot` (a node at labour_lot()): a waiting room where day labourers
+## stand about until somebody hires them. A bench and a stove, a table by the window, the clerk's
+## desk (he is out: BACK IN 5 MINUTES), and on the back wall the board that says who is to be had
+## and for what. Who waits here are the level's HiredHand nodes.
+static func labour_office(lot: Node3D) -> void:
+	var w := TownStreets.POST_TO - TownStreets.POST_FROM
+	var d := ScrapHallSet.HOUSE_D
+	var back := d - TownBlock.WALL
+	var side := w * 0.5 - TownBlock.WALL
+	var green := Color("#27473a")
+	TownBlock.house(lot, Vector3.ZERO, w, d, {key = "labour", scan = "red_brick", door_x = LABOUR_DOOR_X, windows = [[-0.8, 1.7], [2.3, 4.7]],
+		sign = "LABOUR EXCHANGE", sign_back = green, sign_color = Color("#efe3bf"), floor_scan = "wood_floor_worn",
+		lining = Color("#d9d3c0"), trim = green, lamp = Color("#ffe6c0"), storeys = 2})
+	# What is solid first (colliders are wanted on a headless host too).
+	PhotoProp.place(lot, "painted_wooden_bench", Vector3(-side + 0.3, 0, 2.7), 90.0)
+	PhotoProp.place(lot, "barrel_stove", Vector3(-side + 0.55, 0, back - 0.6), 20.0)
+	PhotoProp.place(lot, "metal_office_desk", LABOUR_DESK, 0.0)
+	PhotoProp.place(lot, "painted_wooden_chair_01", LABOUR_DESK + Vector3(0.1, 0, 0.95), 185.0)
+	PhotoProp.place(lot, "painted_wooden_chair_01", LABOUR_DESK + Vector3(-0.2, 0, -1.0), 10.0)
+	PhotoProp.place(lot, "drawer_cabinet", Vector3(side - 0.55, 0, back - 0.27), 180.0)
+	PhotoProp.place(lot, "round_wooden_table_01", Vector3(3.3, 0, 1.15), 0.0)
+	PhotoProp.place(lot, "painted_wooden_chair_01", Vector3(4.3, 0, 1.3), 255.0)
+	# The board on the pavement beside the door.
+	var board_at := Vector3(LABOUR_DOOR_X - 1.6, 0, -0.62)
+	PhotoProp.place(lot, "standing_chalkboard_01", board_at, 190.0)
+	if not EnvMesh.visual():
+		return
+	for x: float in [-side * 0.56, 0.0, side * 0.56]:
+		var tube := OmniLight3D.new()
+		tube.light_color = Color("#fff1d6")
+		tube.light_energy = 0.75
+		tube.omni_range = 6.5
+		tube.omni_attenuation = 1.1
+		tube.shadow_enabled = false
+		tube.position = Vector3(x, TownBlock.ROOM_H - 0.5, d * 0.5 + 0.4)
+		lot.add_child(tube)
+	# The board on the back wall: who is to be had, for what work and what money.
+	_hands_board(lot, Vector3(-1.35, 1.72, back - 0.03))
+	StationKit.label(lot, "DAY LABOUR · FAIR WAGES · EST. 1919", Transform3D(Basis(Vector3.UP, PI), Vector3(-1.35, 2.72, back - 0.04)), 76, green, 700, 0.0032)
+	# The clerk's desk: lamp, papers, the bell, and the card that says he is out.
+	var top := PhotoProp.box("metal_office_desk").size.y
+	PhotoProp.stand(lot, "desk_lamp_arm_01", LABOUR_DESK + Vector3(0.55, top, 0.12), 200.0)
+	PhotoProp.stand(lot, "office_notepads", LABOUR_DESK + Vector3(-0.1, top, 0.1), 175.0)
+	PhotoProp.stand(lot, "binder_notebook", LABOUR_DESK + Vector3(-0.5, top, 0.05), 160.0)
+	PhotoProp.stand(lot, "stationery_supplies", LABOUR_DESK + Vector3(0.25, top, 0.18), 30.0)
+	_desk_card(lot, LABOUR_DESK + Vector3(0.0, top, -0.2), "BACK IN", "5 MINUTES")
+	var brass := StationKit.metal("labour_bell", {steel_color = Color("#b8963e"), rust = 0.05, metallic_steel = 0.9, roughness_steel = 0.3})
+	EnvMesh.add(lot, EnvMesh.sphere(0.055, 14, 8), brass, Transform3D(Basis.from_scale(Vector3(1, 0.62, 1)), LABOUR_DESK + Vector3(-0.42, top + 0.012, -0.22)), false)
+	EnvMesh.add(lot, EnvMesh.cylinder(0.008, 0.008, 0.03, 8), brass, Transform3D(Basis(), LABOUR_DESK + Vector3(-0.42, top + 0.058, -0.22)), false)
+	_ceiling_sign(lot, LABOUR_DESK + Vector3(0, 2.72, -0.45), "ENQUIRIES", green)
+	PhotoProp.mount(lot, "wall_clock", Vector3(LABOUR_DESK.x, 2.3, back - 0.03), Vector3.FORWARD)
+	# For those who wait: something to read on the table, darts on the wall, a plant, a picture, a fan.
+	var table := PhotoProp.box("round_wooden_table_01").size.y
+	PhotoProp.stand(lot, "clipboard", Vector3(3.2, table, 1.05), 35.0)
+	PhotoProp.stand(lot, "office_notepads", Vector3(3.5, table, 1.3), 110.0)
+	PhotoProp.mount(lot, "dartboard", Vector3(side - 0.032, 1.42, 2.9), Vector3.LEFT)
+	PhotoProp.mount(lot, "hanging_picture_frame_03", Vector3(-side + 0.032, 1.75, 2.7), Vector3.RIGHT)
+	PhotoProp.stand(lot, "potted_plant_02", Vector3(1.95, 0, 0.6), 40.0)
+	PhotoProp.stand(lot, "vintage_suitcase", Vector3(-side + 0.3, 0, 4.15), 80.0)
+	PhotoProp.stand(lot, "wooden_bucket_02", Vector3(-side + 1.25, 0, back - 0.4), 0.0)
+	_hung(lot, "rusted_spade_01", Vector3(-side + 1.7, 0.0, back - 0.05), 0.0, 0.0, 6.0)
+	PhotoProp.hang(lot, "ceiling_fan", Vector3(-0.6, TownBlock.ROOM_H, 2.6), 15.0)
+	# Outside: a lamp over the door, and what the board on the pavement says.
+	PhotoProp.mount(lot, "industrial_wall_lamp", Vector3(LABOUR_DOOR_X, TownBlock.DOOR_H + 0.1, 0), Vector3.FORWARD)
+	var face := Transform3D(Basis(Vector3.UP, deg_to_rad(190.0)), board_at) * Transform3D(Basis(Vector3.RIGHT, -0.21), Vector3(0.0, 0.88, 0.188))
+	var chalk := Color(0.93, 0.92, 0.87, 0.92)
+	StationKit.label(lot, "HANDS", face * Transform3D(Basis(), Vector3(0, 0.36, 0)), 110, Color(0.95, 0.82, 0.4, 0.92), 700, 0.0022, StationKit.chalk_font())
+	StationKit.label(lot, "FOR HIRE", face * Transform3D(Basis(), Vector3(0, 0.16, 0)), 92, Color(0.95, 0.82, 0.4, 0.92), 700, 0.0022, StationKit.chalk_font())
+	StationKit.label(lot, "diggers · runners", face * Transform3D(Basis(), Vector3(0, -0.06, 0)), 50, chalk, 500, 0.0022, StationKit.hand_font())
+	StationKit.label(lot, "stall keepers", face * Transform3D(Basis(), Vector3(0, -0.22, 0)), 50, chalk, 500, 0.0022, StationKit.hand_font())
+	StationKit.label(lot, "ask inside", face * Transform3D(Basis(), Vector3(0, -0.38, 0)), 56, chalk, 500, 0.0022, StationKit.hand_font())
+
+
+## The board of the labour exchange on the back wall (it looks -Z; `at` is its middle): a cork board
+## in a wooden frame, HANDS FOR HIRE over three pinned cards, one for each of HiredHand.ROLES with
+## name, work, fee and wage.
+static func _hands_board(set: Node3D, at: Vector3) -> void:
+	var bw := 3.3
+	var bh := 1.36
+	var cork := EnvMesh.wood("labour_cork", {base_color = Color("#a98d63"), grain_color = Color("#8a7150"), weathering = 0.1, roughness_base = 0.85})
+	var frame := EnvMesh.wood("labour_board_frame", {base_color = Color("#4d3a2a"), grain_color = Color("#2c2018"), weathering = 0.3, roughness_base = 0.6})
+	EnvMesh.add(set, EnvMesh.box(Vector3(bw, bh, 0.02)), cork, Transform3D(Basis(), at + Vector3(0, 0, 0.005)), false)
+	var rails := []
+	for s: float in [-1.0, 1.0]:
+		rails.append(EnvMesh.piece(EnvMesh.box(Vector3(bw + 0.1, 0.06, 0.04)), Transform3D(Basis(), at + Vector3(0, s * (bh * 0.5 + 0.01), -0.005))))
+		rails.append(EnvMesh.piece(EnvMesh.box(Vector3(0.06, bh + 0.08, 0.04)), Transform3D(Basis(), at + Vector3(s * (bw * 0.5 + 0.02), 0, -0.005))))
+	EnvMesh.add(set, EnvMesh.merge(rails), frame, Transform3D(), false)
+	var ink := Color("#22201c")
+	var turn := Basis(Vector3.UP, PI)
+	StationKit.label(set, "HANDS FOR HIRE", Transform3D(turn, at + Vector3(0, bh * 0.5 - 0.2, -0.012)), 120, Color("#7a1f1c"), 800, 0.0024)
+	var paper := StandardMaterial3D.new()
+	paper.albedo_color = Color("#ece5d0")
+	paper.roughness = 0.9
+	var pin := StandardMaterial3D.new()
+	pin.albedo_color = Color("#a3281f")
+	pin.roughness = 0.4
+	var cards := []
+	var pins := []
+	var cw := 0.94
+	var ch := 0.84
+	for i in HiredHand.ORDER.size():
+		var who: Dictionary = HiredHand.ROLES[HiredHand.ORDER[i]]
+		# (The board looks -Z: its left end, as one reads it, lies at +x.)
+		var mid := at + Vector3((1 - i) * (cw + 0.1), -0.16, -0.012)
+		cards.append(EnvMesh.piece(EnvMesh.box(Vector3(cw, ch, 0.004)), Transform3D(Basis(Vector3.BACK, (i - 1) * 0.02), mid)))
+		pins.append(EnvMesh.piece(EnvMesh.sphere(0.014, 8, 5), Transform3D(Basis(), mid + Vector3(0, ch * 0.5 - 0.05, -0.008))))
+		var text := mid + Vector3(0, 0, -0.004)
+		StationKit.label(set, String(who.name).to_upper(), Transform3D(turn, text + Vector3(0, 0.22, 0)), 104, ink, 800, 0.0022)
+		StationKit.label(set, String(who.board), Transform3D(turn, text + Vector3(0, 0.04, 0)), 64, Color("#27473a"), 700, 0.0022)
+		StationKit.label(set, "$%d down" % who.fee, Transform3D(turn, text + Vector3(0, -0.13, 0)), 52, ink, 500, 0.0022)
+		StationKit.label(set, "$%d a minute" % who.wage, Transform3D(turn, text + Vector3(0, -0.27, 0)), 52, ink, 500, 0.0022)
+	EnvMesh.add(set, EnvMesh.merge(cards), paper, Transform3D(), false)
+	EnvMesh.add(set, EnvMesh.merge(pins), pin, Transform3D(), false)
+
+
+## A folded card that stands on a desk and says something in two lines to whoever comes in (it
+## looks -Z). `at` is the middle of its foot.
+static func _desk_card(set: Node3D, at: Vector3, line_one: String, line_two: String) -> void:
+	var card := StandardMaterial3D.new()
+	card.albedo_color = Color("#ece5d0")
+	card.roughness = 0.85
+	card.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var lean := 0.32
+	for s: float in [-1.0, 1.0]:
+		EnvMesh.add(set, EnvMesh.box(Vector3(0.34, 0.16, 0.004)), card, Transform3D(Basis(Vector3.RIGHT, s * lean), at + Vector3(0, 0.076, s * 0.026)), false)
+	var front := Transform3D(Basis(Vector3.UP, PI) * Basis(Vector3.RIGHT, lean), at + Vector3(0, 0.076, -0.03))
+	StationKit.label(set, line_one, front * Transform3D(Basis(), Vector3(0, 0.032, 0)), 44, Color("#22201c"), 800, 0.0011)
+	StationKit.label(set, line_two, front * Transform3D(Basis(), Vector3(0, -0.034, 0)), 44, Color("#7a1f1c"), 800, 0.0011)
 
 
 ## The post office's scales: an enamelled foot, a steel pan on a short stem, a dial behind it.

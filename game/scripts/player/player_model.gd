@@ -26,6 +26,11 @@ var grips_on_handle := false
 ## True while the worker works at something with the bare hands (digging in the heap): the hands
 ## go at what is in front, one after the other. Set by Player at physics rate.
 var working := false
+## A body other than the one the player colour picks: a figure's file name in BODY_DIR, without its
+## ending (the crew's hired hands, HiredHand). Set before the model enters the tree.
+var body := ""
+## Whether the figure wears the crew's hard hat (the hired hands come in their own caps).
+var hat := true
 
 @export var suit_color := Color("#3e7bd6"):
 	set(value):
@@ -217,7 +222,7 @@ func _ready() -> void:
 	_tilt = Node3D.new()
 	_tilt.name = &"Tilt"
 	add_child(_tilt)
-	_body = (load(BODY_DIR + body_of(suit_color) + ".glb") as PackedScene).instantiate() as Node3D
+	_body = (load(BODY_DIR + (body if body != "" else body_of(suit_color)) + ".glb") as PackedScene).instantiate() as Node3D
 	_tilt.add_child(_body)
 	_skeleton = _body.find_child("Skeleton3D", true, false) as Skeleton3D
 	var in_model := global_transform.affine_inverse() * _skeleton.global_transform
@@ -609,6 +614,8 @@ static func _approach(from: float, to: float, rate: float, delta: float) -> floa
 ## Puts the hard hat on: the figure brings its own clothes. `in_model` leads from the skeleton's
 ## space into this node's.
 func _dress(in_model: Transform3D) -> void:
+	if not hat:
+		return
 	var head := BoneAttachment3D.new()
 	head.name = &"HeadGear"
 	head.bone_name = "Head"

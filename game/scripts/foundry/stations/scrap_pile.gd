@@ -76,6 +76,16 @@ func _heap_centre() -> Vector3:
 	return global_position
 
 
+## The middle of the heap on the floor, and how far from it the heap's foot lies (m): where somebody
+## stands who digs in it (HiredHand).
+func centre() -> Vector3:
+	return _heap_centre()
+
+
+func foot() -> float:
+	return 0.75
+
+
 func interact_point() -> Vector3:
 	return global_position + Vector3(0, 0.4, 0)
 
@@ -201,6 +211,27 @@ func take_bulk(n: int) -> Array:
 		_dirty = true
 		_fx_all(&"rummage")
 	return out
+
+
+## Host: a hired hand takes one find out of the heap and puts it into `bucket`, as a machine takes
+## it: scrap and junk as they come, never the hot goods. `at` is where the hand works (what is rare
+## is called out there). Returns the kind, &"" when the heap is empty or the bucket takes no more.
+func dig_into(bucket: ScrapBucket, at: Vector3) -> StringName:
+	if not Network.is_sim_authority() or bucket == null or bucket.is_full():
+		return &""
+	var found := take_bulk(1)
+	if found.is_empty() or not bucket.add(found[0]):
+		return &""
+	var kind: StringName = found[0]
+	if RARE.has(kind):
+		var world := get_tree().get_first_node_in_group(&"world") as GameWorld
+		if world:
+			world.popup_all(at + Vector3(0, 0.6, 0), "%s! ✨" % FoundryRules.find_info(kind).name, Color("#ffcf3f"))
+		_fx_all(&"rare")
+		var book := get_tree().get_first_node_in_group(&"find_books") as FindBook
+		if book:
+			book.note(kind, at)
+	return kind
 
 
 func _roll(junk_ok := true) -> StringName:

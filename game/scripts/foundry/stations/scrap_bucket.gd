@@ -178,6 +178,22 @@ func take_out(kind_out: StringName) -> bool:
 	return true
 
 
+## Host: everything in the load that `wanted` says yes to (kind -> bool) is taken out and returned
+## (the runner the crew hires empties the bucket this way, HiredHand).
+func take_where(wanted: Callable) -> Array[StringName]:
+	var out: Array[StringName] = []
+	var rest: Array[StringName] = []
+	for k in contents:
+		if wanted.call(k):
+			out.append(k)
+		else:
+			rest.append(k)
+	if not out.is_empty():
+		contents = rest
+		_changed()
+	return out
+
+
 ## Host: the dealer took everything he buys; hot goods stay in the bucket.
 func sell_scrap() -> int:
 	var sold := count - hot

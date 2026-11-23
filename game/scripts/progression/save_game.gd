@@ -1,6 +1,6 @@
 class_name SaveGame
 ## Host-side save file: money, upgrades, the level to resume in, the gallery
-## of best castings and the loan at the bank.
+## of best castings, the loan at the bank and the hands the crew has hired.
 ##
 ## Only real play sessions touch the file. Tests (scenes under `res://tests/`),
 ## showcase/screenshot runs (`--shot=`), attract-mode menu backgrounds and runs
@@ -43,6 +43,7 @@ static func save(world: GameWorld, level := "") -> void:
 		missions = Missions.of(world.get_tree()).to_save() if Missions.of(world.get_tree()) else {},
 		finds = (world.get("find_book") as FindBook).to_save() if world.get("find_book") else [],
 		bank = world.bank.to_save() if world.bank else {},
+		hands = HiredHand.to_save(world.get_tree()),
 		time = Time.get_unix_time_from_system(),
 		rate = _rate(world),
 	}
@@ -75,6 +76,7 @@ static func load_into(world: GameWorld) -> bool:
 		(world.get("find_book") as FindBook).load_save(data.get("finds", []))
 	if world.bank:
 		world.bank.load_save(data.get("bank", {}))
+	HiredHand.load_save(world.get_tree(), data.get("hands", []))
 	last_away = {time = float(data.get("time", 0.0)), rate = float(data.get("rate", 0.0))}
 	return true
 
@@ -103,3 +105,4 @@ static func saved_level(fallback: String) -> String:
 static func reset() -> void:
 	if FileAccess.file_exists(PATH):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(PATH))
+	HiredHand.pay_roll = []

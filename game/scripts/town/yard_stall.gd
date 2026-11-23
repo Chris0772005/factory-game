@@ -6,6 +6,7 @@ extends Node3D
 ## ([LMB] in front of it, Player.toss_target) or straight from the scrap bucket ([F] with the bucket).
 ## They stay real things: whoever wants one back takes it off the table. The host sells; the others
 ## see the piece go, hear the till and read what the customer says.
+## With a stall keeper the crew has hired (HiredHand) the customers take more per visit and pay more.
 ## The table's long side runs along X; the customers stand at +Z (the street side).
 
 const GROUP := &"yard_stalls"
@@ -22,6 +23,9 @@ const CAST_FACTOR := 1.3
 ## A customer looks at the table this long before buying (s); what is said stays up this long.
 const LOOK_TIME := 2.2
 const SAY_TIME := 4.0
+## While a hired stall keeper serves: what a customer pays more, and how many pieces one takes per visit.
+const KEEPER_BONUS := 1.2
+const KEEPER_BUYS := 2
 
 signal sold(pay: int)
 
@@ -73,6 +77,12 @@ static func find_price(kind: StringName) -> int:
 	if FoundryRules.is_hot(kind):
 		return 0
 	return ceili(FoundryRules.raw_price(kind) * FIND_FACTOR)
+
+
+## What a customer pays for `body` right now: with a stall keeper at the table, more.
+func price_now(body: Node) -> int:
+	var price := price_of(body)
+	return ceili(price * KEEPER_BONUS) if price > 0 and HiredHand.serving_at(self) != null else price
 
 
 ## Whether `body` is a casting (the others on the table are finds).
@@ -166,8 +176,9 @@ func _lay(thing: RigidBody3D, place: int) -> void:
 	thing.sleeping = false
 
 
-## Host: the best finds out of `bucket` are laid on the free places. Returns how many.
-func lay_out(bucket: ScrapBucket) -> int:
+## Host: the best finds out of `bucket` are laid on the free places, `most` of them at most.
+## Returns how many.
+func lay_out(bucket: ScrapBucket, most := 99) -> int:
 	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
 	if not Network.is_sim_authority() or world == null:
 		return 0
@@ -176,22 +187,52 @@ func lay_out(bucket: ScrapBucket) -> int:
 	kinds.sort_custom(func(a: StringName, b: StringName) -> bool: return find_price(a) > find_price(b))
 	var laid := 0
 	for kind: StringName in kinds:
-		if free.is_empty():
+		if free.is_empty() or laid >= most:
 			break
 		if not bucket.take_out(kind):
 			continue
-		var place: int = free.pop_front()
-		var info: Dictionary = FoundryRules.find_info(kind)
-		var item := world.spawn_item(kind, info.color, info.size, 0.4, to_global(place_pos(place) + Vector3(0, 0.16, 0)))
-		if item:
-			item.rotation.y = global_rotation.y + _rng.randf_range(-0.5, 0.5)
+		_put(world, kind, free.pop_front())
 		laid += 1
 	if laid > 0:
-		if Network.is_online():
-			_laid_fx.rpc()
-		else:
-			_laid_fx()
+		_laid()
 	return laid
+
+
+## Host: loose finds somebody brings in his hands (`kinds`) are laid on the free places, the dearest
+## first. Returns those there was no room for, or that nobody buys here.
+func lay_kinds(kinds: Array) -> Array:
+	var rest := kinds.duplicate()
+	var world := get_tree().get_first_node_in_group(&"world") as GameWorld
+	if not Network.is_sim_authority() or world == null:
+		return rest
+	var free := free_places()
+	var wanted := kinds.filter(func(k: StringName) -> bool: return find_price(k) > 0)
+	wanted.sort_custom(func(a: StringName, b: StringName) -> bool: return find_price(a) > find_price(b))
+	var laid := 0
+	for kind: StringName in wanted:
+		if free.is_empty():
+			break
+		_put(world, kind, free.pop_front())
+		rest.erase(kind)
+		laid += 1
+	if laid > 0:
+		_laid()
+	return rest
+
+
+## A find of `kind` appears on place `place` of the table.
+func _put(world: GameWorld, kind: StringName, place: int) -> void:
+	var info: Dictionary = FoundryRules.find_info(kind)
+	var item := world.spawn_item(kind, info.color, info.size, 0.4, to_global(place_pos(place) + Vector3(0, 0.16, 0)))
+	if item:
+		item.rotation.y = global_rotation.y + _rng.randf_range(-0.5, 0.5)
+
+
+func _laid() -> void:
+	if Network.is_online():
+		_laid_fx.rpc()
+	else:
+		_laid_fx()
 
 
 ## How many finds of `bucket` could go on the table now.
@@ -227,8 +268,12 @@ func interact(_player: Node) -> void:
 
 func hint(_player: Node) -> String:
 	var n := goods().size()
+	var keeper := HiredHand.serving_at(self)
 	if n == 0:
 		return "Verkaufstisch · Funde oder Gussstücke herbringen – Passanten zahlen mehr als der Händler"
+	if keeper:
+		return "Verkaufstisch · %d Stück liegen aus – %s bedient: Kunden nehmen bis zu %d Stück und zahlen %d %% mehr" % [
+			n, keeper.info().name, KEEPER_BUYS, roundi((KEEPER_BONUS - 1.0) * 100.0)]
 	return "Verkaufstisch · %d Stück liegen aus – die Kunden kommen von selbst" % n
 
 
@@ -266,23 +311,32 @@ func _serve(index: int) -> void:
 		return
 	var who: Dictionary = customers[index]
 	var wants_castings: bool = who.get("taste", &"finds") == &"castings"
-	var liked := lying.filter(func(item: Item) -> bool: return is_casting(item) == wants_castings)
-	var pick: Item = (liked if not liked.is_empty() else lying)[_rng.randi() % (liked.size() if not liked.is_empty() else lying.size())]
-	var pay := price_of(pick)
-	var what := "Das Gussstück" if is_casting(pick) else String(FoundryRules.find_info(pick.kind).get("name", "Das da"))
-	var at := pick.global_position
-	pick.queue_free()
-	world.add_money(pay)
-	world.popup_all(at + Vector3(0, 0.5, 0), "+%d $" % pay, UITheme.ACCENT)
-	# A sale here counts like one at the sales crate or at the dealer: for the missions and for Onkel Heinz.
-	var sale := &"sold" if is_casting(pick) else &"scrap_sold"
-	Missions.report(get_tree(), &"stall_sold", 1)
-	Missions.report(get_tree(), &"cast_sold" if is_casting(pick) else &"scrap_sold", 1)
-	var guide := get_tree().get_first_node_in_group(&"guides") as Guide
-	if guide:
-		guide.note(sale)
-	sold.emit(pay)
-	_tell(index, "%s? Nehm ich – %d $!" % [what, pay], pay)
+	# Somebody who serves sells more: the customer takes a second piece, and pays more for each.
+	var served := HiredHand.serving_at(self) != null
+	var names := PackedStringArray()
+	var total := 0
+	for n in (KEEPER_BUYS if served else 1):
+		if lying.is_empty():
+			break
+		var liked := lying.filter(func(item: Item) -> bool: return is_casting(item) == wants_castings)
+		var pick: Item = (liked if not liked.is_empty() else lying)[_rng.randi() % (liked.size() if not liked.is_empty() else lying.size())]
+		lying.erase(pick)
+		var pay := price_now(pick)
+		names.append("Das Gussstück" if is_casting(pick) else String(FoundryRules.find_info(pick.kind).get("name", "Das da")))
+		var at := pick.global_position
+		pick.queue_free()
+		world.add_money(pay)
+		world.popup_all(at + Vector3(0, 0.5, 0), "+%d $" % pay, UITheme.ACCENT)
+		# A sale here counts like one at the sales crate or at the dealer: for the missions and for Onkel Heinz.
+		var sale := &"sold" if is_casting(pick) else &"scrap_sold"
+		Missions.report(get_tree(), &"stall_sold", 1)
+		Missions.report(get_tree(), &"cast_sold" if is_casting(pick) else &"scrap_sold", 1)
+		var guide := get_tree().get_first_node_in_group(&"guides") as Guide
+		if guide:
+			guide.note(sale)
+		sold.emit(pay)
+		total += pay
+	_tell(index, "%s? Nehm ich – %d $!" % [" und ".join(names).replace(" und Das ", " und das "), total], total)
 
 
 func _tell(index: int, text: String, pay: int) -> void:
@@ -317,7 +371,7 @@ func _update_tags() -> void:
 			continue
 		var item: Item = lying[i]
 		tag.visible = true
-		tag.text = "%d $" % price_of(item)
+		tag.text = "%d $" % price_now(item)
 		tag.global_position = item.global_position + Vector3(0, 0.26, 0)
 
 

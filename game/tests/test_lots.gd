@@ -97,7 +97,12 @@ func _lots(world: FoundryLevel, me: Player, units: Array[StorageLockup], mission
 	bucket_now.contents = [] as Array[StringName]
 	bucket_now._changed()
 	world.add_money(80 - world.money)
+	# (With the fee for a helper in hand the card first names the labour exchange; once somebody was
+	# hired, the auction.)
 	var tip := NextStepCard.next_step(world)
+	_check(tip.contains("LABOUR EXCHANGE") and NextStepCard.target == HiredHand.of(get_tree(), &"digger"), "with the fee in hand the card names the labour exchange (%s)" % tip)
+	guide.note(&"hired")
+	tip = NextStepCard.next_step(world)
 	_check(tip.contains("Lager-Auktion") and tip.contains("Los 1 ab %d $" % unit.opening) and NextStepCard.target == unit, "with money to spare the card names the auction (%s)" % tip)
 	world.add_money(-world.money)
 	_check(unit.in_reach(me) and unit.hint(me).contains("es fehlen noch"), "without money the sign only says what is missing (%s)" % unit.hint(me))

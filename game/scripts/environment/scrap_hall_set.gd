@@ -223,9 +223,14 @@ func _outside() -> void:
 	var last_z := TownStreets.POST_TO
 	TownBlock.block(self, Vector3(-beyond, 0, from_z), 13.0, mid_z - from_z, {key = "end_a", scan = "yellow_plaster", storeys = 4, solid = true})
 	TownBlock.block(self, Vector3(beyond, 0, from_z), 13.0, mid_z - from_z, {key = "end_b", scan = "red_brick_03", storeys = 3, solid = true})
-	TownBlock.block(self, Vector3(-beyond, 0, mid_z), 13.0, last_z - mid_z, {key = "end_c", scan = "red_brick", storeys = 3, solid = true})
-	# In the eastern row the middle house is the post office, built in a frame of its own that looks
-	# west across the side street (TownShops.post_lot).
+	# The middle house of each row is open: in the west the labour exchange, in the east the post
+	# office, each built in a frame of its own that looks across its side street (TownShops.labour_lot,
+	# TownShops.post_lot).
+	var labour := Node3D.new()
+	labour.name = "LabourLot"
+	labour.transform = TownShops.labour_lot()
+	add_child(labour)
+	TownShops.labour_office(labour)
 	var post := Node3D.new()
 	post.name = "PostLot"
 	post.transform = TownShops.post_lot()

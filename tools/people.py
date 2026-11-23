@@ -59,7 +59,7 @@ GAME = ROOT / "game/assets/models/people"
 # Where the figures are written: the game's folder, or the folder given second (to try something out).
 OUT = pathlib.Path(sys.argv[2]) if len(sys.argv) > 2 else GAME
 PEOPLE = ["worker", "broker", "officer", "woman", "youth", "dealer", "patrol", "mate_a", "mate_b", "cook", "granny", "mechanic",
-          "clerk", "teller", "collector", "shopper", "auctioneer", "postmistress"]
+          "clerk", "teller", "collector", "shopper", "auctioneer", "postmistress", "hugo", "ede", "rosa"]
 # Clips are sampled at this rate.
 RATE = 30.0
 # Clips taken from the first figure's extra files: file suffix -> clip name in the game.
@@ -89,7 +89,7 @@ CEILING = 0.8
 # arm is then the shirt's sleeve, as cloth does. The vest is found by its colour (VEST_HUES: degrees, with at
 # least VEST_VIVID of saturation and brightness) on the trunk, its grey reflective bands by lying within
 # BAND_NEAR (m) of that colour.
-VESTS = ("mate_a", "mate_b")
+VESTS = ("mate_a", "mate_b", "hugo", "ede", "rosa")
 TRUNK_IN = 0.04
 TRUNK_BELOW = (0.02, 0.12)
 VEST_HUES = ((8.0, 35.0), (48.0, 80.0))
