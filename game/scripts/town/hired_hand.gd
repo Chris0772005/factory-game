@@ -137,6 +137,11 @@ var _for_stall: Array[StringName] = []
 var _net_accum := 0.0
 var _net_pos := Vector3.ZERO
 var _net_vel := Vector3.ZERO
+## Host: whether the last packet told of movement, and the way the hand looked in it. Client: how old
+## the last packet is (s).
+var _net_busy := false
+var _net_yaw := 0.0
+var _net_age := 0.0
 var _model: PlayerModel
 var _crate: Node3D
 var _crate_load: Node3D
@@ -431,13 +436,20 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		if Network.is_online():
 			_net_accum += delta
-			# (Somebody who stands still is told twice a second.)
-			var busy := Vector2(velocity.x, velocity.z).length_squared() > 0.01 or digging
-			if _net_accum > (0.1 if busy else 0.5):
+			# (Somebody who stands still is told twice a second; a stop and a turn on the spot at
+			# the quick rate, so that nobody walks on or turns in jerks on the other machines.)
+			var busy := Vector2(velocity.x, velocity.z).length_squared() > 0.01 or digging \
+				or absf(angle_difference(rotation.y, _net_yaw)) > 0.02
+			if _net_accum > (0.1 if busy or _net_busy else 0.5):
 				_net_accum = 0.0
+				_net_busy = busy
+				_net_yaw = rotation.y
 				_sync.rpc(global_position, rotation.y, velocity, state, note, (1 if digging else 0) | (2 if carrying else 0) | (4 if serving else 0), loaded)
 	else:
-		_net_pos += _net_vel * delta
+		# (On along the last course only for a moment: a late packet must not walk a hand into a wall.)
+		_net_age += delta
+		if _net_age < 0.25:
+			_net_pos += _net_vel * delta
 		global_position = global_position.lerp(_net_pos, 1.0 - exp(-12.0 * delta))
 	_show(delta)
 
@@ -446,6 +458,7 @@ func _physics_process(delta: float) -> void:
 func _sync(pos: Vector3, yaw: float, vel: Vector3, s: int, what: int, flags: int, pieces: int) -> void:
 	_net_pos = pos
 	_net_vel = Vector3(vel.x, 0.0, vel.z)
+	_net_age = 0.0
 	rotation.y = yaw
 	# (Far from where the host has it, as for somebody who has just joined: there at once.)
 	if global_position.distance_to(pos) > 6.0:
@@ -465,9 +478,10 @@ func _think(delta: float) -> void:
 			_stand(delta, home, home_yaw)
 		State.COMING:
 			if _walk(delta, HURRY):
+				# (The minute of wage starts when the hand is hired, not here: sending a hand off and
+				# calling it back wins no fresh one.)
 				state = State.WORKING
 				_task = Task.REST
-				_wage_left = WAGE_EVERY
 				_reach_goal = Vector3.INF
 		State.LEAVING:
 			if _walk(delta, WALK):
@@ -616,8 +630,10 @@ func _run(delta: float) -> void:
 			_for_stall.clear()
 			var stall := _stall()
 			var room := stall.free_places().size() if stall else 0
-			for kind in _load:
-				if ScrapPile.RARE.has(kind) and _for_stall.size() < room:
+			var rare: Array = _load.filter(func(kind: StringName) -> bool: return ScrapPile.RARE.has(kind))
+			rare.sort_custom(func(a: StringName, b: StringName) -> bool: return YardStall.find_price(a) > YardStall.find_price(b))
+			for kind: StringName in rare:
+				if _for_stall.size() < room:
 					_for_stall.append(kind)
 			if _for_stall.is_empty():
 				_set_off_to_dealer()
@@ -700,9 +716,11 @@ func _bucket_there(bucket: ScrapBucket) -> bool:
 
 
 ## A bucket in the yard that is worth a trip: it holds FETCH_AT pieces the runner takes, or it is
-## full and holds at least one. Not the one that stands by the stall (the stall keeper's).
+## full and holds at least one. Not the one that stands by the stall while a stall keeper is hired
+## (it is hers).
 func _bucket_to_empty() -> ScrapBucket:
-	var stall := _stall()
+	var keeper := of(get_tree(), &"keeper")
+	var stall := _stall() if keeper and keeper.hired() else null
 	for node in get_tree().get_nodes_in_group(&"scrap_buckets"):
 		var b := node as ScrapBucket
 		var at := b.global_position

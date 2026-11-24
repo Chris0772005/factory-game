@@ -164,6 +164,9 @@ func _build_town() -> void:
 			# Art check: the hired hands at their work ("work"), or all three just hired and on their
 			# way to the yard ("come").
 			_debug_hands.call_deferred(arg.trim_prefix("--hands="))
+		elif arg == "--hunt":
+			# Art check: a Suchauftrag is running (its pill in the column under the money).
+			(func() -> void: (get_tree().get_first_node_in_group(&"search_hunts") as SearchHunt).start()).call_deferred()
 		elif arg == "--boost":
 			# Art check: the crew has had coffee and stew at the diner (the pills on the HUD).
 			CrewBoost.of(get_tree()).left = {&"coffee": 152.0, &"meal": 221.0}

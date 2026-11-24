@@ -63,6 +63,9 @@ func _process(_delta: float) -> void:
 	visible = _hunt.active or total > 0
 	if not visible:
 		return
+	# Last in the column under the money: below the wanted box, the debt, the hired hands and the
+	# missions (it lay under the missions panel before, where a hall has one).
+	position.y = MissionsPanel.column_end(get_tree())
 	_scores.visible = total > 0
 	if _hunt.active:
 		_title.text = "SUCHAUFTRAG · %d s · %d $" % [ceili(_hunt.time_left), _hunt.reward()]

@@ -338,7 +338,9 @@ static func labour_office(lot: Node3D) -> void:
 	PhotoProp.stand(lot, "desk_lamp_arm_01", LABOUR_DESK + Vector3(0.55, top, 0.12), 200.0)
 	PhotoProp.stand(lot, "office_notepads", LABOUR_DESK + Vector3(-0.1, top, 0.1), 175.0)
 	PhotoProp.stand(lot, "binder_notebook", LABOUR_DESK + Vector3(-0.5, top, 0.05), 160.0)
-	PhotoProp.stand(lot, "stationery_supplies", LABOUR_DESK + Vector3(0.25, top, 0.18), 30.0)
+	# (One piece each: the scan is a display of pens laid out in a row above one another.)
+	PhotoProp.stand(lot, "stationery_supplies:_pencilcup", LABOUR_DESK + Vector3(0.8, top, -0.18), 30.0)
+	PhotoProp.stand(lot, "stationery_supplies:_pen_blue", LABOUR_DESK + Vector3(0.72, top, 0.3), 25.0)
 	_desk_card(lot, LABOUR_DESK + Vector3(0.0, top, -0.2), "BACK IN", "5 MINUTES")
 	var brass := StationKit.metal("labour_bell", {steel_color = Color("#b8963e"), rust = 0.05, metallic_steel = 0.9, roughness_steel = 0.3})
 	EnvMesh.add(lot, EnvMesh.sphere(0.055, 14, 8), brass, Transform3D(Basis.from_scale(Vector3(1, 0.62, 1)), LABOUR_DESK + Vector3(-0.42, top + 0.012, -0.22)), false)
@@ -348,7 +350,7 @@ static func labour_office(lot: Node3D) -> void:
 	# For those who wait: something to read on the table, darts on the wall, a plant, a picture, a fan.
 	var table := PhotoProp.box("round_wooden_table_01").size.y
 	PhotoProp.stand(lot, "clipboard", Vector3(3.2, table, 1.05), 35.0)
-	PhotoProp.stand(lot, "office_notepads", Vector3(3.5, table, 1.3), 110.0)
+	PhotoProp.stand(lot, "office_notepads:_yellow_pad", Vector3(3.5, table, 1.3), 110.0)
 	PhotoProp.mount(lot, "dartboard", Vector3(side - 0.032, 1.42, 2.9), Vector3.LEFT)
 	PhotoProp.mount(lot, "hanging_picture_frame_03", Vector3(-side + 0.032, 1.75, 2.7), Vector3.RIGHT)
 	PhotoProp.stand(lot, "potted_plant_02", Vector3(1.95, 0, 0.6), 40.0)
@@ -360,8 +362,8 @@ static func labour_office(lot: Node3D) -> void:
 	PhotoProp.mount(lot, "industrial_wall_lamp", Vector3(LABOUR_DOOR_X, TownBlock.DOOR_H + 0.1, 0), Vector3.FORWARD)
 	var face := Transform3D(Basis(Vector3.UP, deg_to_rad(190.0)), board_at) * Transform3D(Basis(Vector3.RIGHT, -0.21), Vector3(0.0, 0.88, 0.188))
 	var chalk := Color(0.93, 0.92, 0.87, 0.92)
-	StationKit.label(lot, "HANDS", face * Transform3D(Basis(), Vector3(0, 0.36, 0)), 110, Color(0.95, 0.82, 0.4, 0.92), 700, 0.0022, StationKit.chalk_font())
-	StationKit.label(lot, "FOR HIRE", face * Transform3D(Basis(), Vector3(0, 0.16, 0)), 92, Color(0.95, 0.82, 0.4, 0.92), 700, 0.0022, StationKit.chalk_font())
+	StationKit.label(lot, "HANDS", face * Transform3D(Basis(), Vector3(0, 0.36, 0)), 100, Color(0.95, 0.82, 0.4, 0.92), 700, 0.0022, StationKit.chalk_font())
+	StationKit.label(lot, "FOR HIRE", face * Transform3D(Basis(), Vector3(0, 0.16, 0)), 78, Color(0.95, 0.82, 0.4, 0.92), 700, 0.0022, StationKit.chalk_font())
 	StationKit.label(lot, "diggers · runners", face * Transform3D(Basis(), Vector3(0, -0.06, 0)), 50, chalk, 500, 0.0022, StationKit.hand_font())
 	StationKit.label(lot, "stall keepers", face * Transform3D(Basis(), Vector3(0, -0.22, 0)), 50, chalk, 500, 0.0022, StationKit.hand_font())
 	StationKit.label(lot, "ask inside", face * Transform3D(Basis(), Vector3(0, -0.38, 0)), 56, chalk, 500, 0.0022, StationKit.hand_font())
@@ -418,8 +420,9 @@ static func _desk_card(set: Node3D, at: Vector3, line_one: String, line_two: Str
 	card.cull_mode = BaseMaterial3D.CULL_DISABLED
 	var lean := 0.32
 	for s: float in [-1.0, 1.0]:
-		EnvMesh.add(set, EnvMesh.box(Vector3(0.34, 0.16, 0.004)), card, Transform3D(Basis(Vector3.RIGHT, s * lean), at + Vector3(0, 0.076, s * 0.026)), false)
-	var front := Transform3D(Basis(Vector3.UP, PI) * Basis(Vector3.RIGHT, lean), at + Vector3(0, 0.076, -0.03))
+		# (The tops meet, the feet stand apart.)
+		EnvMesh.add(set, EnvMesh.box(Vector3(0.34, 0.16, 0.004)), card, Transform3D(Basis(Vector3.RIGHT, -s * lean), at + Vector3(0, 0.076, s * 0.026)), false)
+	var front := Transform3D(Basis(Vector3.UP, PI) * Basis(Vector3.RIGHT, -lean), at + Vector3(0, 0.076, -0.03))
 	StationKit.label(set, line_one, front * Transform3D(Basis(), Vector3(0, 0.032, 0)), 44, Color("#22201c"), 800, 0.0011)
 	StationKit.label(set, line_two, front * Transform3D(Basis(), Vector3(0, -0.034, 0)), 44, Color("#7a1f1c"), 800, 0.0011)
 
@@ -552,7 +555,8 @@ static func bank(set: Node3D) -> void:
 	# Behind the counter: the desk with the day's ledgers, a strip of light over the clerks.
 	var desk := at + Vector3(-3.3, 0.79, back - 0.52)
 	PhotoProp.stand(set, "binder_notebook", desk + Vector3(0.35, 0, -0.05), 170.0)
-	PhotoProp.stand(set, "stationery_supplies", desk + Vector3(-0.55, 0.07, 0.12), 200.0)
+	PhotoProp.stand(set, "stationery_supplies:_pencilcup", desk + Vector3(-0.55, 0, 0.12), 200.0)
+	PhotoProp.stand(set, "stationery_supplies:_pen_fancy", desk + Vector3(-0.42, 0, 0.28), 160.0)
 	PhotoProp.stand(set, "mantel_clock_01", desk + Vector3(-0.2, 0, 0.25), 180.0)
 	PhotoProp.stand(set, "book_encyclopedia_set_01", desk + Vector3(0.6, 0, 0.25), 180.0)
 	TownBlock.strip_light(set, at + Vector3(-1.6, TownBlock.ROOM_H - 0.02, counter_z + 1.3), Color("#fff1d6"))
@@ -573,7 +577,8 @@ static func bank(set: Node3D) -> void:
 	# The customers' side: the console with slips and pens, pictures, two chandeliers.
 	var console := at + Vector3(side - 0.32, 0.95, 1.45)
 	PhotoProp.stand(set, "office_notepads", console + Vector3(0.02, 0, 0.1), -90.0, 0.42)
-	PhotoProp.stand(set, "stationery_supplies", console + Vector3(0.05, 0.07, -0.5), -70.0)
+	PhotoProp.stand(set, "stationery_supplies:_pencilcup", console + Vector3(0.05, 0, -0.5), -70.0)
+	PhotoProp.stand(set, "stationery_supplies:_pen_blue", console + Vector3(0.0, 0, -0.32), 20.0)
 	PhotoProp.mount(set, "hanging_picture_frame_03", at + Vector3(side - 0.03, 1.72, 1.45), Vector3.LEFT)
 	PhotoProp.mount(set, "fancy_picture_frame_02", at + Vector3(-side + 0.03, 1.5, 1.75), Vector3.RIGHT)
 	for x: float in [-2.6, 2.6]:

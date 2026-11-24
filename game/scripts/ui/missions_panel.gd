@@ -6,6 +6,7 @@ extends CanvasLayer
 ## Needle were the model).
 
 const WIDTH := 392.0
+const GROUP := &"missions_panels"
 
 var _pill: PanelContainer
 var _title: Label
@@ -16,8 +17,26 @@ var _bars: Array[ColorRect] = []
 var _tracks: Array[ColorRect] = []
 
 
+## Where the column under the money begins (y on the screen): under the wanted box, the debt at the
+## bank and the hired hands.
+static func column_top(tree: SceneTree) -> float:
+	var law := TownLaw.of(tree)
+	return HUD.SAFE.y + (146.0 if law and law.stars() > 0 else 92.0) + BankHud.room(tree) + HandsHud.room(tree)
+
+
+## Where that column ends: under the missions, where a hall shows them. What comes next (the
+## Suchauftrag's pill) starts here.
+static func column_end(tree: SceneTree) -> float:
+	var y := column_top(tree)
+	var panel := tree.get_first_node_in_group(GROUP) as MissionsPanel
+	if panel and panel.visible and panel._pill and panel._pill.visible:
+		y += panel._pill.size.y + 8.0
+	return y
+
+
 func _ready() -> void:
 	layer = 2
+	add_to_group(GROUP)
 	var root := Control.new()
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -98,5 +117,4 @@ func _refresh() -> void:
 func _process(_delta: float) -> void:
 	# The wanted box, the debt at the bank and the hired hands sit between the money and the missions;
 	# make room for them.
-	var law := TownLaw.of(get_tree())
-	_pill.position.y = HUD.SAFE.y + (146.0 if law and law.stars() > 0 else 92.0) + BankHud.room(get_tree()) + HandsHud.room(get_tree())
+	_pill.position.y = column_top(get_tree())

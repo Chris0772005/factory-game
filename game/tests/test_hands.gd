@@ -154,10 +154,12 @@ func _going_home(world: FoundryLevel, me: Player, digger: HiredHand) -> void:
 	var money := world.money
 	await _frames(60 * 3)
 	_check("zurückrufen" in digger.hint(me), "on his way home the hint offers to call him back: %s" % digger.hint(me))
+	digger._wage_left = 20.0
 	digger.interact(me)
 	_check(digger.state == HiredHand.State.COMING and digger.hired() and world.money == money, "[F] calls him back without a fee")
 	await _until(func() -> bool: return digger.digging, 40.0)
 	_check(digger.state == HiredHand.State.WORKING and digger.digging, "and he digs again")
+	_check(digger._wage_left > 5.0 and digger._wage_left <= 20.0, "the minute that was running runs on: calling him back wins no fresh one (%.0f s left)" % digger._wage_left)
 	digger.interact(me)
 	digger.interact(me)
 	_check(digger.state == HiredHand.State.LEAVING, "sent home once more")
@@ -233,6 +235,15 @@ func _keeping(world: FoundryLevel, me: Player, keeper: HiredHand, runner: HiredH
 	var kettle := world.spawn_item(&"scrap_kettle", Color.WHITE, Vector3(0.3, 0.26, 0.3), 0.4, stall.to_global(stall.place_pos(0) + Vector3(0, 0.12, 0)))
 	await _frames(20)
 	_check(stall.price_now(kettle) == 30, "without a stall keeper a kettle costs 30 $ at the stall")
+	# Without a stall keeper the bucket by the stall is the runner's like any other.
+	var by_heap := bucket.global_position
+	bucket.global_position = stall.global_position + Vector3(-2.0, 0.2, -0.3)
+	for i in 9:
+		bucket.add(&"junk_bolt")
+	_check(runner._bucket_to_empty() == bucket, "without a stall keeper the runner would empty a bucket by the stall too")
+	bucket.empty()
+	bucket.global_position = by_heap
+	bucket.linear_velocity = Vector3.ZERO
 	world.add_money(1000 - world.money)
 	keeper.interact(me)
 	_check(keeper.state == HiredHand.State.COMING and world.money == 900, "Rosa is hired for 100 $")
@@ -247,6 +258,7 @@ func _keeping(world: FoundryLevel, me: Player, keeper: HiredHand, runner: HiredH
 	_check(Vector2(behind.x - 0.62, behind.z + YardStall.SIZE.y * 0.5 + 0.42).length() < 0.4 and frames < 60 * 50,
 		"at her place beside the pole, not held up on the way (%.2f, %.2f)" % [behind.x, behind.z])
 	_check(stall.price_now(kettle) == 36 and "Rosa" in stall.hint(me), "with her the kettle costs 36 $: %s" % stall.hint(me))
+	_check("36 $" in stall.toss_hint(kettle), "and the hint for laying a piece down names that price: %s" % stall.toss_hint(kettle))
 	# A customer takes two pieces instead of one.
 	for i in 2:
 		world.spawn_item(&"scrap_candle", Color.WHITE, Vector3(0.13, 0.24, 0.13), 0.4, stall.to_global(stall.place_pos(1 + i) + Vector3(0, 0.12, 0)))

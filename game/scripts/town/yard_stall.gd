@@ -155,7 +155,7 @@ func toss_point() -> Vector3:
 
 
 func toss_hint(body: Node3D) -> String:
-	return "Auf den Verkaufstisch legen · Kunden zahlen %d $" % price_of(body)
+	return "Auf den Verkaufstisch legen · Kunden zahlen %d $" % price_now(body)
 
 
 ## Host: the thing let go in front of the table is laid on a free place.
@@ -336,7 +336,10 @@ func _serve(index: int) -> void:
 			guide.note(sale)
 		sold.emit(pay)
 		total += pay
-	_tell(index, "%s? Nehm ich – %d $!" % [" und ".join(names).replace(" und Das ", " und das "), total], total)
+	var what := " und ".join(names).replace(" und Das ", " und das ")
+	if names.size() == 2 and names[0] == names[1]:
+		what = "Beide Gussstücke" if names[0] == "Das Gussstück" else "Zweimal %s" % names[0]
+	_tell(index, "%s? Nehm ich – %d $!" % [what, total], total)
 
 
 func _tell(index: int, text: String, pay: int) -> void:
@@ -400,10 +403,11 @@ func _build() -> void:
 	PhotoProp.stand(self, "standing_chalkboard_01", board, 20.0)
 	var face := Transform3D(Basis(Vector3.UP, deg_to_rad(20.0)), board) * Transform3D(Basis(Vector3.RIGHT, -0.21), Vector3(0.0, 0.88, 0.188))
 	var chalk := Color(0.93, 0.92, 0.87, 0.92)
-	StationKit.label(self, "YARD SALE", face * Transform3D(Basis(), Vector3(0, 0.34, 0)), 100, Color(0.95, 0.82, 0.4, 0.92), 700, 0.0022, StationKit.chalk_font())
-	StationKit.label(self, "finds & castings", face * Transform3D(Basis(), Vector3(0, 0.12, 0)), 56, chalk, 500, 0.0022, StationKit.hand_font())
-	StationKit.label(self, "straight from", face * Transform3D(Basis(), Vector3(0, -0.08, 0)), 50, chalk, 500, 0.0022, StationKit.hand_font())
-	StationKit.label(self, "the heap", face * Transform3D(Basis(), Vector3(0, -0.28, 0)), 62, chalk, 500, 0.0022, StationKit.hand_font())
+	# (Two lines: in one the words were wider than the slate, and the frame hid their ends.)
+	StationKit.label(self, "YARD", face * Transform3D(Basis(), Vector3(0, 0.36, 0)), 104, Color(0.95, 0.82, 0.4, 0.92), 700, 0.0022, StationKit.chalk_font())
+	StationKit.label(self, "SALE", face * Transform3D(Basis(), Vector3(0, 0.16, 0)), 104, Color(0.95, 0.82, 0.4, 0.92), 700, 0.0022, StationKit.chalk_font())
+	StationKit.label(self, "finds & castings", face * Transform3D(Basis(), Vector3(0, -0.07, 0)), 54, chalk, 500, 0.0022, StationKit.hand_font())
+	StationKit.label(self, "from the heap", face * Transform3D(Basis(), Vector3(0, -0.27, 0)), 56, chalk, 500, 0.0022, StationKit.hand_font())
 	# A crate and a basket under the table, for what is not laid out yet.
 	PhotoProp.stand(self, "wooden_crate_01", Vector3(-0.5, 0, 0.0), 12.0, 0.55)
 	PhotoProp.stand(self, "wicker_basket_01", Vector3(0.45, 0, 0.05), -8.0, 1.0)

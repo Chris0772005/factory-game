@@ -91,8 +91,8 @@ func _build() -> void:
 	# The board beside him: what this is.
 	var face := Transform3D(Basis(Vector3.UP, deg_to_rad(188.0)), BOARD) * Transform3D(Basis(Vector3.RIGHT, -0.21), Vector3(0.0, 0.88, 0.188))
 	var chalk := Color(0.93, 0.92, 0.87, 0.92)
-	StationKit.label(self, "AUCTION", face * Transform3D(Basis(), Vector3(0, 0.36, 0)), 96, Color(0.95, 0.82, 0.4, 0.92), 700, 0.0022, StationKit.chalk_font())
-	StationKit.label(self, "TODAY", face * Transform3D(Basis(), Vector3(0, 0.15, 0)), 96, Color(0.95, 0.82, 0.4, 0.92), 700, 0.0022, StationKit.chalk_font())
+	StationKit.label(self, "AUCTION", face * Transform3D(Basis(), Vector3(0, 0.36, 0)), 82, Color(0.95, 0.82, 0.4, 0.92), 700, 0.0022, StationKit.chalk_font())
+	StationKit.label(self, "TODAY", face * Transform3D(Basis(), Vector3(0, 0.17, 0)), 82, Color(0.95, 0.82, 0.4, 0.92), 700, 0.0022, StationKit.chalk_font())
 	StationKit.label(self, "lots sold unseen", face * Transform3D(Basis(), Vector3(0, -0.08, 0)), 50, chalk, 500, 0.0022, StationKit.hand_font())
 	StationKit.label(self, "cash only", face * Transform3D(Basis(), Vector3(0, -0.28, 0)), 58, chalk, 500, 0.0022, StationKit.hand_font())
 	# Under the viaduct it is always shade: a lamp on the pier behind him, lit all day.

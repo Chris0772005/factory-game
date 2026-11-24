@@ -458,8 +458,8 @@ func _diner_room() -> void:
 	# The board on the pavement by the door.
 	var face := Transform3D(Basis(Vector3.UP, deg_to_rad(170.0)), DINER + DINER_SIGN) * Transform3D(Basis(Vector3.RIGHT, -0.21), Vector3(0.0, 0.88, 0.188))
 	StationKit.label(self, "OPEN", face * Transform3D(Basis(), Vector3(0, 0.34, 0)), 112, Color(0.95, 0.82, 0.4, 0.92), 700, 0.0022, StationKit.chalk_font())
-	StationKit.label(self, "COFFEE 4 $", face * Transform3D(Basis(), Vector3(0, 0.1, 0)), 72, Color(chalk, 0.92), 700, 0.0022, StationKit.chalk_font())
-	StationKit.label(self, "HOT STEW 12 $", face * Transform3D(Basis(), Vector3(0, -0.1, 0)), 62, Color(chalk, 0.92), 700, 0.0022, StationKit.chalk_font())
+	StationKit.label(self, "COFFEE 4 $", face * Transform3D(Basis(), Vector3(0, 0.1, 0)), 66, Color(chalk, 0.92), 700, 0.0022, StationKit.chalk_font())
+	StationKit.label(self, "HOT STEW 12 $", face * Transform3D(Basis(), Vector3(0, -0.1, 0)), 50, Color(chalk, 0.92), 700, 0.0022, StationKit.chalk_font())
 	StationKit.label(self, "come in!", face * Transform3D(Basis(), Vector3(0, -0.3, 0)), 56, Color(chalk, 0.92), 500, 0.0022, StationKit.hand_font())
 	# The awning over the two windows: striped cloth on two iron arms.
 	var stripes := Image.create(2, 1, false, Image.FORMAT_RGB8)
